@@ -1,12 +1,12 @@
 use zvvnmod_utn57::{
-    shape_to_zvvnmod_map, ZvvnmodCode, ZvvnmodShape, B_I_MEDI, B_I_MEDI_ALT_1, FVS1, FVS2, FVS3,
-    MVS,
+    shape_to_zvvnmod_map, ZvvnmodCode, ZvvnmodShape, B_I_INIT, B_I_MEDI, FVS1, FVS2, FVS3, MVS,
 };
 
 #[test]
-fn merged_shape_keeps_all_zvvnmod_aliases() {
+fn initial_and_medial_multi_shapes_are_distinct() {
     let map = shape_to_zvvnmod_map();
-    assert_eq!(map[&ZvvnmodShape::B_I_MEDI], &[B_I_MEDI, B_I_MEDI_ALT_1],);
+    assert_eq!(map[&ZvvnmodShape::B_I_INIT], &[B_I_INIT]);
+    assert_eq!(map[&ZvvnmodShape::B_I_MEDI], &[B_I_MEDI]);
 }
 
 #[test]
