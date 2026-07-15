@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Generate Rust ZVVNMOD Shape → code aliases map."""
+"""生成 Rust ZVVNMOD Shape → 编码别名 Map。
+
+Generate the Rust ZVVNMOD Shape → code aliases map.
+"""
 
 import argparse
 from pathlib import Path
