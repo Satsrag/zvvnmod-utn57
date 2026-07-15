@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Generate Rust ZVVNMOD code and merged-shape definitions."""
+"""生成 Rust ZVVNMOD 编码及合并 shape 定义。
+
+Generate Rust ZVVNMOD code and merged-shape definitions.
+"""
 
 import argparse
 from pathlib import Path
