@@ -66,8 +66,14 @@ def _unit_identifier(unit: str) -> str:
 
 def parse_shape_name(name: str, codepoint: int | None = None) -> ParsedShape:
     name = name.strip()
-    if codepoint in CONTROL_NAMES and not name:
-        return ParsedShape(CONTROL_NAMES[codepoint], (), None, True)
+    if codepoint in CONTROL_NAMES:
+        rust_name = CONTROL_NAMES[codepoint]
+        table_name = rust_name.capitalize()
+        if name and name != table_name:
+            raise ValueError(
+                f"unexpected control name {name!r} for U+{codepoint:04X}; expected {table_name}"
+            )
+        return ParsedShape(rust_name, (), None, True)
     if not name:
         raise ValueError(f"missing name for U+{codepoint:04X}" if codepoint is not None else "missing name")
     if name == "Nirugu":

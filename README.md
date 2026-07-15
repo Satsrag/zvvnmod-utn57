@@ -73,13 +73,13 @@ B_I_MEDI → [B_I_MEDI, B_I_MEDI_ALT_1]
 
 CSV 中最先出现的 code 是 canonical，后续使用 `_ALT_n`，不会静默覆盖。
 
-四个 control-table code 固定为：
+四个 control-table 名称及生成的 Rust 常量为：
 
 ```text
-U+E140 → FVS1
-U+E141 → FVS2
-U+E142 → FVS3
-U+E143 → MVS
+U+E140 → Fvs1 → FVS1
+U+E141 → Fvs2 → FVS2
+U+E142 → Fvs3 → FVS3
+U+E143 → Mvs  → MVS
 ```
 
 它们是 code 常量，不进入 `ZvvnmodShape` Map。

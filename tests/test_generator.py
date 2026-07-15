@@ -43,6 +43,18 @@ class ShapeNamingTests(unittest.TestCase):
         self.assertEqual(gen.parse_shape_name("", codepoint=0xE142).rust_name, "FVS3")
         self.assertEqual(gen.parse_shape_name("", codepoint=0xE143).rust_name, "MVS")
 
+    def test_named_control_rows_generate_fixed_rust_names(self):
+        gen = load_generator()
+        self.assertEqual(gen.parse_shape_name("Fvs1", codepoint=0xE140).rust_name, "FVS1")
+        self.assertEqual(gen.parse_shape_name("Fvs2", codepoint=0xE141).rust_name, "FVS2")
+        self.assertEqual(gen.parse_shape_name("Fvs3", codepoint=0xE142).rust_name, "FVS3")
+        self.assertEqual(gen.parse_shape_name("Mvs", codepoint=0xE143).rust_name, "MVS")
+
+    def test_named_control_row_rejects_wrong_name(self):
+        gen = load_generator()
+        with self.assertRaisesRegex(ValueError, "expected Fvs1"):
+            gen.parse_shape_name("Fvs2", codepoint=0xE140)
+
     def test_duplicate_shapes_keep_all_codes_and_first_is_canonical(self):
         gen = load_generator()
         rows = [
