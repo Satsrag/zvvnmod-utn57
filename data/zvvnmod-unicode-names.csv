@@ -1,0 +1,144 @@
+unicode,name,source
+e000,A i,font
+e001,O i,font
+e005,A m,font
+e006,I m,font
+e008,O m,font
+e00c,A f,font
+e00d,Aa f,font
+e00e,I f,font
+e00f,O f,font
+e010,Ue f,font
+e011,U f,font
+e01a,I isol,font
+e01b,U isol,font
+e027,N i,font
+e028,N m,font
+e029,B i,font
+e02a,B m,font
+e02b,B f,font
+e02c,P i,font
+e02d,P m,font
+e02e,P f,font
+e02f,H i,font
+e030,G i,font
+e031,G m,font
+e032,H f,font
+e034,Gx i,font
+e036,M i,font
+e037,M m,font
+e038,M f,font
+e039,L i,font
+e03a,L m,font
+e03b,L f,font
+e03c,S i,font
+e03d,S m,font
+e03e,S f,font
+e03f,Sh i,font
+e040,Sh m,font
+e041,Sh f,font
+e042,T i,font
+e043,T m,font
+e044,T f,font
+e045,D i,font
+e046,D m,font
+e049,D f,font
+e04a,Ch i,font
+e04b,Ch m,font
+e04c,Ch f,font
+e04d,I i,font
+e04e,J m,font
+e04f,J f,font
+e050,Y i,font
+e051,Y m,font
+e053,R i,font
+e054,R m,font
+e055,R f,font
+e056,W i,font
+e057,W m,font
+e058,W f,font
+e059,F i,font
+e05a,F m,font
+e05b,F f,font
+e05c,K i,font
+e05d,K m,font
+e05e,K f,font
+e05f,C i,font
+e060,C m,font
+e061,C f,font
+e062,Z i,font
+e063,Z m,font
+e064,Z f,font
+e066,Hr m,font
+e067,Hr f,font
+e068,Rh i,font
+e069,Rh m,font
+e06a,Rh f,font
+e077,N m Aa f,font
+e079,B i I f,font
+e07a,B i O f,font
+e07b,B i Ue f,font
+e07c,B i A m,font
+e07d,B m A m,font
+e07f,B i I m,font
+e080,B m I m,font
+e081,B m I f,font
+e082,B i O m,font
+e083,B m O m,font
+e084,B m O f,font
+e086,P i I f,font
+e087,P i O f,font
+e088,P i Ue f,font
+e089,P i A m,font
+e08a,P m A m,font
+e08c,P i I m,font
+e08d,P m I m,font
+e08e,P m I f,font
+e08f,P i O m,font
+e090,P m O m,font
+e091,P m O f,font
+e092,G i I f,font
+e093,G i Ue f,font
+e094,G i A m,font
+e095,G m A m,font
+e097,G i I m,font
+e098,G m I m,font
+e099,G m I f,font
+e09a,G i O m I m,font
+e09b,G m O m,font
+e09c,G m O f,font
+e09d,Gx m Aa f,font
+e09f,F i I f,font
+e0a0,F i O f,font
+e0a1,F i Ue f,font
+e0a2,F i A m,font
+e0a3,F m A m,font
+e0a5,F i I m,font
+e0a6,F m I m,font
+e0a7,F m I f,font
+e0a8,F i O m,font
+e0a9,F m O m,font
+e0aa,F m O f,font
+e0ad,K i I f,font
+e0ae,K i O f,font
+e0af,K i Ue f,font
+e0b0,K i A m,font
+e0b1,K m A m,font
+e0b6,K i I m,font
+e0b7,K m I m,font
+e0b8,K m I f,font
+e0b9,K i O m,font
+e0ba,K m O m,font
+e0bb,K m O f,font
+e0bc,K m Ue f,font
+e0cd,B m Ue f,font
+e0ce,P m Ue f,font
+e0cf,G m Ue f,font
+e0d0,F m Ue f,font
+e0e5,Nirugu,font
+e0e6,Ir f,font
+e0e7,Zr i,font
+e140,,control-table
+e141,,control-table
+e142,,control-table
+e143,,control-table
