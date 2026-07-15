@@ -52,10 +52,7 @@ class Model:
 
 
 def _unit_identifier(unit: str) -> str:
-    """将 written-unit 名称转换为 Rust 标识符。 / Convert a written-unit name to a Rust identifier.
-
-    示例 / Example: ``Fvs1`` → ``FVS1``.
-    """
+    """将 written-unit 名称转换为 Rust 标识符。 / Convert a written-unit name to a Rust identifier."""
 
     identifier = "".join(ch if ch.isalnum() else "_" for ch in unit).upper()
     identifier = "_".join(part for part in identifier.split("_") if part)
@@ -67,7 +64,10 @@ def _unit_identifier(unit: str) -> str:
 def parse_shape_name(
     name: str, codepoint: int | None = None, source: str = "font"
 ) -> ParsedShape:
-    """解析一行 shape/control 名称。 / Parse one shape or control name."""
+    """解析一行 shape/control 名称。 / Parse one shape or control name.
+
+    示例 / Example: ``B i I m`` → ``B_I_MEDI``.
+    """
 
     name = name.strip()
     # control-table 的名称由 CSV 决定，不在生成器中重复硬编码。
