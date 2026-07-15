@@ -99,42 +99,56 @@ pub enum ZvvnmodShape {
     B_I_ISOL,
     B_O_ISOL,
     B_UE_ISOL,
+    B_A_INIT,
     B_A_MEDI,
+    B_I_INIT,
     B_I_MEDI,
     B_I_FINA,
+    B_O_INIT,
     B_O_MEDI,
     B_O_FINA,
     P_I_ISOL,
     P_O_ISOL,
     P_UE_ISOL,
+    P_A_INIT,
     P_A_MEDI,
+    P_I_INIT,
     P_I_MEDI,
     P_I_FINA,
+    P_O_INIT,
     P_O_MEDI,
     P_O_FINA,
     G_I_ISOL,
     G_UE_ISOL,
+    G_A_INIT,
     G_A_MEDI,
+    G_I_INIT,
     G_I_MEDI,
     G_I_FINA,
-    G_O_I_MEDI,
+    G_O_I_INIT,
     G_O_MEDI,
     G_O_FINA,
     GX_AA_FINA,
     F_I_ISOL,
     F_O_ISOL,
     F_UE_ISOL,
+    F_A_INIT,
     F_A_MEDI,
+    F_I_INIT,
     F_I_MEDI,
     F_I_FINA,
+    F_O_INIT,
     F_O_MEDI,
     F_O_FINA,
     K_I_ISOL,
     K_O_ISOL,
     K_UE_ISOL,
+    K_A_INIT,
     K_A_MEDI,
+    K_I_INIT,
     K_I_MEDI,
     K_I_FINA,
+    K_O_INIT,
     K_O_MEDI,
     K_O_FINA,
     K_UE_FINA,
@@ -306,19 +320,19 @@ pub const B_O_ISOL: ZvvnmodCode = ZvvnmodCode(0xE07A);
 /// Code U+E07B: B i Ue f (font).
 pub const B_UE_ISOL: ZvvnmodCode = ZvvnmodCode(0xE07B);
 /// Code U+E07C: B i A m (font).
-pub const B_A_MEDI: ZvvnmodCode = ZvvnmodCode(0xE07C);
+pub const B_A_INIT: ZvvnmodCode = ZvvnmodCode(0xE07C);
 /// Code U+E07D: B m A m (font).
-pub const B_A_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE07D);
+pub const B_A_MEDI: ZvvnmodCode = ZvvnmodCode(0xE07D);
 /// Code U+E07F: B i I m (font).
-pub const B_I_MEDI: ZvvnmodCode = ZvvnmodCode(0xE07F);
+pub const B_I_INIT: ZvvnmodCode = ZvvnmodCode(0xE07F);
 /// Code U+E080: B m I m (font).
-pub const B_I_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE080);
+pub const B_I_MEDI: ZvvnmodCode = ZvvnmodCode(0xE080);
 /// Code U+E081: B m I f (font).
 pub const B_I_FINA: ZvvnmodCode = ZvvnmodCode(0xE081);
 /// Code U+E082: B i O m (font).
-pub const B_O_MEDI: ZvvnmodCode = ZvvnmodCode(0xE082);
+pub const B_O_INIT: ZvvnmodCode = ZvvnmodCode(0xE082);
 /// Code U+E083: B m O m (font).
-pub const B_O_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE083);
+pub const B_O_MEDI: ZvvnmodCode = ZvvnmodCode(0xE083);
 /// Code U+E084: B m O f (font).
 pub const B_O_FINA: ZvvnmodCode = ZvvnmodCode(0xE084);
 /// Code U+E086: P i I f (font).
@@ -328,19 +342,19 @@ pub const P_O_ISOL: ZvvnmodCode = ZvvnmodCode(0xE087);
 /// Code U+E088: P i Ue f (font).
 pub const P_UE_ISOL: ZvvnmodCode = ZvvnmodCode(0xE088);
 /// Code U+E089: P i A m (font).
-pub const P_A_MEDI: ZvvnmodCode = ZvvnmodCode(0xE089);
+pub const P_A_INIT: ZvvnmodCode = ZvvnmodCode(0xE089);
 /// Code U+E08A: P m A m (font).
-pub const P_A_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE08A);
+pub const P_A_MEDI: ZvvnmodCode = ZvvnmodCode(0xE08A);
 /// Code U+E08C: P i I m (font).
-pub const P_I_MEDI: ZvvnmodCode = ZvvnmodCode(0xE08C);
+pub const P_I_INIT: ZvvnmodCode = ZvvnmodCode(0xE08C);
 /// Code U+E08D: P m I m (font).
-pub const P_I_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE08D);
+pub const P_I_MEDI: ZvvnmodCode = ZvvnmodCode(0xE08D);
 /// Code U+E08E: P m I f (font).
 pub const P_I_FINA: ZvvnmodCode = ZvvnmodCode(0xE08E);
 /// Code U+E08F: P i O m (font).
-pub const P_O_MEDI: ZvvnmodCode = ZvvnmodCode(0xE08F);
+pub const P_O_INIT: ZvvnmodCode = ZvvnmodCode(0xE08F);
 /// Code U+E090: P m O m (font).
-pub const P_O_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE090);
+pub const P_O_MEDI: ZvvnmodCode = ZvvnmodCode(0xE090);
 /// Code U+E091: P m O f (font).
 pub const P_O_FINA: ZvvnmodCode = ZvvnmodCode(0xE091);
 /// Code U+E092: G i I f (font).
@@ -348,17 +362,17 @@ pub const G_I_ISOL: ZvvnmodCode = ZvvnmodCode(0xE092);
 /// Code U+E093: G i Ue f (font).
 pub const G_UE_ISOL: ZvvnmodCode = ZvvnmodCode(0xE093);
 /// Code U+E094: G i A m (font).
-pub const G_A_MEDI: ZvvnmodCode = ZvvnmodCode(0xE094);
+pub const G_A_INIT: ZvvnmodCode = ZvvnmodCode(0xE094);
 /// Code U+E095: G m A m (font).
-pub const G_A_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE095);
+pub const G_A_MEDI: ZvvnmodCode = ZvvnmodCode(0xE095);
 /// Code U+E097: G i I m (font).
-pub const G_I_MEDI: ZvvnmodCode = ZvvnmodCode(0xE097);
+pub const G_I_INIT: ZvvnmodCode = ZvvnmodCode(0xE097);
 /// Code U+E098: G m I m (font).
-pub const G_I_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE098);
+pub const G_I_MEDI: ZvvnmodCode = ZvvnmodCode(0xE098);
 /// Code U+E099: G m I f (font).
 pub const G_I_FINA: ZvvnmodCode = ZvvnmodCode(0xE099);
 /// Code U+E09A: G i O m I m (font).
-pub const G_O_I_MEDI: ZvvnmodCode = ZvvnmodCode(0xE09A);
+pub const G_O_I_INIT: ZvvnmodCode = ZvvnmodCode(0xE09A);
 /// Code U+E09B: G m O m (font).
 pub const G_O_MEDI: ZvvnmodCode = ZvvnmodCode(0xE09B);
 /// Code U+E09C: G m O f (font).
@@ -372,19 +386,19 @@ pub const F_O_ISOL: ZvvnmodCode = ZvvnmodCode(0xE0A0);
 /// Code U+E0A1: F i Ue f (font).
 pub const F_UE_ISOL: ZvvnmodCode = ZvvnmodCode(0xE0A1);
 /// Code U+E0A2: F i A m (font).
-pub const F_A_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0A2);
+pub const F_A_INIT: ZvvnmodCode = ZvvnmodCode(0xE0A2);
 /// Code U+E0A3: F m A m (font).
-pub const F_A_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE0A3);
+pub const F_A_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0A3);
 /// Code U+E0A5: F i I m (font).
-pub const F_I_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0A5);
+pub const F_I_INIT: ZvvnmodCode = ZvvnmodCode(0xE0A5);
 /// Code U+E0A6: F m I m (font).
-pub const F_I_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE0A6);
+pub const F_I_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0A6);
 /// Code U+E0A7: F m I f (font).
 pub const F_I_FINA: ZvvnmodCode = ZvvnmodCode(0xE0A7);
 /// Code U+E0A8: F i O m (font).
-pub const F_O_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0A8);
+pub const F_O_INIT: ZvvnmodCode = ZvvnmodCode(0xE0A8);
 /// Code U+E0A9: F m O m (font).
-pub const F_O_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE0A9);
+pub const F_O_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0A9);
 /// Code U+E0AA: F m O f (font).
 pub const F_O_FINA: ZvvnmodCode = ZvvnmodCode(0xE0AA);
 /// Code U+E0AD: K i I f (font).
@@ -394,19 +408,19 @@ pub const K_O_ISOL: ZvvnmodCode = ZvvnmodCode(0xE0AE);
 /// Code U+E0AF: K i Ue f (font).
 pub const K_UE_ISOL: ZvvnmodCode = ZvvnmodCode(0xE0AF);
 /// Code U+E0B0: K i A m (font).
-pub const K_A_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0B0);
+pub const K_A_INIT: ZvvnmodCode = ZvvnmodCode(0xE0B0);
 /// Code U+E0B1: K m A m (font).
-pub const K_A_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE0B1);
+pub const K_A_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0B1);
 /// Code U+E0B6: K i I m (font).
-pub const K_I_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0B6);
+pub const K_I_INIT: ZvvnmodCode = ZvvnmodCode(0xE0B6);
 /// Code U+E0B7: K m I m (font).
-pub const K_I_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE0B7);
+pub const K_I_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0B7);
 /// Code U+E0B8: K m I f (font).
 pub const K_I_FINA: ZvvnmodCode = ZvvnmodCode(0xE0B8);
 /// Code U+E0B9: K i O m (font).
-pub const K_O_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0B9);
+pub const K_O_INIT: ZvvnmodCode = ZvvnmodCode(0xE0B9);
 /// Code U+E0BA: K m O m (font).
-pub const K_O_MEDI_ALT_1: ZvvnmodCode = ZvvnmodCode(0xE0BA);
+pub const K_O_MEDI: ZvvnmodCode = ZvvnmodCode(0xE0BA);
 /// Code U+E0BB: K m O f (font).
 pub const K_O_FINA: ZvvnmodCode = ZvvnmodCode(0xE0BB);
 /// Code U+E0BC: K m Ue f (font).

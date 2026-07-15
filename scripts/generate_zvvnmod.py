@@ -66,7 +66,7 @@ def parse_shape_name(
 ) -> ParsedShape:
     """解析一行 shape/control 名称。 / Parse one shape or control name.
 
-    示例 / Example: ``B i I m`` → ``B_I_MEDI``.
+    示例 / Example: ``B i I m`` → ``B_I_INIT``.
     """
 
     name = name.strip()
@@ -97,8 +97,21 @@ def parse_shape_name(
         units.append(unit)
         short_positions.append(position)
 
-    if len(units) > 1 and short_positions[0] == "i" and short_positions[-1] == "f":
-        position_suffix, position_variant = "ISOL", "Isol"
+    if len(units) > 1:
+        # 多 shape 的首尾位置分别表示前后连接状态。
+        # For a multi-part shape, the first and last positions encode its two joins.
+        if (
+            short_positions[0] not in {"i", "m"}
+            or short_positions[-1] not in {"m", "f"}
+            or any(position != "m" for position in short_positions[1:-1])
+        ):
+            raise ValueError(f"invalid multi-shape positions in {name!r}")
+        position_suffix, position_variant = {
+            ("i", "f"): ("ISOL", "Isol"),
+            ("i", "m"): ("INIT", "Init"),
+            ("m", "m"): ("MEDI", "Medi"),
+            ("m", "f"): ("FINA", "Fina"),
+        }[(short_positions[0], short_positions[-1])]
     else:
         position_suffix, position_variant = POSITION_WORDS[short_positions[-1]]
 

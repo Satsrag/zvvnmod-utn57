@@ -62,21 +62,19 @@ Ir f   → IR_FINA
 
 ```text
 B i I f → B_I_ISOL
-B i I m → B_I_MEDI
+B i I m → B_I_INIT
 B m I m → B_I_MEDI
 B m I f → B_I_FINA
 ```
 
 多 shape 的整体位置规则：
 
-1. 第一项为 `i` 且末项为 `f` 时，整体为 `ISOL`；
-2. 其他情况使用末项位置。
+1. `i ... f` → `ISOL`；
+2. `i ... m` → `INIT`；
+3. `m ... m` → `MEDI`；
+4. `m ... f` → `FINA`。
 
 同一个合并 shape 对应多个 code 时，全部保留。
-
-```text
-B_I_MEDI → [B_I_MEDI, B_I_MEDI_ALT_1]
-```
 
 CSV 中最先出现的 code 是 canonical，后续 code 使用 `_ALT_n`，不会静默覆盖。
 

@@ -62,21 +62,19 @@ For a multi-part shape, the unit names are merged.
 
 ```text
 B i I f → B_I_ISOL
-B i I m → B_I_MEDI
+B i I m → B_I_INIT
 B m I m → B_I_MEDI
 B m I f → B_I_FINA
 ```
 
 Overall position rules for a multi-part shape:
 
-1. If the first item is `i` and the final item is `f`, the overall position is `ISOL`.
-2. Otherwise, the final item's position is used.
+1. `i ... f` → `ISOL`
+2. `i ... m` → `INIT`
+3. `m ... m` → `MEDI`
+4. `m ... f` → `FINA`
 
 When several codes represent the same merged shape, all aliases are retained.
-
-```text
-B_I_MEDI → [B_I_MEDI, B_I_MEDI_ALT_1]
-```
 
 The first code in CSV order is canonical. Later codes use `_ALT_n` and never silently overwrite an existing code.
 
