@@ -421,11 +421,11 @@ pub const NIRUGU: ZvvnmodCode = ZvvnmodCode(0xE0E5);
 pub const IR_FINA: ZvvnmodCode = ZvvnmodCode(0xE0E6);
 /// U+E0E7: Zr i (font).
 pub const ZR_INIT: ZvvnmodCode = ZvvnmodCode(0xE0E7);
-/// U+E140: FVS1 (control-table).
+/// U+E140: Fvs1 (control-table).
 pub const FVS1: ZvvnmodCode = ZvvnmodCode(0xE140);
-/// U+E141: FVS2 (control-table).
+/// U+E141: Fvs2 (control-table).
 pub const FVS2: ZvvnmodCode = ZvvnmodCode(0xE141);
-/// U+E142: FVS3 (control-table).
+/// U+E142: Fvs3 (control-table).
 pub const FVS3: ZvvnmodCode = ZvvnmodCode(0xE142);
-/// U+E143: MVS (control-table).
+/// U+E143: Mvs (control-table).
 pub const MVS: ZvvnmodCode = ZvvnmodCode(0xE143);
