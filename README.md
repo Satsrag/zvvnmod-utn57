@@ -73,6 +73,7 @@ Overall position rules for a multi-part shape:
 2. `i ... m` → `INIT`
 3. `m ... m` → `MEDI`
 4. `m ... f` → `FINA`
+5. `f ... f` → `FINA`
 
 When several codes represent the same merged shape, all aliases are retained.
 
