@@ -1,16 +1,16 @@
 use zvvnmod_utn57::{
-    code_sequence_to_zvvnmod_map, ZvvnmodCode, AA_FINA, B_INIT, B_I_INIT, FVS1, FVS2, FVS3, I_MEDI,
-    MVS, N_MEDI, ZVVNMOD_SEQUENCE_REPLACEMENTS,
+    zvvnmod_code_decomposition_map, ZvvnmodCode, B_INIT, B_I_INIT, FVS1, FVS2, FVS3, I_MEDI, MVS,
+    N_AA_FINA, ZVVNMOD_CODE_DECOMPOSITIONS,
 };
 
 #[test]
-fn decomposed_code_sequence_maps_to_merged_code() {
-    let map = code_sequence_to_zvvnmod_map();
-    assert_eq!(map.get([B_INIT, I_MEDI].as_slice()), Some(&B_I_INIT));
+fn merged_code_maps_to_decomposed_code_sequence() {
+    let map = zvvnmod_code_decomposition_map();
+    assert_eq!(map.get(&B_I_INIT), Some(&[B_INIT, I_MEDI].as_slice()));
     assert_eq!(map.len(), 59);
-    assert_eq!(map.get([N_MEDI, AA_FINA].as_slice()), None);
-    for &(sequence, result) in ZVVNMOD_SEQUENCE_REPLACEMENTS {
-        assert_eq!(map.get(sequence), Some(&result));
+    assert_eq!(map.get(&N_AA_FINA), None);
+    for &(merged, components) in ZVVNMOD_CODE_DECOMPOSITIONS {
+        assert_eq!(map.get(&merged), Some(&components));
     }
 }
 

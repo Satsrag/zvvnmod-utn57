@@ -68,7 +68,7 @@ class ShapeNamingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing control name"):
             gen.parse_code_name("", codepoint=0xE140, source="control-table")
 
-    def test_multi_code_sequence_maps_to_merged_zvvnmod_code(self):
+    def test_merged_zvvnmod_code_maps_to_component_sequence(self):
         gen = load_generator()
         rows = [
             gen.InputRow(0xE006, "I m", "font"),
@@ -76,28 +76,28 @@ class ShapeNamingTests(unittest.TestCase):
             gen.InputRow(0xE07F, "B i I m", "font"),
         ]
         model = gen.build_model(rows)
-        self.assertEqual(len(model.sequence_replacements), 1)
-        replacement = model.sequence_replacements[0]
+        self.assertEqual(len(model.code_decompositions), 1)
+        decomposition = model.code_decompositions[0]
+        self.assertEqual(decomposition.merged.codepoint, 0xE07F)
         self.assertEqual(
-            [item.codepoint for item in replacement.sequence],
+            [item.codepoint for item in decomposition.components],
             [0xE029, 0xE006],
         )
-        self.assertEqual(replacement.result.codepoint, 0xE07F)
 
-    def test_missing_component_code_does_not_create_replacement(self):
+    def test_missing_component_code_does_not_create_decomposition(self):
         gen = load_generator()
         model = gen.build_model([gen.InputRow(0xE07F, "B i I m", "font")])
-        self.assertEqual(model.sequence_replacements, [])
+        self.assertEqual(model.code_decompositions, [])
 
-    def test_ambiguous_sequence_results_are_rejected(self):
+    def test_ambiguous_component_code_is_rejected(self):
         gen = load_generator()
         rows = [
-            gen.InputRow(0xE006, "I m", "font"),
             gen.InputRow(0xE029, "B i", "font"),
+            gen.InputRow(0xE02A, "B i", "font"),
+            gen.InputRow(0xE006, "I m", "font"),
             gen.InputRow(0xE07F, "B i I m", "font"),
-            gen.InputRow(0xE080, "B i I m", "font"),
         ]
-        with self.assertRaisesRegex(ValueError, "ambiguous sequence replacement"):
+        with self.assertRaisesRegex(ValueError, "ambiguous component code"):
             gen.build_model(rows)
 
     def test_code_generator_contains_names_but_not_maps(self):
@@ -119,7 +119,7 @@ class ShapeNamingTests(unittest.TestCase):
         self.assertNotIn("编码值", output)
         self.assertNotIn("CODE_TO_SHAPE", output)
 
-    def test_map_generator_maps_code_sequences_to_codes(self):
+    def test_map_generator_maps_merged_codes_to_component_sequences(self):
         gen = load_generator()
         rows = [
             gen.InputRow(0xE000, "A i", "font"),
@@ -127,13 +127,13 @@ class ShapeNamingTests(unittest.TestCase):
             gen.InputRow(0xE029, "B i", "font"),
             gen.InputRow(0xE07F, "B i I m", "font"),
         ]
-        output = gen.render_code_sequence_map_rust(
+        output = gen.render_code_decomposition_map_rust(
             gen.build_model(rows), source_name="fixture.csv"
         )
         self.assertIn("use super::zvvnmod_codes::*;", output)
-        self.assertIn("pub static ZVVNMOD_SEQUENCE_REPLACEMENTS", output)
-        self.assertIn("(&[B_INIT, I_MEDI], B_I_INIT)", output)
-        self.assertIn("pub fn code_sequence_to_zvvnmod_map()", output)
+        self.assertIn("pub static ZVVNMOD_CODE_DECOMPOSITIONS", output)
+        self.assertIn("(B_I_INIT, &[B_INIT, I_MEDI])", output)
+        self.assertIn("pub fn zvvnmod_code_decomposition_map()", output)
         self.assertNotIn("ZvvnmodShape", output)
         self.assertNotIn("CODE_TO_SHAPE", output)
         self.assertNotIn("所有具名", output)
@@ -146,18 +146,18 @@ class ShapeNamingTests(unittest.TestCase):
         self.assertEqual(by_codepoint[0xE09D].name, "Gx f Aa f")
 
         model = gen.build_model(rows)
-        replacement_results = {
-            replacement.result.codepoint for replacement in model.sequence_replacements
+        decomposed_codes = {
+            decomposition.merged.codepoint for decomposition in model.code_decompositions
         }
-        self.assertNotIn(0xE077, replacement_results)
-        self.assertNotIn(0xE09D, replacement_results)
+        self.assertNotIn(0xE077, decomposed_codes)
+        self.assertNotIn(0xE09D, decomposed_codes)
 
-    def test_checked_in_code_sequence_map_is_fresh(self):
+    def test_checked_in_code_decomposition_map_is_fresh(self):
         gen = load_generator()
-        checked_in = ROOT / "src" / "generated" / "code_sequence_map.rs"
+        checked_in = ROOT / "src" / "generated" / "code_decomposition_map.rs"
         with tempfile.TemporaryDirectory() as directory:
-            generated = Path(directory) / "code_sequence_map.rs"
-            gen.generate_code_sequence_map(NAMES, generated)
+            generated = Path(directory) / "code_decomposition_map.rs"
+            gen.generate_code_decomposition_map(NAMES, generated)
             self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
 
     def test_checked_in_code_definitions_are_fresh(self):

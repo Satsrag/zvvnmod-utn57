@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""生成 Rust ZVVNMOD code-sequence replacement Map。
+"""生成 Rust ZVVNMOD code decomposition Map。
 
-Generate the Rust ZVVNMOD code-sequence replacement map.
+Generate the Rust ZVVNMOD code decomposition map.
 """
 
 import argparse
 from pathlib import Path
 
-from generate_zvvnmod import generate_code_sequence_map
+from generate_zvvnmod import generate_code_decomposition_map
 
 
 def main() -> None:
@@ -21,12 +21,12 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=root / "src" / "generated" / "code_sequence_map.rs",
+        default=root / "src" / "generated" / "code_decomposition_map.rs",
     )
     args = parser.parse_args()
-    model = generate_code_sequence_map(args.input, args.output)
+    model = generate_code_decomposition_map(args.input, args.output)
     print(
-        f"generated {len(model.sequence_replacements)} sequence replacements "
+        f"generated {len(model.code_decompositions)} code decompositions "
         f"-> {args.output}"
     )
 

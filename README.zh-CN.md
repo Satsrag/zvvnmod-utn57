@@ -8,7 +8,7 @@
 
 - 根据用户名称表进行可重复的代码生成；
 - 生成 ZVVNMOD code 的语义化 Rust 常量；
-- 生成 `分解的 ZVVNMOD code sequence → merged ZVVNMOD code` 纠正 Map；
+- 生成 `merged ZVVNMOD code → component ZVVNMOD code sequence` 分解 Map；
 - 生成 FVS1/FVS2/FVS3/MVS 控制常量。
 
 完整双向转换算法尚未加入。
@@ -26,12 +26,12 @@
 ├── scripts/
 │   ├── generate_zvvnmod.py
 │   ├── generate_zvvnmod_codes.py
-│   └── generate_code_sequence_map.py
+│   └── generate_code_decomposition_map.py
 ├── src/
 │   ├── lib.rs
 │   └── generated/
 │       ├── zvvnmod_codes.rs
-│       └── code_sequence_map.rs
+│       └── code_decomposition_map.rs
 └── tests/
     ├── generated.rs
     └── test_generator.py
@@ -75,15 +75,15 @@ B m I f → B_I_FINA
 
 `ZvvnmodCode` 是唯一生成的 Rust identity；不再定义独立的 `ZvvnmodShape` 对象。`B_I_INIT` 这样的 multi-part code 本身已经表示它的字形。
 
-生成的纠正 Map 以分解后的 code sequence 为 key，以 merged ZVVNMOD code 为 value：
+生成的分解 Map 以 merged ZVVNMOD code 为 key，以 component code sequence 为 value：
 
 ```text
-[B_INIT, I_MEDI] → B_I_INIT
-[B_MEDI, I_MEDI] → B_I_MEDI
-[G_INIT, O_MEDI, I_MEDI] → G_O_I_INIT
+B_I_INIT   → [B_INIT, I_MEDI]
+B_I_MEDI   → [B_MEDI, I_MEDI]
+G_O_I_INIT → [G_INIT, O_MEDI, I_MEDI]
 ```
 
-该 Map 用来纠正 ZVVNMOD 转换结果：如果转换错误地产生了 component codes，而本应输出一个 merged ZVVNMOD code，就使用该 Map 替换。CSV 缺少必要 component code 时，不补造 replacement。
+该 Map 在转换到 UTN #57 written units 之前展开 merged ZVVNMOD code；component-oriented 输出更接近 UTN #57 表示。`Ir_fina` helper replacement 必须先执行，因为它会消耗 helper 并修改前一个 merged code。CSV 缺少必要 component code 时，不补造 decomposition。
 
 四个 control-table 名称及生成的 Rust 常量为：
 
@@ -102,7 +102,7 @@ U+E143 → Mvs  → MVS
 
 ```bash
 python3 scripts/generate_zvvnmod_codes.py
-python3 scripts/generate_code_sequence_map.py
+python3 scripts/generate_code_decomposition_map.py
 ```
 
 也可以一次生成两者：
@@ -115,13 +115,13 @@ python3 scripts/generate_zvvnmod.py
 
 ```rust
 use zvvnmod_utn57::{
-    code_sequence_to_zvvnmod_map, B_INIT, B_I_INIT, I_MEDI,
+    zvvnmod_code_decomposition_map, B_INIT, B_I_INIT, I_MEDI,
 };
 
-let map = code_sequence_to_zvvnmod_map();
+let map = zvvnmod_code_decomposition_map();
 assert_eq!(
-    map.get([B_INIT, I_MEDI].as_slice()),
-    Some(&B_I_INIT),
+    map.get(&B_I_INIT),
+    Some(&[B_INIT, I_MEDI].as_slice()),
 );
 ```
 

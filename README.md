@@ -8,7 +8,7 @@ The current first milestone includes:
 
 - reproducible code generation from the user-supplied name table;
 - semantic Rust constants for ZVVNMOD codes;
-- a `decomposed ZVVNMOD code sequence → merged ZVVNMOD code` correction map;
+- a `merged ZVVNMOD code → component ZVVNMOD code sequence` decomposition map;
 - FVS1/FVS2/FVS3/MVS control constants.
 
 The complete bidirectional conversion algorithm has not been added yet.
@@ -26,12 +26,12 @@ The complete bidirectional conversion algorithm has not been added yet.
 ├── scripts/
 │   ├── generate_zvvnmod.py
 │   ├── generate_zvvnmod_codes.py
-│   └── generate_code_sequence_map.py
+│   └── generate_code_decomposition_map.py
 ├── src/
 │   ├── lib.rs
 │   └── generated/
 │       ├── zvvnmod_codes.rs
-│       └── code_sequence_map.rs
+│       └── code_decomposition_map.rs
 └── tests/
     ├── generated.rs
     └── test_generator.py
@@ -75,15 +75,15 @@ Overall position rules for a multi-part shape:
 
 `ZvvnmodCode` is the only generated Rust identity; there is no separate `ZvvnmodShape` object. A multi-part code such as `B_I_INIT` already identifies its glyph shape.
 
-The generated correction Map uses a decomposed code sequence as its key and the merged ZVVNMOD code as its value:
+The generated decomposition Map uses a merged ZVVNMOD code as its key and its component code sequence as its value:
 
 ```text
-[B_INIT, I_MEDI] → B_I_INIT
-[B_MEDI, I_MEDI] → B_I_MEDI
-[G_INIT, O_MEDI, I_MEDI] → G_O_I_INIT
+B_I_INIT   → [B_INIT, I_MEDI]
+B_I_MEDI   → [B_MEDI, I_MEDI]
+G_O_I_INIT → [G_INIT, O_MEDI, I_MEDI]
 ```
 
-This Map corrects a ZVVNMOD conversion that produced component codes where a merged ZVVNMOD code should have been emitted. If a required component code is absent from the CSV, no replacement is invented.
+This Map expands a merged ZVVNMOD code before conversion to UTN #57 written units. Its component-oriented output stays close to the UTN #57 representation. `Ir_fina` helper replacement must run before decomposition because it consumes the helper and changes the preceding merged code. If a required component code is absent from the CSV, no decomposition is invented.
 
 The four control-table names and their generated Rust constants are:
 
@@ -94,7 +94,7 @@ U+E142 → Fvs3 → FVS3
 U+E143 → Mvs  → MVS
 ```
 
-They are code constants and are not inserted into the `ZvvnmodShape` map.
+They are code constants and are not inserted into the decomposition map.
 
 ## Generation
 
@@ -102,7 +102,7 @@ Generate code definitions and the map separately:
 
 ```bash
 python3 scripts/generate_zvvnmod_codes.py
-python3 scripts/generate_code_sequence_map.py
+python3 scripts/generate_code_decomposition_map.py
 ```
 
 Both outputs can also be generated at once:
@@ -115,13 +115,13 @@ python3 scripts/generate_zvvnmod.py
 
 ```rust
 use zvvnmod_utn57::{
-    code_sequence_to_zvvnmod_map, B_INIT, B_I_INIT, I_MEDI,
+    zvvnmod_code_decomposition_map, B_INIT, B_I_INIT, I_MEDI,
 };
 
-let map = code_sequence_to_zvvnmod_map();
+let map = zvvnmod_code_decomposition_map();
 assert_eq!(
-    map.get([B_INIT, I_MEDI].as_slice()),
-    Some(&B_I_INIT),
+    map.get(&B_I_INIT),
+    Some(&[B_INIT, I_MEDI].as_slice()),
 );
 ```
 
