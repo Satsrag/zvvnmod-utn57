@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""从已审核的 CSV 生成 Rust ZVVNMOD 编码及 shape 定义。
+"""从已审核的 CSV 生成 Rust ZVVNMOD code 定义和 sequence replacement Map。
 
-Generate Rust ZVVNMOD code and shape definitions from the reviewed CSV.
+Generate Rust ZVVNMOD code definitions and the sequence replacement map from the reviewed CSV.
 """
 
 from __future__ import annotations
@@ -10,6 +10,7 @@ import argparse
 import csv
 from collections import OrderedDict
 from dataclasses import dataclass
+from itertools import product
 from pathlib import Path
 from typing import Iterable
 
@@ -21,11 +22,12 @@ POSITION_WORDS = {
 }
 
 @dataclass(frozen=True)
-class ParsedShape:
+class ParsedCodeName:
     rust_name: str
     units: tuple[str, ...]
     position: str | None
     is_control: bool = False
+    component_names: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -39,16 +41,21 @@ class InputRow:
 class CodeEntry:
     codepoint: int
     const_name: str
-    shape_name: str | None
+    semantic_name: str | None
     source_name: str
     source: str
+
+
+@dataclass(frozen=True)
+class SequenceReplacement:
+    sequence: tuple[CodeEntry, ...]
+    result: CodeEntry
 
 
 @dataclass
 class Model:
     codes: list[CodeEntry]
-    shapes: list[str]
-    shape_to_codes: OrderedDict[str, list[CodeEntry]]
+    sequence_replacements: list[SequenceReplacement]
 
 
 def _unit_identifier(unit: str) -> str:
@@ -61,9 +68,9 @@ def _unit_identifier(unit: str) -> str:
     return identifier
 
 
-def parse_shape_name(
+def parse_code_name(
     name: str, codepoint: int | None = None, source: str = "font"
-) -> ParsedShape:
+) -> ParsedCodeName:
     """解析一行 shape/control 名称。 / Parse one shape or control name.
 
     示例 / Example: ``B i I m`` → ``B_I_INIT``.
@@ -76,13 +83,13 @@ def parse_shape_name(
         if not name:
             location = f" for U+{codepoint:04X}" if codepoint is not None else ""
             raise ValueError(f"missing control name{location}")
-        return ParsedShape(_unit_identifier(name), (), None, True)
+        return ParsedCodeName(_unit_identifier(name), (), None, True)
     if source != "font":
         raise ValueError(f"unsupported source {source!r}")
     if not name:
         raise ValueError(f"missing name for U+{codepoint:04X}" if codepoint is not None else "missing name")
     if name == "Nirugu":
-        return ParsedShape("NIRUGU", ("Nirugu",), None)
+        return ParsedCodeName("NIRUGU", ("Nirugu",), None)
 
     parts = name.split()
     if len(parts) % 2:
@@ -118,10 +125,15 @@ def parse_shape_name(
         position_suffix, position_variant = POSITION_WORDS[short_positions[-1]]
 
     rust_units = "_".join(_unit_identifier(unit) for unit in units)
-    return ParsedShape(
+    component_names = tuple(
+        f"{_unit_identifier(unit)}_{POSITION_WORDS[short_position][0]}"
+        for unit, short_position in zip(units, short_positions)
+    )
+    return ParsedCodeName(
         rust_name=f"{rust_units}_{position_suffix}",
         units=tuple(units),
         position=position_variant,
+        component_names=component_names,
     )
 
 
@@ -149,37 +161,64 @@ def read_csv(path: Path) -> list[InputRow]:
 
 
 def build_model(rows: Iterable[InputRow]) -> Model:
-    """构建编码、shape 和别名模型。 / Build the code, shape, and alias model."""
+    """构建 ZVVNMOD codes 和 sequence replacements。 / Build ZVVNMOD codes and sequence replacements."""
 
-    parsed_rows: list[tuple[InputRow, ParsedShape]] = []
-    shape_to_rows: OrderedDict[str, list[InputRow]] = OrderedDict()
+    parsed_rows: list[tuple[InputRow, ParsedCodeName]] = []
+    name_to_rows: OrderedDict[str, list[InputRow]] = OrderedDict()
     for row in rows:
-        parsed = parse_shape_name(row.name, row.codepoint, row.source)
+        parsed = parse_code_name(row.name, row.codepoint, row.source)
         parsed_rows.append((row, parsed))
         if not parsed.is_control:
-            shape_to_rows.setdefault(parsed.rust_name, []).append(row)
+            name_to_rows.setdefault(parsed.rust_name, []).append(row)
 
     alias_index: dict[int, int] = {}
-    for shape_rows in shape_to_rows.values():
-        for index, row in enumerate(shape_rows):
+    for named_rows in name_to_rows.values():
+        for index, row in enumerate(named_rows):
             alias_index[row.codepoint] = index
 
     codes: list[CodeEntry] = []
-    shape_to_codes: OrderedDict[str, list[CodeEntry]] = OrderedDict()
+    codes_by_name: OrderedDict[str, list[CodeEntry]] = OrderedDict()
+    code_by_value: dict[int, CodeEntry] = {}
     for row, parsed in parsed_rows:
         if parsed.is_control:
             const_name = parsed.rust_name
-            shape_name = None
+            semantic_name = None
         else:
             index = alias_index[row.codepoint]
             const_name = parsed.rust_name if index == 0 else f"{parsed.rust_name}_ALT_{index}"
-            shape_name = parsed.rust_name
-        entry = CodeEntry(row.codepoint, const_name, shape_name, row.name, row.source)
+            semantic_name = parsed.rust_name
+        entry = CodeEntry(row.codepoint, const_name, semantic_name, row.name, row.source)
         codes.append(entry)
-        if shape_name is not None:
-            shape_to_codes.setdefault(shape_name, []).append(entry)
+        code_by_value[row.codepoint] = entry
+        if semantic_name is not None:
+            codes_by_name.setdefault(semantic_name, []).append(entry)
 
-    return Model(codes, list(shape_to_codes), shape_to_codes)
+    replacements: list[SequenceReplacement] = []
+    result_by_sequence: dict[tuple[int, ...], CodeEntry] = {}
+    for row, parsed in parsed_rows:
+        if parsed.is_control or len(parsed.component_names) <= 1:
+            continue
+        component_codes = [codes_by_name.get(name) for name in parsed.component_names]
+        # CSV 中缺少 component code 时不补造 replacement。
+        # Do not invent a replacement when a component code is absent from the CSV.
+        if any(entries is None for entries in component_codes):
+            continue
+        available_codes = [entries for entries in component_codes if entries is not None]
+        result = code_by_value[row.codepoint]
+        for sequence in product(*available_codes):
+            key = tuple(entry.codepoint for entry in sequence)
+            existing = result_by_sequence.get(key)
+            if existing is not None and existing != result:
+                rendered = " + ".join(f"U+{value:04X}" for value in key)
+                raise ValueError(
+                    f"ambiguous sequence replacement {rendered}: "
+                    f"{existing.const_name} vs {result.const_name}"
+                )
+            if existing is None:
+                replacements.append(SequenceReplacement(sequence, result))
+                result_by_sequence[key] = result
+
+    return Model(codes, replacements)
 
 
 def _render_code_list(entries: list[CodeEntry]) -> str:
@@ -206,13 +245,7 @@ def render_codes_rust(model: Model, source_name: str) -> str:
         "    }",
         "}",
         "",
-        "/// A merged ZVVNMOD written shape.",
-        "#[allow(non_camel_case_types)]",
-        "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]",
-        "pub enum ZvvnmodShape {",
     ]
-    lines.extend(f"    {shape}," for shape in model.shapes)
-    lines.extend(["}", ""])
 
     for entry in model.codes:
         comment = entry.source_name or entry.const_name
@@ -222,32 +255,33 @@ def render_codes_rust(model: Model, source_name: str) -> str:
     return "\n".join(lines)
 
 
-def render_shape_map_rust(model: Model, source_name: str) -> str:
+def render_code_sequence_map_rust(model: Model, source_name: str) -> str:
     lines = [
-        "// Generated by scripts/generate_shape_map.py — DO NOT EDIT.",
+        "// Generated by scripts/generate_code_sequence_map.py — DO NOT EDIT.",
         f"// Source: {source_name}",
         "",
         "use super::zvvnmod_codes::*;",
         "use std::collections::HashMap;",
         "",
+        "/// Decomposed ZVVNMOD code sequences and their merged replacement code.",
+        "pub static ZVVNMOD_SEQUENCE_REPLACEMENTS: &[(&[ZvvnmodCode], ZvvnmodCode)] = &[",
     ]
-    for shape, entries in model.shape_to_codes.items():
+    for replacement in model.sequence_replacements:
         lines.append(
-            f"static {shape}_CODES: &[ZvvnmodCode] = &[{_render_code_list(entries)}];"
+            f"    (&[{_render_code_list(list(replacement.sequence))}], "
+            f"{replacement.result.const_name}),"
         )
-    lines.extend(["", "/// Every named glyph code and its merged written shape.", "pub static CODE_TO_SHAPE: &[(ZvvnmodCode, ZvvnmodShape)] = &["])
-    for entry in model.codes:
-        if entry.shape_name is not None:
-            lines.append(f"    ({entry.const_name}, ZvvnmodShape::{entry.shape_name}),")
-    lines.extend(["];", ""])
-    lines.extend([
-        "/// Build Shape → all ZVVNMOD aliases; the first code is canonical.",
-        "pub fn shape_to_zvvnmod_map() -> HashMap<ZvvnmodShape, &'static [ZvvnmodCode]> {",
-        "    HashMap::from([",
-    ])
-    for shape in model.shapes:
-        lines.append(f"        (ZvvnmodShape::{shape}, {shape}_CODES),")
-    lines.extend(["    ])", "}", ""])
+    lines.extend(
+        [
+            "];",
+            "",
+            "/// Build decomposed ZVVNMOD code sequence → merged ZVVNMOD code.",
+            "pub fn code_sequence_to_zvvnmod_map() -> HashMap<&'static [ZvvnmodCode], ZvvnmodCode> {",
+            "    ZVVNMOD_SEQUENCE_REPLACEMENTS.iter().copied().collect()",
+            "}",
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -258,10 +292,12 @@ def generate_codes(input_path: Path, output_path: Path) -> Model:
     return model
 
 
-def generate_shape_map(input_path: Path, output_path: Path) -> Model:
+def generate_code_sequence_map(input_path: Path, output_path: Path) -> Model:
     model = build_model(read_csv(input_path))
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(render_shape_map_rust(model, input_path.name), encoding="utf-8")
+    output_path.write_text(
+        render_code_sequence_map_rust(model, input_path.name), encoding="utf-8"
+    )
     return model
 
 
@@ -270,13 +306,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=root / "data" / "zvvnmod-unicode-names.csv")
     parser.add_argument("--codes-output", type=Path, default=root / "src" / "generated" / "zvvnmod_codes.rs")
-    parser.add_argument("--map-output", type=Path, default=root / "src" / "generated" / "shape_map.rs")
+    parser.add_argument(
+        "--sequence-map-output",
+        type=Path,
+        default=root / "src" / "generated" / "code_sequence_map.rs",
+    )
     args = parser.parse_args()
     model = generate_codes(args.input, args.codes_output)
-    generate_shape_map(args.input, args.map_output)
+    generate_code_sequence_map(args.input, args.sequence_map_output)
     print(
-        f"generated {len(model.codes)} codes, {len(model.shapes)} merged shapes -> "
-        f"{args.codes_output}, {args.map_output}"
+        f"generated {len(model.codes)} codes, "
+        f"{len(model.sequence_replacements)} sequence replacements -> "
+        f"{args.codes_output}, {args.sequence_map_output}"
     )
 
 

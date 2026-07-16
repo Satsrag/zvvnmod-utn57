@@ -8,9 +8,7 @@
 
 - 根据用户名称表进行可重复的代码生成；
 - 生成 ZVVNMOD code 的语义化 Rust 常量；
-- 将多个 written shape 合并为 `ZvvnmodShape`；
-- 生成 `CODE_TO_SHAPE`；
-- 生成 `Shape → 全部 ZVVNMOD aliases` Map；
+- 生成 `分解的 ZVVNMOD code sequence → merged ZVVNMOD code` 纠正 Map；
 - 生成 FVS1/FVS2/FVS3/MVS 控制常量。
 
 完整双向转换算法尚未加入。
@@ -28,12 +26,12 @@
 ├── scripts/
 │   ├── generate_zvvnmod.py
 │   ├── generate_zvvnmod_codes.py
-│   └── generate_shape_map.py
+│   └── generate_code_sequence_map.py
 ├── src/
 │   ├── lib.rs
 │   └── generated/
 │       ├── zvvnmod_codes.rs
-│       └── shape_map.rs
+│       └── code_sequence_map.rs
 └── tests/
     ├── generated.rs
     └── test_generator.py
@@ -58,7 +56,7 @@ A m    → A_MEDI
 Ir f   → IR_FINA
 ```
 
-多 shape 会合并 unit 名。
+multi-part ZVVNMOD code 会合并 unit 名。
 
 ```text
 B i I f → B_I_ISOL
@@ -75,9 +73,17 @@ B m I f → B_I_FINA
 4. `m ... f` → `FINA`；
 5. `f ... f` → `FINA`。
 
-同一个合并 shape 对应多个 code 时，全部保留。
+`ZvvnmodCode` 是唯一生成的 Rust identity；不再定义独立的 `ZvvnmodShape` 对象。`B_I_INIT` 这样的 multi-part code 本身已经表示它的字形。
 
-CSV 中最先出现的 code 是 canonical，后续 code 使用 `_ALT_n`，不会静默覆盖。
+生成的纠正 Map 以分解后的 code sequence 为 key，以 merged ZVVNMOD code 为 value：
+
+```text
+[B_INIT, I_MEDI] → B_I_INIT
+[B_MEDI, I_MEDI] → B_I_MEDI
+[G_INIT, O_MEDI, I_MEDI] → G_O_I_INIT
+```
+
+该 Map 用来纠正 ZVVNMOD 转换结果：如果转换错误地产生了 component codes，而本应输出一个 merged ZVVNMOD code，就使用该 Map 替换。CSV 缺少必要 component code 时，不补造 replacement。
 
 四个 control-table 名称及生成的 Rust 常量为：
 
@@ -88,7 +94,7 @@ U+E142 → Fvs3 → FVS3
 U+E143 → Mvs  → MVS
 ```
 
-它们是 code 常量，不进入 `ZvvnmodShape` Map。
+它们也是 `ZvvnmodCode` 常量，不需要另一个 shape 对象。
 
 ## 生成
 
@@ -96,7 +102,7 @@ U+E143 → Mvs  → MVS
 
 ```bash
 python3 scripts/generate_zvvnmod_codes.py
-python3 scripts/generate_shape_map.py
+python3 scripts/generate_code_sequence_map.py
 ```
 
 也可以一次生成两者：
@@ -108,13 +114,16 @@ python3 scripts/generate_zvvnmod.py
 ## Rust API
 
 ```rust
-use zvvnmod_utn57::{shape_to_zvvnmod_map, ZvvnmodShape};
+use zvvnmod_utn57::{
+    code_sequence_to_zvvnmod_map, B_INIT, B_I_INIT, I_MEDI,
+};
 
-let map = shape_to_zvvnmod_map();
-let aliases = map[&ZvvnmodShape::B_I_MEDI];
+let map = code_sequence_to_zvvnmod_map();
+assert_eq!(
+    map.get([B_INIT, I_MEDI].as_slice()),
+    Some(&B_I_INIT),
+);
 ```
-
-`aliases[0]` 是 canonical ZVVNMOD code。
 
 ## 验证
 

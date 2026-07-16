@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""生成 Rust ZVVNMOD 编码及合并 shape 定义。
+"""生成 Rust ZVVNMOD code 定义。
 
-Generate Rust ZVVNMOD code and merged-shape definitions.
+Generate Rust ZVVNMOD code definitions.
 """
 
 import argparse
@@ -17,7 +17,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=root / "src" / "generated" / "zvvnmod_codes.rs")
     args = parser.parse_args()
     model = generate_codes(args.input, args.output)
-    print(f"generated {len(model.codes)} codes, {len(model.shapes)} shapes -> {args.output}")
+    print(f"generated {len(model.codes)} codes -> {args.output}")
 
 
 if __name__ == "__main__":
