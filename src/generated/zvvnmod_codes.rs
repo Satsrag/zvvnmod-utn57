@@ -311,7 +311,7 @@ pub const RH_INIT: ZvvnmodCode = ZvvnmodCode(0xE068);
 pub const RH_MEDI: ZvvnmodCode = ZvvnmodCode(0xE069);
 /// Code U+E06A: Rh f (font).
 pub const RH_FINA: ZvvnmodCode = ZvvnmodCode(0xE06A);
-/// Code U+E077: N m Aa f (font).
+/// Code U+E077: N f Aa f (font).
 pub const N_AA_FINA: ZvvnmodCode = ZvvnmodCode(0xE077);
 /// Code U+E079: B i I f (font).
 pub const B_I_ISOL: ZvvnmodCode = ZvvnmodCode(0xE079);
@@ -377,7 +377,7 @@ pub const G_O_I_INIT: ZvvnmodCode = ZvvnmodCode(0xE09A);
 pub const G_O_MEDI: ZvvnmodCode = ZvvnmodCode(0xE09B);
 /// Code U+E09C: G m O f (font).
 pub const G_O_FINA: ZvvnmodCode = ZvvnmodCode(0xE09C);
-/// Code U+E09D: Gx m Aa f (font).
+/// Code U+E09D: Gx f Aa f (font).
 pub const GX_AA_FINA: ZvvnmodCode = ZvvnmodCode(0xE09D);
 /// Code U+E09F: F i I f (font).
 pub const F_I_ISOL: ZvvnmodCode = ZvvnmodCode(0xE09F);

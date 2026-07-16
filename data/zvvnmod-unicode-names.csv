@@ -74,7 +74,7 @@ e067,Hr f,font
 e068,Rh i,font
 e069,Rh m,font
 e06a,Rh f,font
-e077,N m Aa f,font
+e077,N f Aa f,font
 e079,B i I f,font
 e07a,B i O f,font
 e07b,B i Ue f,font
@@ -107,7 +107,7 @@ e099,G m I f,font
 e09a,G i O m I m,font
 e09b,G m O m,font
 e09c,G m O f,font
-e09d,Gx m Aa f,font
+e09d,Gx f Aa f,font
 e09f,F i I f,font
 e0a0,F i O f,font
 e0a1,F i Ue f,font

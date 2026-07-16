@@ -72,7 +72,8 @@ B m I f → B_I_FINA
 1. `i ... f` → `ISOL`；
 2. `i ... m` → `INIT`；
 3. `m ... m` → `MEDI`；
-4. `m ... f` → `FINA`。
+4. `m ... f` → `FINA`；
+5. `f ... f` → `FINA`。
 
 同一个合并 shape 对应多个 code 时，全部保留。
 

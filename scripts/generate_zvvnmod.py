@@ -100,18 +100,20 @@ def parse_shape_name(
     if len(units) > 1:
         # 多 shape 的首尾位置分别表示前后连接状态。
         # For a multi-part shape, the first and last positions encode its two joins.
-        if (
-            short_positions[0] not in {"i", "m"}
-            or short_positions[-1] not in {"m", "f"}
-            or any(position != "m" for position in short_positions[1:-1])
-        ):
-            raise ValueError(f"invalid multi-shape positions in {name!r}")
-        position_suffix, position_variant = {
+        edge_positions = (short_positions[0], short_positions[-1])
+        edge_variants = {
             ("i", "f"): ("ISOL", "Isol"),
             ("i", "m"): ("INIT", "Init"),
             ("m", "m"): ("MEDI", "Medi"),
             ("m", "f"): ("FINA", "Fina"),
-        }[(short_positions[0], short_positions[-1])]
+            ("f", "f"): ("FINA", "Fina"),
+        }
+        if (
+            edge_positions not in edge_variants
+            or any(position != "m" for position in short_positions[1:-1])
+        ):
+            raise ValueError(f"invalid multi-shape positions in {name!r}")
+        position_suffix, position_variant = edge_variants[edge_positions]
     else:
         position_suffix, position_variant = POSITION_WORDS[short_positions[-1]]
 

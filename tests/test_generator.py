@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = ROOT / "scripts" / "generate_zvvnmod.py"
+NAMES = ROOT / "data" / "zvvnmod-unicode-names.csv"
 
 
 def load_generator():
@@ -30,6 +31,13 @@ class ShapeNamingTests(unittest.TestCase):
         self.assertEqual(parsed.rust_name, "B_I_ISOL")
         self.assertEqual(parsed.units, ("B", "I"))
         self.assertEqual(parsed.position, "Isol")
+
+    def test_fina_to_fina_multi_code_becomes_fina(self):
+        gen = load_generator()
+        parsed = gen.parse_shape_name("N f Aa f")
+        self.assertEqual(parsed.rust_name, "N_AA_FINA")
+        self.assertEqual(parsed.units, ("N", "Aa"))
+        self.assertEqual(parsed.position, "Fina")
 
     def test_multi_shape_position_uses_both_edges(self):
         gen = load_generator()
@@ -102,6 +110,17 @@ class ShapeNamingTests(unittest.TestCase):
         self.assertIn("B_I_INIT_ALT_1", output)
         self.assertIn("Every named glyph code", output)
         self.assertNotIn("所有具名", output)
+
+    def test_chachleg_rows_use_final_components(self):
+        gen = load_generator()
+        rows = gen.read_csv(NAMES)
+        by_codepoint = {row.codepoint: row for row in rows}
+        self.assertEqual(by_codepoint[0xE077].name, "N f Aa f")
+        self.assertEqual(by_codepoint[0xE09D].name, "Gx f Aa f")
+
+        model = gen.build_model(rows)
+        self.assertEqual(model.shape_to_codes["N_AA_FINA"][0].codepoint, 0xE077)
+        self.assertEqual(model.shape_to_codes["GX_AA_FINA"][0].codepoint, 0xE09D)
 
 
 if __name__ == "__main__":
