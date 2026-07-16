@@ -89,15 +89,13 @@ class ShapeNamingTests(unittest.TestCase):
         model = gen.build_model([gen.InputRow(0xE07F, "B i I m", "font")])
         self.assertEqual(model.code_decompositions, [])
 
-    def test_ambiguous_component_code_is_rejected(self):
+    def test_duplicate_generated_code_name_is_rejected(self):
         gen = load_generator()
         rows = [
             gen.InputRow(0xE029, "B i", "font"),
             gen.InputRow(0xE02A, "B i", "font"),
-            gen.InputRow(0xE006, "I m", "font"),
-            gen.InputRow(0xE07F, "B i I m", "font"),
         ]
-        with self.assertRaisesRegex(ValueError, "ambiguous component code"):
+        with self.assertRaisesRegex(ValueError, "duplicate generated code name B_INIT"):
             gen.build_model(rows)
 
     def test_code_generator_contains_names_but_not_maps(self):

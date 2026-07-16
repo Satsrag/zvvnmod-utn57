@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -38,9 +37,10 @@ class InputRow:
 
 @dataclass(frozen=True)
 class CodeEntry:
+    """One authoritative CSV row resolved to its generated Rust constant."""
+
     codepoint: int
     const_name: str
-    semantic_name: str | None
     source_name: str
     source: str
 
@@ -163,34 +163,23 @@ def build_model(rows: Iterable[InputRow]) -> Model:
     """构建 ZVVNMOD codes 和 decompositions。 / Build ZVVNMOD codes and decompositions."""
 
     parsed_rows: list[tuple[InputRow, ParsedCodeName]] = []
-    name_to_rows: OrderedDict[str, list[InputRow]] = OrderedDict()
     for row in rows:
-        parsed = parse_code_name(row.name, row.codepoint, row.source)
-        parsed_rows.append((row, parsed))
-        if not parsed.is_control:
-            name_to_rows.setdefault(parsed.rust_name, []).append(row)
-
-    alias_index: dict[int, int] = {}
-    for named_rows in name_to_rows.values():
-        for index, row in enumerate(named_rows):
-            alias_index[row.codepoint] = index
+        parsed_rows.append((row, parse_code_name(row.name, row.codepoint, row.source)))
 
     codes: list[CodeEntry] = []
-    codes_by_name: OrderedDict[str, list[CodeEntry]] = OrderedDict()
+    codes_by_name: dict[str, CodeEntry] = {}
     code_by_value: dict[int, CodeEntry] = {}
+    used_const_names: set[str] = set()
     for row, parsed in parsed_rows:
-        if parsed.is_control:
-            const_name = parsed.rust_name
-            semantic_name = None
-        else:
-            index = alias_index[row.codepoint]
-            const_name = parsed.rust_name if index == 0 else f"{parsed.rust_name}_ALT_{index}"
-            semantic_name = parsed.rust_name
-        entry = CodeEntry(row.codepoint, const_name, semantic_name, row.name, row.source)
+        const_name = parsed.rust_name
+        if const_name in used_const_names:
+            raise ValueError(f"duplicate generated code name {const_name}")
+        used_const_names.add(const_name)
+        entry = CodeEntry(row.codepoint, const_name, row.name, row.source)
         codes.append(entry)
         code_by_value[row.codepoint] = entry
-        if semantic_name is not None:
-            codes_by_name.setdefault(semantic_name, []).append(entry)
+        if not parsed.is_control:
+            codes_by_name[const_name] = entry
 
     decompositions: list[CodeDecomposition] = []
     for row, parsed in parsed_rows:
@@ -199,19 +188,9 @@ def build_model(rows: Iterable[InputRow]) -> Model:
         component_codes = [codes_by_name.get(name) for name in parsed.component_names]
         # CSV 中缺少 component code 时不补造 decomposition。
         # Do not invent a decomposition when a component code is absent from the CSV.
-        if any(entries is None for entries in component_codes):
+        if any(entry is None for entry in component_codes):
             continue
-        ambiguous = [
-            name
-            for name, entries in zip(parsed.component_names, component_codes)
-            if entries is not None and len(entries) != 1
-        ]
-        if ambiguous:
-            raise ValueError(
-                f"ambiguous component code for {code_by_value[row.codepoint].const_name}: "
-                + ", ".join(ambiguous)
-            )
-        components = tuple(entries[0] for entries in component_codes if entries is not None)
+        components = tuple(entry for entry in component_codes if entry is not None)
         decompositions.append(
             CodeDecomposition(code_by_value[row.codepoint], components)
         )
