@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = ROOT / "scripts" / "generate_zvvnmod.py"
 NAMES = ROOT / "data" / "zvvnmod-unicode-names.csv"
+IR_FINA_RULES = ROOT / "data" / "ir-fina-replacements.csv"
 
 
 def load_generator():
@@ -164,6 +165,55 @@ class ShapeNamingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             generated = Path(directory) / "zvvnmod_codes.rs"
             gen.generate_codes(NAMES, generated)
+            self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
+
+    def test_ir_fina_rules_resolve_readable_names_from_the_main_table(self):
+        gen = load_generator()
+        model = gen.build_model(gen.read_csv(NAMES))
+        rules = gen.read_ir_fina_csv(IR_FINA_RULES, model)
+        self.assertEqual(len(rules), 30)
+        self.assertEqual(rules[0].prefix.const_name, "O_MEDI")
+        self.assertEqual(rules[0].suffix.const_name, "IR_FINA")
+        self.assertEqual(rules[0].result.const_name, "UE_FINA")
+        self.assertTrue(all(rule.source == "user-confirmed" for rule in rules))
+        self.assertNotIn("e008", IR_FINA_RULES.read_text(encoding="utf-8"))
+
+    def test_ir_fina_generator_emits_english_only_rust(self):
+        gen = load_generator()
+        model = gen.build_model(gen.read_csv(NAMES))
+        rules = gen.read_ir_fina_csv(IR_FINA_RULES, model)
+        output = gen.render_ir_fina_rust(
+            rules,
+            names_source=NAMES.name,
+            rules_source=IR_FINA_RULES.name,
+        )
+        self.assertIn("pub static IR_FINA_REPLACEMENTS", output)
+        self.assertIn("(O_MEDI, UE_FINA)", output)
+        self.assertIn("pub fn replace_ir_fina", output)
+        self.assertIn("has no standalone UTN counterpart", output)
+        self.assertIn("runs before decomposition", output)
+        self.assertNotRegex(output, r"[\u3400-\u9fff]")
+
+    def test_ir_fina_rules_reject_duplicate_pairs(self):
+        gen = load_generator()
+        model = gen.build_model(gen.read_csv(NAMES))
+        content = (
+            "prefix_name,ir_fina_name,result_name,source\n"
+            "O_MEDI,IR_FINA,UE_FINA,user-confirmed\n"
+            "O_MEDI,IR_FINA,UE_FINA,user-confirmed\n"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "duplicate.csv"
+            path.write_text(content, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "duplicate Ir_fina replacement"):
+                gen.read_ir_fina_csv(path, model)
+
+    def test_checked_in_ir_fina_file_is_fresh(self):
+        gen = load_generator()
+        checked_in = ROOT / "src" / "generated" / "ir_fina.rs"
+        with tempfile.TemporaryDirectory() as directory:
+            generated = Path(directory) / "ir_fina.rs"
+            gen.generate_ir_fina(NAMES, IR_FINA_RULES, generated)
             self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
 
 
