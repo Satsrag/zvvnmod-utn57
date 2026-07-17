@@ -9,10 +9,10 @@
 - 根据用户名称表进行可重复的代码生成；
 - 生成 ZVVNMOD code 的语义化 Rust 常量；
 - 生成 `merged ZVVNMOD code → component ZVVNMOD code sequence` 分解 Map；
-- 生成 FVS1/FVS2/FVS3/MVS 控制常量；
+- 从输入 stream 删除旧 FVS1/FVS2/FVS3/MVS；
 - 生成 30 条用户确认的 `Ir_fina` 替换规则。
 
-完整双向转换算法尚未加入；`Ir_fina` 替换是本库实现的第一个转换阶段。
+完整双向转换算法尚未加入；旧 control 删除和 `Ir_fina` replacement 是本库已实现的前两个转换阶段。
 
 ## 目录
 
@@ -32,6 +32,7 @@
 │   └── generate_code_decomposition_map.py
 ├── src/
 │   ├── lib.rs
+│   ├── preprocess.rs
 │   └── generated/
 │       ├── code_decomposition_map.rs
 │       ├── ir_fina.rs
@@ -89,16 +90,21 @@ G_O_I_INIT → [G_INIT, O_MEDI, I_MEDI]
 
 该 Map 在转换到 UTN #57 written units 之前展开 merged ZVVNMOD code；component-oriented 输出更接近 UTN #57 表示。`Ir_fina` helper replacement 必须先执行，因为它会消耗 helper 并修改前一个 merged code。CSV 缺少必要 component code 时，不补造 decomposition。
 
-四个 control-table 名称及生成的 Rust 常量为：
+正式 inventory 只包含来自字体的显式 ZVVNMOD shapes。旧 FVS1/FVS2/FVS3/MVS
+值不是 ZVVNMOD codes，因此不生成对应 Rust 常量。`discard_legacy_controls()`
+在 `Ir_fina` replacement 前从输入 stream 删除 U+E140 至 U+E143；后续 mapping
+阶段再根据 ZVVNMOD writing-unit patterns 重建所需的 UTN #57 MVS units。
+
+## 删除旧 controls
+
+旧 control 值在转换第一阶段被删除：
 
 ```text
-U+E140 → Fvs1 → FVS1
-U+E141 → Fvs2 → FVS2
-U+E142 → Fvs3 → FVS3
-U+E143 → Mvs  → MVS
+[A_INIT, U+E140, A_MEDI, U+E143]
+→ [A_INIT, A_MEDI]
 ```
 
-它们也是 `ZvvnmodCode` 常量，不需要另一个 shape 对象。
+该操作保留其他所有 codes 及其顺序，并且必须在 `replace_ir_fina()` 前执行。
 
 ## `Ir_fina` 替换
 
@@ -137,12 +143,18 @@ python3 scripts/generate_zvvnmod.py
 
 ```rust
 use zvvnmod_utn57::{
-    replace_ir_fina, zvvnmod_code_decomposition_map, B_INIT, B_I_INIT,
-    I_MEDI, IR_FINA, O_MEDI, UE_FINA,
+    discard_legacy_controls, replace_ir_fina, zvvnmod_code_decomposition_map,
+    ZvvnmodCode, A_INIT, B_INIT, B_I_INIT, I_MEDI, IR_FINA, O_MEDI, UE_FINA,
 };
 
-let replaced = replace_ir_fina(&[O_MEDI, IR_FINA]).unwrap();
-assert_eq!(replaced, vec![UE_FINA]);
+let cleaned = discard_legacy_controls(&[
+    A_INIT,
+    ZvvnmodCode(0xE140),
+    O_MEDI,
+    IR_FINA,
+]);
+let replaced = replace_ir_fina(&cleaned).unwrap();
+assert_eq!(replaced, vec![A_INIT, UE_FINA]);
 
 let map = zvvnmod_code_decomposition_map();
 assert_eq!(

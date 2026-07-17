@@ -1,7 +1,8 @@
 use zvvnmod_utn57::{
-    replace_ir_fina, zvvnmod_code_decomposition_map, IrFinaReplacementError, ZvvnmodCode, A_INIT,
-    B_INIT, B_I_INIT, FVS1, FVS2, FVS3, HX_AA_FINA, HX_INIT, IR_FINA, IR_FINA_REPLACEMENTS, I_MEDI,
-    MVS, N_AA_FINA, O_MEDI, T_FINA, T_MEDI, UE_FINA, ZVVNMOD_CODE_DECOMPOSITIONS,
+    discard_legacy_controls, replace_ir_fina, zvvnmod_code_decomposition_map,
+    IrFinaReplacementError, ZvvnmodCode, A_INIT, A_MEDI, B_INIT, B_I_INIT, HX_AA_FINA, HX_INIT,
+    IR_FINA, IR_FINA_REPLACEMENTS, I_MEDI, N_AA_FINA, O_MEDI, T_FINA, T_MEDI, UE_FINA,
+    ZVVNMOD_CODE_DECOMPOSITIONS,
 };
 
 #[test]
@@ -16,11 +17,27 @@ fn merged_code_maps_to_decomposed_code_sequence() {
 }
 
 #[test]
-fn controls_keep_their_fixed_codepoints() {
-    assert_eq!(FVS1, ZvvnmodCode(0xE140));
-    assert_eq!(FVS2, ZvvnmodCode(0xE141));
-    assert_eq!(FVS3, ZvvnmodCode(0xE142));
-    assert_eq!(MVS, ZvvnmodCode(0xE143));
+fn legacy_controls_are_discarded_before_replacements() {
+    assert_eq!(
+        discard_legacy_controls(&[
+            ZvvnmodCode(0xE13F),
+            A_INIT,
+            ZvvnmodCode(0xE140),
+            ZvvnmodCode(0xE141),
+            A_MEDI,
+            ZvvnmodCode(0xE142),
+            ZvvnmodCode(0xE143),
+            IR_FINA,
+            ZvvnmodCode(0xE144),
+        ]),
+        vec![
+            ZvvnmodCode(0xE13F),
+            A_INIT,
+            A_MEDI,
+            IR_FINA,
+            ZvvnmodCode(0xE144),
+        ],
+    );
 }
 
 #[test]

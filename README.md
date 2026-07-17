@@ -9,10 +9,10 @@ The current first milestone includes:
 - reproducible code generation from the user-supplied name table;
 - semantic Rust constants for ZVVNMOD codes;
 - a `merged ZVVNMOD code → component ZVVNMOD code sequence` decomposition map;
-- FVS1/FVS2/FVS3/MVS control constants;
+- legacy FVS1/FVS2/FVS3/MVS removal from input streams;
 - 30 user-confirmed `Ir_fina` replacement rules.
 
-The complete bidirectional conversion algorithm has not been added yet. `Ir_fina` replacement is the first conversion stage implemented in the crate.
+The complete bidirectional conversion algorithm has not been added yet. Legacy-control removal and `Ir_fina` replacement are the first two implemented conversion stages.
 
 ## Layout
 
@@ -32,6 +32,7 @@ The complete bidirectional conversion algorithm has not been added yet. `Ir_fina
 │   └── generate_code_decomposition_map.py
 ├── src/
 │   ├── lib.rs
+│   ├── preprocess.rs
 │   └── generated/
 │       ├── code_decomposition_map.rs
 │       ├── ir_fina.rs
@@ -89,16 +90,23 @@ G_O_I_INIT → [G_INIT, O_MEDI, I_MEDI]
 
 This Map expands a merged ZVVNMOD code before conversion to UTN #57 written units. Its component-oriented output stays close to the UTN #57 representation. `Ir_fina` helper replacement must run before decomposition because it consumes the helper and changes the preceding merged code. If a required component code is absent from the CSV, no decomposition is invented.
 
-The four control-table names and their generated Rust constants are:
+The formal inventory contains only explicit ZVVNMOD shapes from the font. Legacy
+FVS1/FVS2/FVS3/MVS values are not ZVVNMOD codes and are therefore not emitted as
+Rust constants. `discard_legacy_controls()` removes U+E140 through U+E143 from an
+input stream before `Ir_fina` replacement. Later mapping stages will reconstruct
+required UTN #57 MVS units from ZVVNMOD writing-unit patterns.
+
+## Legacy control removal
+
+Legacy control values are discarded as the first conversion stage:
 
 ```text
-U+E140 → Fvs1 → FVS1
-U+E141 → Fvs2 → FVS2
-U+E142 → Fvs3 → FVS3
-U+E143 → Mvs  → MVS
+[A_INIT, U+E140, A_MEDI, U+E143]
+→ [A_INIT, A_MEDI]
 ```
 
-They are code constants and are not inserted into the decomposition map.
+The operation preserves all other codes and their order. It must run before
+`replace_ir_fina()`.
 
 ## `Ir_fina` replacement
 
@@ -137,12 +145,18 @@ python3 scripts/generate_zvvnmod.py
 
 ```rust
 use zvvnmod_utn57::{
-    replace_ir_fina, zvvnmod_code_decomposition_map, B_INIT, B_I_INIT,
-    I_MEDI, IR_FINA, O_MEDI, UE_FINA,
+    discard_legacy_controls, replace_ir_fina, zvvnmod_code_decomposition_map,
+    ZvvnmodCode, A_INIT, B_INIT, B_I_INIT, I_MEDI, IR_FINA, O_MEDI, UE_FINA,
 };
 
-let replaced = replace_ir_fina(&[O_MEDI, IR_FINA]).unwrap();
-assert_eq!(replaced, vec![UE_FINA]);
+let cleaned = discard_legacy_controls(&[
+    A_INIT,
+    ZvvnmodCode(0xE140),
+    O_MEDI,
+    IR_FINA,
+]);
+let replaced = replace_ir_fina(&cleaned).unwrap();
+assert_eq!(replaced, vec![A_INIT, UE_FINA]);
 
 let map = zvvnmod_code_decomposition_map();
 assert_eq!(
