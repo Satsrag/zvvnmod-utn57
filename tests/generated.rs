@@ -1,7 +1,7 @@
 use zvvnmod_utn57::{
     replace_ir_fina, zvvnmod_code_decomposition_map, IrFinaReplacementError, ZvvnmodCode, A_INIT,
-    B_INIT, B_I_INIT, FVS1, FVS2, FVS3, IR_FINA, IR_FINA_REPLACEMENTS, I_MEDI, MVS, N_AA_FINA,
-    O_MEDI, T_FINA, T_MEDI, UE_FINA, ZVVNMOD_CODE_DECOMPOSITIONS,
+    B_INIT, B_I_INIT, FVS1, FVS2, FVS3, HX_AA_FINA, HX_INIT, IR_FINA, IR_FINA_REPLACEMENTS, I_MEDI,
+    MVS, N_AA_FINA, O_MEDI, T_FINA, T_MEDI, UE_FINA, ZVVNMOD_CODE_DECOMPOSITIONS,
 };
 
 #[test]
@@ -21,6 +21,12 @@ fn controls_keep_their_fixed_codepoints() {
     assert_eq!(FVS2, ZvvnmodCode(0xE141));
     assert_eq!(FVS3, ZvvnmodCode(0xE142));
     assert_eq!(MVS, ZvvnmodCode(0xE143));
+}
+
+#[test]
+fn hx_codes_keep_their_source_codepoints() {
+    assert_eq!(HX_INIT, ZvvnmodCode(0xE034));
+    assert_eq!(HX_AA_FINA, ZvvnmodCode(0xE09D));
 }
 
 #[test]

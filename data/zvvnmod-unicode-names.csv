@@ -24,7 +24,7 @@ e02f,H i,font
 e030,G i,font
 e031,G m,font
 e032,H f,font
-e034,Gx i,font
+e034,Hx i,font
 e036,M i,font
 e037,M m,font
 e038,M f,font
@@ -107,7 +107,7 @@ e099,G m I f,font
 e09a,G i O m I m,font
 e09b,G m O m,font
 e09c,G m O f,font
-e09d,Gx f Aa f,font
+e09d,Hx f Aa f,font
 e09f,F i I f,font
 e0a0,F i O f,font
 e0a1,F i Ue f,font
