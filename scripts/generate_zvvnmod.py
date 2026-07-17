@@ -24,7 +24,6 @@ class ParsedCodeName:
     rust_name: str
     units: tuple[str, ...]
     position: str | None
-    is_control: bool = False
     component_names: tuple[str, ...] = ()
 
 
@@ -78,19 +77,18 @@ def _unit_identifier(unit: str) -> str:
 def parse_code_name(
     name: str, codepoint: int | None = None, source: str = "font"
 ) -> ParsedCodeName:
-    """解析一行 shape/control 名称。 / Parse one shape or control name.
+    """解析一行 ZVVNMOD shape 名称。 / Parse one ZVVNMOD shape name.
 
     示例 / Example: ``B i I m`` → ``B_I_INIT``.
     """
 
     name = name.strip()
-    # control-table 的名称由 CSV 决定，不在生成器中重复硬编码。
-    # Control names come from the CSV and are not duplicated in the generator.
-    if source == "control-table":
-        if not name:
-            location = f" for U+{codepoint:04X}" if codepoint is not None else ""
-            raise ValueError(f"missing control name{location}")
-        return ParsedCodeName(_unit_identifier(name), (), None, True)
+    # 即使 CSV 误标为 font，旧 control 范围也不能重新进入正式 shape inventory。
+    # Keep the legacy control range out of the formal shape inventory even if mislabeled as font.
+    if codepoint is not None and 0xE140 <= codepoint <= 0xE143:
+        raise ValueError(
+            f"legacy control codepoint U+{codepoint:04X} is not a ZVVNMOD shape"
+        )
     if source != "font":
         raise ValueError(f"unsupported source {source!r}")
     if not name:
@@ -186,12 +184,11 @@ def build_model(rows: Iterable[InputRow]) -> Model:
         entry = CodeEntry(row.codepoint, const_name, row.name, row.source)
         codes.append(entry)
         code_by_value[row.codepoint] = entry
-        if not parsed.is_control:
-            codes_by_name[const_name] = entry
+        codes_by_name[const_name] = entry
 
     decompositions: list[CodeDecomposition] = []
     for row, parsed in parsed_rows:
-        if parsed.is_control or len(parsed.component_names) <= 1:
+        if len(parsed.component_names) <= 1:
             continue
         component_codes = [codes_by_name.get(name) for name in parsed.component_names]
         # CSV 中缺少 component code 时不补造 decomposition。
