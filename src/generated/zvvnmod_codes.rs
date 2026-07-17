@@ -66,8 +66,8 @@ pub const G_INIT: ZvvnmodCode = ZvvnmodCode(0xE030);
 pub const G_MEDI: ZvvnmodCode = ZvvnmodCode(0xE031);
 /// Code U+E032: H f (font).
 pub const H_FINA: ZvvnmodCode = ZvvnmodCode(0xE032);
-/// Code U+E034: Gx i (font).
-pub const GX_INIT: ZvvnmodCode = ZvvnmodCode(0xE034);
+/// Code U+E034: Hx i (font).
+pub const HX_INIT: ZvvnmodCode = ZvvnmodCode(0xE034);
 /// Code U+E036: M i (font).
 pub const M_INIT: ZvvnmodCode = ZvvnmodCode(0xE036);
 /// Code U+E037: M m (font).
@@ -232,8 +232,8 @@ pub const G_O_I_INIT: ZvvnmodCode = ZvvnmodCode(0xE09A);
 pub const G_O_MEDI: ZvvnmodCode = ZvvnmodCode(0xE09B);
 /// Code U+E09C: G m O f (font).
 pub const G_O_FINA: ZvvnmodCode = ZvvnmodCode(0xE09C);
-/// Code U+E09D: Gx f Aa f (font).
-pub const GX_AA_FINA: ZvvnmodCode = ZvvnmodCode(0xE09D);
+/// Code U+E09D: Hx f Aa f (font).
+pub const HX_AA_FINA: ZvvnmodCode = ZvvnmodCode(0xE09D);
 /// Code U+E09F: F i I f (font).
 pub const F_I_ISOL: ZvvnmodCode = ZvvnmodCode(0xE09F);
 /// Code U+E0A0: F i O f (font).

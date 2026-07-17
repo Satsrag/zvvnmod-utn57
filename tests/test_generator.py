@@ -137,12 +137,13 @@ class ShapeNamingTests(unittest.TestCase):
         self.assertNotIn("CODE_TO_SHAPE", output)
         self.assertNotIn("所有具名", output)
 
-    def test_chachleg_rows_use_final_components(self):
+    def test_corrected_hx_and_chachleg_rows_use_final_components(self):
         gen = load_generator()
         rows = gen.read_csv(NAMES)
         by_codepoint = {row.codepoint: row for row in rows}
+        self.assertEqual(by_codepoint[0xE034].name, "Hx i")
         self.assertEqual(by_codepoint[0xE077].name, "N f Aa f")
-        self.assertEqual(by_codepoint[0xE09D].name, "Gx f Aa f")
+        self.assertEqual(by_codepoint[0xE09D].name, "Hx f Aa f")
 
         model = gen.build_model(rows)
         decomposed_codes = {
