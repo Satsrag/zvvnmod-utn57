@@ -9,9 +9,10 @@
 - 根据用户名称表进行可重复的代码生成；
 - 生成 ZVVNMOD code 的语义化 Rust 常量；
 - 生成 `merged ZVVNMOD code → component ZVVNMOD code sequence` 分解 Map；
-- 生成 FVS1/FVS2/FVS3/MVS 控制常量。
+- 生成 FVS1/FVS2/FVS3/MVS 控制常量；
+- 生成 30 条用户确认的 `Ir_fina` 替换规则。
 
-完整双向转换算法尚未加入。
+完整双向转换算法尚未加入；`Ir_fina` 替换是本库实现的第一个转换阶段。
 
 ## 目录
 
@@ -22,16 +23,19 @@
 ├── README.md
 ├── README.zh-CN.md
 ├── data/
+│   ├── ir-fina-replacements.csv
 │   └── zvvnmod-unicode-names.csv
 ├── scripts/
+│   ├── generate_ir_fina.py
 │   ├── generate_zvvnmod.py
 │   ├── generate_zvvnmod_codes.py
 │   └── generate_code_decomposition_map.py
 ├── src/
 │   ├── lib.rs
 │   └── generated/
-│       ├── zvvnmod_codes.rs
-│       └── code_decomposition_map.rs
+│       ├── code_decomposition_map.rs
+│       ├── ir_fina.rs
+│       └── zvvnmod_codes.rs
 └── tests/
     ├── generated.rs
     └── test_generator.py
@@ -96,16 +100,34 @@ U+E143 → Mvs  → MVS
 
 它们也是 `ZvvnmodCode` 常量，不需要另一个 shape 对象。
 
+## `Ir_fina` 替换
+
+`Ir_fina` 是 ZVVNMOD helper，没有可独立输出的 UTN written unit。它表示必须把前一个 ZVVNMOD form 替换为特定 final form。因此该替换必须发生在 code decomposition 以及后续 written-form 或 UTN 转换之前：`IR_FINA` 会与前一个 code 一起被消费，而不会作为独立 unit 输出。
+
+示例：
+
+```text
+O_MEDI + IR_FINA   → UE_FINA
+T_MEDI + IR_FINA   → T_FINA
+B_I_INIT + IR_FINA → B_I_ISOL
+B_O_MEDI + IR_FINA → B_UE_FINA
+```
+
+30 条权威规则保存在 `data/ir-fina-replacements.csv`，使用 `O_MEDI`、`IR_FINA`、`UE_FINA` 这类可读的生成名称。生成器根据 `data/zvvnmod-unicode-names.csv` 派生的 model 解析并验证每个名称；替换表不使用原始十六进制 code reference。
+
+`replace_ir_fina()` 从左到右扫描完整 code stream。支持的 `preceding + IR_FINA` helper sequence 会替换为特定 final-form code；无法匹配的 `IR_FINA` 返回 `IrFinaReplacementError`，不会静默保留或删除。
+
 ## 生成
 
-分别生成 code 定义和 Map：
+分别生成 code 定义、decomposition Map 和 replacement：
 
 ```bash
 python3 scripts/generate_zvvnmod_codes.py
 python3 scripts/generate_code_decomposition_map.py
+python3 scripts/generate_ir_fina.py
 ```
 
-也可以一次生成两者：
+也可以一次生成全部输出：
 
 ```bash
 python3 scripts/generate_zvvnmod.py
@@ -115,8 +137,12 @@ python3 scripts/generate_zvvnmod.py
 
 ```rust
 use zvvnmod_utn57::{
-    zvvnmod_code_decomposition_map, B_INIT, B_I_INIT, I_MEDI,
+    replace_ir_fina, zvvnmod_code_decomposition_map, B_INIT, B_I_INIT,
+    I_MEDI, IR_FINA, O_MEDI, UE_FINA,
 };
+
+let replaced = replace_ir_fina(&[O_MEDI, IR_FINA]).unwrap();
+assert_eq!(replaced, vec![UE_FINA]);
 
 let map = zvvnmod_code_decomposition_map();
 assert_eq!(

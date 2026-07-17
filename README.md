@@ -9,9 +9,10 @@ The current first milestone includes:
 - reproducible code generation from the user-supplied name table;
 - semantic Rust constants for ZVVNMOD codes;
 - a `merged ZVVNMOD code → component ZVVNMOD code sequence` decomposition map;
-- FVS1/FVS2/FVS3/MVS control constants.
+- FVS1/FVS2/FVS3/MVS control constants;
+- 30 user-confirmed `Ir_fina` replacement rules.
 
-The complete bidirectional conversion algorithm has not been added yet.
+The complete bidirectional conversion algorithm has not been added yet. `Ir_fina` replacement is the first conversion stage implemented in the crate.
 
 ## Layout
 
@@ -22,16 +23,19 @@ The complete bidirectional conversion algorithm has not been added yet.
 ├── README.md
 ├── README.zh-CN.md
 ├── data/
+│   ├── ir-fina-replacements.csv
 │   └── zvvnmod-unicode-names.csv
 ├── scripts/
+│   ├── generate_ir_fina.py
 │   ├── generate_zvvnmod.py
 │   ├── generate_zvvnmod_codes.py
 │   └── generate_code_decomposition_map.py
 ├── src/
 │   ├── lib.rs
 │   └── generated/
-│       ├── zvvnmod_codes.rs
-│       └── code_decomposition_map.rs
+│       ├── code_decomposition_map.rs
+│       ├── ir_fina.rs
+│       └── zvvnmod_codes.rs
 └── tests/
     ├── generated.rs
     └── test_generator.py
@@ -96,16 +100,34 @@ U+E143 → Mvs  → MVS
 
 They are code constants and are not inserted into the decomposition map.
 
+## `Ir_fina` replacement
+
+`Ir_fina` is a ZVVNMOD helper with no standalone UTN written-unit counterpart. It indicates that the preceding ZVVNMOD form must be replaced with a specific final form. The replacement therefore runs before code decomposition and later written-form or UTN conversion: it consumes `IR_FINA` together with the preceding code instead of emitting `IR_FINA` as an independent unit.
+
+Examples:
+
+```text
+O_MEDI + IR_FINA   → UE_FINA
+T_MEDI + IR_FINA   → T_FINA
+B_I_INIT + IR_FINA → B_I_ISOL
+B_O_MEDI + IR_FINA → B_UE_FINA
+```
+
+The 30 authoritative rules are stored in `data/ir-fina-replacements.csv` with readable generated names such as `O_MEDI`, `IR_FINA`, and `UE_FINA`. The generator resolves and validates every name against the model derived from `data/zvvnmod-unicode-names.csv`; raw hexadecimal code references are not used in the replacement table.
+
+`replace_ir_fina()` scans a complete code stream from left to right. A supported `preceding + IR_FINA` helper sequence is replaced with its specific final-form code. An unmatched `IR_FINA` returns `IrFinaReplacementError` instead of being silently retained or dropped.
+
 ## Generation
 
-Generate code definitions and the map separately:
+Generate code definitions, the decomposition map, and replacements separately:
 
 ```bash
 python3 scripts/generate_zvvnmod_codes.py
 python3 scripts/generate_code_decomposition_map.py
+python3 scripts/generate_ir_fina.py
 ```
 
-Both outputs can also be generated at once:
+All outputs can also be generated at once:
 
 ```bash
 python3 scripts/generate_zvvnmod.py
@@ -115,8 +137,12 @@ python3 scripts/generate_zvvnmod.py
 
 ```rust
 use zvvnmod_utn57::{
-    zvvnmod_code_decomposition_map, B_INIT, B_I_INIT, I_MEDI,
+    replace_ir_fina, zvvnmod_code_decomposition_map, B_INIT, B_I_INIT,
+    I_MEDI, IR_FINA, O_MEDI, UE_FINA,
 };
+
+let replaced = replace_ir_fina(&[O_MEDI, IR_FINA]).unwrap();
+assert_eq!(replaced, vec![UE_FINA]);
 
 let map = zvvnmod_code_decomposition_map();
 assert_eq!(
