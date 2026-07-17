@@ -21,14 +21,30 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Run Python tests
         run: python3 -m unittest discover -s tests -v
 
       - name: Regenerate Rust sources
         run: python3 scripts/generate_zvvnmod.py
 
+      - name: Upload GitHub-generated Rust sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-rust-${{ github.sha }}
+          path: src/generated/*.rs
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Verify generated sources are current
-        run: git diff --exit-code -- src/generated
+        shell: bash
+        run: |
+          git diff --exit-code -- src/generated
+          test -z "$(git status --porcelain --untracked-files=all -- src/generated)"
 
   rust:
     name: Rust tests and quality gates
