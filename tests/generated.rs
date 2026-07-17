@@ -1,12 +1,17 @@
 use zvvnmod_utn57::{
-    shape_to_zvvnmod_map, ZvvnmodCode, ZvvnmodShape, B_I_INIT, B_I_MEDI, FVS1, FVS2, FVS3, MVS,
+    zvvnmod_code_decomposition_map, ZvvnmodCode, B_INIT, B_I_INIT, FVS1, FVS2, FVS3, I_MEDI, MVS,
+    N_AA_FINA, ZVVNMOD_CODE_DECOMPOSITIONS,
 };
 
 #[test]
-fn initial_and_medial_multi_shapes_are_distinct() {
-    let map = shape_to_zvvnmod_map();
-    assert_eq!(map[&ZvvnmodShape::B_I_INIT], &[B_I_INIT]);
-    assert_eq!(map[&ZvvnmodShape::B_I_MEDI], &[B_I_MEDI]);
+fn merged_code_maps_to_decomposed_code_sequence() {
+    let map = zvvnmod_code_decomposition_map();
+    assert_eq!(map.get(&B_I_INIT), Some(&[B_INIT, I_MEDI].as_slice()));
+    assert_eq!(map.len(), 59);
+    assert_eq!(map.get(&N_AA_FINA), None);
+    for &(merged, components) in ZVVNMOD_CODE_DECOMPOSITIONS {
+        assert_eq!(map.get(&merged), Some(&components));
+    }
 }
 
 #[test]

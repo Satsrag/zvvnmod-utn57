@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -20,42 +21,43 @@ def load_generator():
 class ShapeNamingTests(unittest.TestCase):
     def test_single_shape_uses_expanded_position(self):
         gen = load_generator()
-        parsed = gen.parse_shape_name("A i")
+        parsed = gen.parse_code_name("A i")
         self.assertEqual(parsed.rust_name, "A_INIT")
         self.assertEqual(parsed.units, ("A",))
         self.assertEqual(parsed.position, "Init")
 
     def test_init_to_fina_multi_shape_becomes_isol(self):
         gen = load_generator()
-        parsed = gen.parse_shape_name("B i I f")
+        parsed = gen.parse_code_name("B i I f")
         self.assertEqual(parsed.rust_name, "B_I_ISOL")
         self.assertEqual(parsed.units, ("B", "I"))
         self.assertEqual(parsed.position, "Isol")
 
     def test_fina_to_fina_multi_code_becomes_fina(self):
         gen = load_generator()
-        parsed = gen.parse_shape_name("N f Aa f")
+        parsed = gen.parse_code_name("N f Aa f")
         self.assertEqual(parsed.rust_name, "N_AA_FINA")
         self.assertEqual(parsed.units, ("N", "Aa"))
         self.assertEqual(parsed.position, "Fina")
+        self.assertEqual(parsed.component_names, ("N_FINA", "AA_FINA"))
 
     def test_multi_shape_position_uses_both_edges(self):
         gen = load_generator()
-        self.assertEqual(gen.parse_shape_name("B i I f").rust_name, "B_I_ISOL")
-        self.assertEqual(gen.parse_shape_name("B i I m").rust_name, "B_I_INIT")
-        self.assertEqual(gen.parse_shape_name("B m I m").rust_name, "B_I_MEDI")
-        self.assertEqual(gen.parse_shape_name("B m I f").rust_name, "B_I_FINA")
-        self.assertEqual(gen.parse_shape_name("G i O m I m").rust_name, "G_O_I_INIT")
+        self.assertEqual(gen.parse_code_name("B i I f").rust_name, "B_I_ISOL")
+        self.assertEqual(gen.parse_code_name("B i I m").rust_name, "B_I_INIT")
+        self.assertEqual(gen.parse_code_name("B m I m").rust_name, "B_I_MEDI")
+        self.assertEqual(gen.parse_code_name("B m I f").rust_name, "B_I_FINA")
+        self.assertEqual(gen.parse_code_name("G i O m I m").rust_name, "G_O_I_INIT")
 
     def test_multi_shape_rejects_invalid_position_sequence(self):
         gen = load_generator()
         with self.assertRaisesRegex(ValueError, "invalid multi-shape positions"):
-            gen.parse_shape_name("B f I m")
+            gen.parse_code_name("B f I m")
 
     def test_control_name_is_derived_from_csv_row(self):
         gen = load_generator()
-        fvs = gen.parse_shape_name("Fvs1", codepoint=0xE140, source="control-table")
-        custom = gen.parse_shape_name("Joiner", codepoint=0xE200, source="control-table")
+        fvs = gen.parse_code_name("Fvs1", codepoint=0xE140, source="control-table")
+        custom = gen.parse_code_name("Joiner", codepoint=0xE200, source="control-table")
         self.assertEqual(fvs.rust_name, "FVS1")
         self.assertEqual(custom.rust_name, "JOINER")
         self.assertTrue(fvs.is_control)
@@ -64,51 +66,74 @@ class ShapeNamingTests(unittest.TestCase):
     def test_control_table_row_requires_a_name(self):
         gen = load_generator()
         with self.assertRaisesRegex(ValueError, "missing control name"):
-            gen.parse_shape_name("", codepoint=0xE140, source="control-table")
+            gen.parse_code_name("", codepoint=0xE140, source="control-table")
 
-    def test_duplicate_shapes_keep_all_codes_and_first_is_canonical(self):
+    def test_merged_zvvnmod_code_maps_to_component_sequence(self):
         gen = load_generator()
         rows = [
+            gen.InputRow(0xE006, "I m", "font"),
+            gen.InputRow(0xE029, "B i", "font"),
             gen.InputRow(0xE07F, "B i I m", "font"),
-            gen.InputRow(0xE080, "B i I m", "font"),
         ]
         model = gen.build_model(rows)
-        aliases = model.shape_to_codes["B_I_INIT"]
-        self.assertEqual([item.codepoint for item in aliases], [0xE07F, 0xE080])
-        self.assertEqual(aliases[0].const_name, "B_I_INIT")
-        self.assertEqual(aliases[1].const_name, "B_I_INIT_ALT_1")
+        self.assertEqual(len(model.code_decompositions), 1)
+        decomposition = model.code_decompositions[0]
+        self.assertEqual(decomposition.merged.codepoint, 0xE07F)
+        self.assertEqual(
+            [item.codepoint for item in decomposition.components],
+            [0xE029, 0xE006],
+        )
+
+    def test_missing_component_code_does_not_create_decomposition(self):
+        gen = load_generator()
+        model = gen.build_model([gen.InputRow(0xE07F, "B i I m", "font")])
+        self.assertEqual(model.code_decompositions, [])
+
+    def test_duplicate_generated_code_name_is_rejected(self):
+        gen = load_generator()
+        rows = [
+            gen.InputRow(0xE029, "B i", "font"),
+            gen.InputRow(0xE02A, "B i", "font"),
+        ]
+        with self.assertRaisesRegex(ValueError, "duplicate generated code name B_INIT"):
+            gen.build_model(rows)
 
     def test_code_generator_contains_names_but_not_maps(self):
         gen = load_generator()
         rows = [
             gen.InputRow(0xE000, "A i", "font"),
+            gen.InputRow(0xE006, "I m", "font"),
+            gen.InputRow(0xE029, "B i", "font"),
             gen.InputRow(0xE07F, "B i I m", "font"),
-            gen.InputRow(0xE080, "B i I m", "font"),
             gen.InputRow(0xE140, "Fvs1", "control-table"),
         ]
         output = gen.render_codes_rust(gen.build_model(rows), source_name="fixture.csv")
         self.assertIn("pub const A_INIT: ZvvnmodCode", output)
-        self.assertIn("pub const B_I_INIT_ALT_1: ZvvnmodCode", output)
-        self.assertIn("pub enum ZvvnmodShape", output)
+        self.assertIn("pub const B_I_INIT: ZvvnmodCode", output)
+        self.assertNotIn("ZvvnmodShape", output)
         self.assertIn("pub const FVS1: ZvvnmodCode", output)
         self.assertIn("Generated by scripts/generate_zvvnmod_codes.py", output)
         self.assertNotIn("自动生成", output)
         self.assertNotIn("编码值", output)
         self.assertNotIn("CODE_TO_SHAPE", output)
 
-    def test_map_generator_contains_bidirectional_maps(self):
+    def test_map_generator_maps_merged_codes_to_component_sequences(self):
         gen = load_generator()
         rows = [
             gen.InputRow(0xE000, "A i", "font"),
+            gen.InputRow(0xE006, "I m", "font"),
+            gen.InputRow(0xE029, "B i", "font"),
             gen.InputRow(0xE07F, "B i I m", "font"),
-            gen.InputRow(0xE080, "B i I m", "font"),
         ]
-        output = gen.render_shape_map_rust(gen.build_model(rows), source_name="fixture.csv")
+        output = gen.render_code_decomposition_map_rust(
+            gen.build_model(rows), source_name="fixture.csv"
+        )
         self.assertIn("use super::zvvnmod_codes::*;", output)
-        self.assertIn("pub static CODE_TO_SHAPE", output)
-        self.assertIn("pub fn shape_to_zvvnmod_map()", output)
-        self.assertIn("B_I_INIT_ALT_1", output)
-        self.assertIn("Every named glyph code", output)
+        self.assertIn("pub static ZVVNMOD_CODE_DECOMPOSITIONS", output)
+        self.assertIn("(B_I_INIT, &[B_INIT, I_MEDI])", output)
+        self.assertIn("pub fn zvvnmod_code_decomposition_map()", output)
+        self.assertNotIn("ZvvnmodShape", output)
+        self.assertNotIn("CODE_TO_SHAPE", output)
         self.assertNotIn("所有具名", output)
 
     def test_chachleg_rows_use_final_components(self):
@@ -119,8 +144,27 @@ class ShapeNamingTests(unittest.TestCase):
         self.assertEqual(by_codepoint[0xE09D].name, "Gx f Aa f")
 
         model = gen.build_model(rows)
-        self.assertEqual(model.shape_to_codes["N_AA_FINA"][0].codepoint, 0xE077)
-        self.assertEqual(model.shape_to_codes["GX_AA_FINA"][0].codepoint, 0xE09D)
+        decomposed_codes = {
+            decomposition.merged.codepoint for decomposition in model.code_decompositions
+        }
+        self.assertNotIn(0xE077, decomposed_codes)
+        self.assertNotIn(0xE09D, decomposed_codes)
+
+    def test_checked_in_code_decomposition_map_is_fresh(self):
+        gen = load_generator()
+        checked_in = ROOT / "src" / "generated" / "code_decomposition_map.rs"
+        with tempfile.TemporaryDirectory() as directory:
+            generated = Path(directory) / "code_decomposition_map.rs"
+            gen.generate_code_decomposition_map(NAMES, generated)
+            self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
+
+    def test_checked_in_code_definitions_are_fresh(self):
+        gen = load_generator()
+        checked_in = ROOT / "src" / "generated" / "zvvnmod_codes.rs"
+        with tempfile.TemporaryDirectory() as directory:
+            generated = Path(directory) / "zvvnmod_codes.rs"
+            gen.generate_codes(NAMES, generated)
+            self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
 
 
 if __name__ == "__main__":
