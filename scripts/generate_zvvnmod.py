@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""从已审核的 CSV 生成 Rust ZVVNMOD code 定义和 code decomposition Map。
+"""从已审核数据生成 Rust ZVVNMOD 定义、replacement 与 UTN57 mapping。
 
-Generate Rust ZVVNMOD code definitions and the code decomposition map from the reviewed CSV.
+Generate Rust ZVVNMOD definitions, replacements, and UTN57 mapping from reviewed data.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -17,6 +19,13 @@ POSITION_WORDS = {
     "m": ("MEDI", "Medi"),
     "f": ("FINA", "Fina"),
     "isol": ("ISOL", "Isol"),
+}
+
+REVIEWED_MAPPING_AMBIGUITIES = {
+    ("AA_FINA",): {("Aa:fina",), ("Aa:isol",)},
+    ("K_INIT",): {("K:init",), ("K2:init",)},
+    ("K_MEDI",): {("K:medi",), ("K2:medi",)},
+    ("K_FINA",): {("K:fina",), ("K2:fina",)},
 }
 
 @dataclass(frozen=True)
@@ -56,6 +65,32 @@ class IrFinaReplacement:
     suffix: CodeEntry
     result: CodeEntry
     source: str
+
+
+@dataclass(frozen=True)
+class Utn57Target:
+    id: str
+    unit: str
+    position: str
+    order: int
+
+    @property
+    def const_name(self) -> str:
+        suffix = "CONTROL" if self.position == "control" else self.position.upper()
+        return f"UTN57_{_unit_identifier(self.unit)}_{suffix}"
+
+
+@dataclass(frozen=True)
+class Utn57MappingRule:
+    id: str
+    sources: tuple[CodeEntry, ...]
+    targets: tuple[Utn57Target, ...]
+
+
+@dataclass(frozen=True)
+class Utn57MappingModel:
+    targets: tuple[Utn57Target, ...]
+    rules: tuple[Utn57MappingRule, ...]
 
 
 @dataclass
@@ -259,8 +294,239 @@ def read_ir_fina_csv(path: Path, model: Model) -> list[IrFinaReplacement]:
     return rules
 
 
+def _require_json_keys(value: dict, expected: set[str], label: str) -> None:
+    if set(value) != expected:
+        raise ValueError(
+            f"{label}: expected keys {sorted(expected)}, got {sorted(value)}"
+        )
+
+
+def read_utn57_mapping_json(path: Path, model: Model) -> Utn57MappingModel:
+    """读取并验证 reviewed mapping。 / Read and validate the reviewed mapping."""
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("UTN57 mapping root must be an object")
+    _require_json_keys(
+        payload,
+        {"schema", "description", "sources", "targets", "mappings"},
+        "UTN57 mapping root",
+    )
+    if payload["schema"] != "zvvnmod-utn57-map-v3":
+        raise ValueError(f"unsupported UTN57 mapping schema {payload['schema']!r}")
+
+    code_by_name = {entry.const_name: entry for entry in model.codes}
+    source_ids: set[str] = set()
+    sources = payload["sources"]
+    if not isinstance(sources, list):
+        raise ValueError("UTN57 mapping sources must be an array")
+    for order, source in enumerate(sources):
+        if not isinstance(source, dict):
+            raise ValueError(f"source {order}: expected an object")
+        _require_json_keys(
+            source,
+            {"id", "name", "codepoint", "value", "glyph", "order"},
+            f"source {order}",
+        )
+        source_id = source["id"]
+        if not isinstance(source_id, str) or source_id in source_ids:
+            raise ValueError(f"source {order}: invalid or duplicate ID {source_id!r}")
+        source_ids.add(source_id)
+        entry = code_by_name.get(source_id)
+        if entry is None:
+            raise ValueError(f"source {order}: unknown ZVVNMOD code {source_id!r}")
+        expected_codepoint = f"U+{entry.codepoint:04X}"
+        if (
+            source["name"] != entry.source_name
+            or source["codepoint"] != expected_codepoint
+            or source["value"] != entry.codepoint
+            or source["glyph"] != chr(entry.codepoint)
+            or source["order"] != order
+        ):
+            raise ValueError(f"source {order}: metadata drift for {source_id}")
+
+    targets_payload = payload["targets"]
+    if not isinstance(targets_payload, list):
+        raise ValueError("UTN57 mapping targets must be an array")
+    targets: list[Utn57Target] = []
+    targets_by_id: dict[str, Utn57Target] = {}
+    for order, target in enumerate(targets_payload):
+        if not isinstance(target, dict):
+            raise ValueError(f"target {order}: expected an object")
+        _require_json_keys(
+            target,
+            {"id", "unit", "position", "glyph", "order"},
+            f"target {order}",
+        )
+        target_id = target["id"]
+        unit = target["unit"]
+        position = target["position"]
+        if not isinstance(target_id, str) or target_id in targets_by_id:
+            raise ValueError(f"target {order}: invalid or duplicate ID {target_id!r}")
+        if not isinstance(unit, str) or re.fullmatch(r"[A-Z][A-Za-z0-9]*", unit) is None:
+            raise ValueError(f"target {order}: invalid unit {unit!r}")
+        if position not in {"isol", "init", "medi", "fina", "control"}:
+            raise ValueError(f"target {order}: invalid position {position!r}")
+        expected_id = unit if position == "control" else f"{unit}:{position}"
+        if target_id != expected_id or target["order"] != order:
+            raise ValueError(f"target {order}: ID/order drift for {target_id!r}")
+        if not isinstance(target["glyph"], str) or not target["glyph"]:
+            raise ValueError(f"target {order}: glyph must be a non-empty string")
+        parsed = Utn57Target(target_id, unit, position, order)
+        targets.append(parsed)
+        targets_by_id[target_id] = parsed
+
+    mappings = payload["mappings"]
+    if not isinstance(mappings, list):
+        raise ValueError("UTN57 mappings must be an array")
+    rules: list[Utn57MappingRule] = []
+    row_ids: set[str] = set()
+    for index, row in enumerate(mappings):
+        if not isinstance(row, dict):
+            raise ValueError(f"mapping {index}: expected an object")
+        _require_json_keys(row, {"id", "note", "sources", "targets"}, f"mapping {index}")
+        row_id = row["id"]
+        if not isinstance(row_id, str) or row_id in row_ids:
+            raise ValueError(f"mapping {index}: invalid or duplicate ID {row_id!r}")
+        row_ids.add(row_id)
+        if not isinstance(row["note"], str):
+            raise ValueError(f"mapping {row_id}: note must be a string")
+        if not isinstance(row["sources"], list) or not all(
+            isinstance(item, str) for item in row["sources"]
+        ):
+            raise ValueError(f"mapping {row_id}: sources must be a string array")
+        if not isinstance(row["targets"], list) or not all(
+            isinstance(item, str) for item in row["targets"]
+        ):
+            raise ValueError(f"mapping {row_id}: targets must be a string array")
+        if not row["sources"] and not row["targets"]:
+            raise ValueError(f"mapping {row_id}: both sides are empty")
+        try:
+            source_entries = tuple(code_by_name[item] for item in row["sources"])
+        except KeyError as error:
+            raise ValueError(f"mapping {row_id}: unknown source {error.args[0]!r}") from error
+        if any(item not in source_ids for item in row["sources"]):
+            raise ValueError(f"mapping {row_id}: source is outside the editable catalogue")
+        try:
+            target_entries = tuple(targets_by_id[item] for item in row["targets"])
+        except KeyError as error:
+            raise ValueError(f"mapping {row_id}: unknown target {error.args[0]!r}") from error
+        if source_entries and target_entries:
+            rules.append(Utn57MappingRule(row_id, source_entries, target_entries))
+
+    targets_by_sources: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
+    for rule in rules:
+        sources_key = tuple(entry.const_name for entry in rule.sources)
+        targets_key = tuple(target.id for target in rule.targets)
+        targets_by_sources.setdefault(sources_key, set()).add(targets_key)
+    ambiguities = {
+        sources_key: target_sequences
+        for sources_key, target_sequences in targets_by_sources.items()
+        if len(target_sequences) > 1
+    }
+    if ambiguities != REVIEWED_MAPPING_AMBIGUITIES:
+        raise ValueError(
+            "unsupported ambiguous mapping set: "
+            f"expected {REVIEWED_MAPPING_AMBIGUITIES!r}, got {ambiguities!r}"
+        )
+
+    return Utn57MappingModel(tuple(targets), tuple(rules))
+
+
 def _render_code_list(entries: list[CodeEntry]) -> str:
     return ", ".join(entry.const_name for entry in entries)
+
+
+def render_utn57_mapping_rust(
+    mapping: Utn57MappingModel, names_source: str, mapping_source: str
+) -> str:
+    units = list(dict.fromkeys(target.unit for target in mapping.targets))
+    lines = [
+        "// Generated by scripts/generate_utn57_mapping.py — DO NOT EDIT.",
+        f"// Sources: {names_source}, {mapping_source}",
+        "",
+        "use super::zvvnmod_codes::*;",
+        "",
+        "/// A semantic UTN #57 written unit.",
+        "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]",
+        "pub enum Utn57Unit {",
+    ]
+    lines.extend(f"    {unit}," for unit in units)
+    lines.extend(
+        [
+            "}",
+            "",
+            "/// A UTN #57 joining position or non-positional control kind.",
+            "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]",
+            "pub enum Utn57Position {",
+            "    Isol,",
+            "    Init,",
+            "    Medi,",
+            "    Fina,",
+            "    Control,",
+            "}",
+            "",
+            "/// One typed UTN #57 written unit target.",
+            "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]",
+            "pub struct Utn57WrittenUnit {",
+            "    /// Semantic unit identity.",
+            "    pub unit: Utn57Unit,",
+            "    /// Joining position, or `Control` for a non-positional control.",
+            "    pub position: Utn57Position,",
+            "}",
+            "",
+            "impl Utn57WrittenUnit {",
+            "    /// Construct a typed UTN #57 written unit.",
+            "    pub const fn new(unit: Utn57Unit, position: Utn57Position) -> Self {",
+            "        Self { unit, position }",
+            "    }",
+            "}",
+            "",
+        ]
+    )
+    for target in mapping.targets:
+        position = "Control" if target.position == "control" else target.position.title()
+        lines.append(f"/// Reviewed target `{target.id}`.")
+        declaration = (
+            f"pub const {target.const_name}: Utn57WrittenUnit = "
+            f"Utn57WrittenUnit::new(Utn57Unit::{target.unit}, Utn57Position::{position});"
+        )
+        if len(declaration) <= 100:
+            lines.append(declaration)
+        else:
+            lines.append(f"pub const {target.const_name}: Utn57WrittenUnit =")
+            lines.append(
+                f"    Utn57WrittenUnit::new(Utn57Unit::{target.unit}, Utn57Position::{position});"
+            )
+    lines.extend(
+        [
+            "",
+            "/// One reviewed ZVVNMOD sequence → UTN #57 sequence relation row.",
+            "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
+            "pub struct ZvvnmodToUtn57Mapping {",
+            "    /// Ordered ZVVNMOD source sequence.",
+            "    pub sources: &'static [ZvvnmodCode],",
+            "    /// Ordered UTN #57 target sequence.",
+            "    pub targets: &'static [Utn57WrittenUnit],",
+            "}",
+            "",
+            "/// Complete non-empty reviewed mapping relation.",
+            "///",
+            "/// The relation intentionally preserves contextual and K/K2 alternatives;",
+            "/// executable conversion applies the documented resolution policy.",
+            "pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[",
+        ]
+    )
+    for rule in mapping.rules:
+        sources = _render_code_list(list(rule.sources))
+        targets = ", ".join(target.const_name for target in rule.targets)
+        lines.append(f"    // {rule.id}")
+        lines.append("    ZvvnmodToUtn57Mapping {")
+        lines.append(f"        sources: &[{sources}],")
+        lines.append(f"        targets: &[{targets}],")
+        lines.append("    },")
+    lines.extend(["];", ""])
+    return "\n".join(lines)
 
 
 def render_codes_rust(model: Model, source_name: str) -> str:
@@ -443,6 +709,21 @@ def generate_ir_fina(
     return rules
 
 
+def generate_utn57_mapping(
+    names_path: Path, mapping_path: Path, output_path: Path
+) -> Utn57MappingModel:
+    """生成 reviewed UTN57 mapping Rust API。 / Generate the reviewed UTN57 mapping Rust API."""
+
+    model = build_model(read_csv(names_path))
+    mapping = read_utn57_mapping_json(mapping_path, model)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        render_utn57_mapping_rust(mapping, names_path.name, mapping_path.name),
+        encoding="utf-8",
+    )
+    return mapping
+
+
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
@@ -463,15 +744,28 @@ def main() -> None:
         type=Path,
         default=root / "src" / "generated" / "ir_fina.rs",
     )
+    parser.add_argument(
+        "--mapping-input",
+        type=Path,
+        default=root / "data" / "zvvnmod-utn57-map.json",
+    )
+    parser.add_argument(
+        "--mapping-output",
+        type=Path,
+        default=root / "src" / "generated" / "utn57_mapping.rs",
+    )
     args = parser.parse_args()
     model = generate_codes(args.input, args.codes_output)
     generate_code_decomposition_map(args.input, args.decomposition_map_output)
     rules = generate_ir_fina(args.input, args.ir_fina_input, args.ir_fina_output)
+    mapping = generate_utn57_mapping(args.input, args.mapping_input, args.mapping_output)
     print(
         f"generated {len(model.codes)} codes, "
         f"{len(model.code_decompositions)} code decompositions, "
-        f"{len(rules)} Ir_fina replacements -> "
-        f"{args.codes_output}, {args.decomposition_map_output}, {args.ir_fina_output}"
+        f"{len(rules)} Ir_fina replacements, "
+        f"{len(mapping.targets)} UTN57 targets, and {len(mapping.rules)} mapping rows -> "
+        f"{args.codes_output}, {args.decomposition_map_output}, {args.ir_fina_output}, "
+        f"{args.mapping_output}"
     )
 
 

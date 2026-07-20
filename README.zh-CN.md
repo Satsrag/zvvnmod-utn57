@@ -10,9 +10,11 @@
 - 生成 ZVVNMOD code 的语义化 Rust 常量；
 - 生成 `merged ZVVNMOD code → component ZVVNMOD code sequence` 分解 Map；
 - 从输入 stream 删除旧 FVS1/FVS2/FVS3/MVS；
-- 生成 30 条用户确认的 `Ir_fina` 替换规则。
+- 生成 30 条用户确认的 `Ir_fina` 替换规则；
+- 生成包含 96 个 UTN #57 targets 与 91 条非空 reviewed rows 的 typed relation；
+- 对一个 ZVVNMOD written-form run 执行 longest-match replacement。
 
-完整双向转换算法尚未加入；旧 control 删除和 `Ir_fina` replacement 是本库已实现的前两个转换阶段。
+已实现正向 reviewed written-unit mapping replacement。本次不猜测 main mapping 尚未编码的 canonical MVS/ZWJ reconstruction、particle boundary、target serialization 或反向转换规则。
 
 ## 目录
 
@@ -24,18 +26,22 @@
 ├── README.zh-CN.md
 ├── data/
 │   ├── ir-fina-replacements.csv
-│   └── zvvnmod-unicode-names.csv
+│   ├── zvvnmod-unicode-names.csv
+│   └── zvvnmod-utn57-map.json
 ├── scripts/
 │   ├── generate_ir_fina.py
+│   ├── generate_utn57_mapping.py
 │   ├── generate_zvvnmod.py
 │   ├── generate_zvvnmod_codes.py
 │   └── generate_code_decomposition_map.py
 ├── src/
 │   ├── lib.rs
+│   ├── conversion.rs
 │   ├── preprocess.rs
 │   └── generated/
 │       ├── code_decomposition_map.rs
 │       ├── ir_fina.rs
+│       ├── utn57_mapping.rs
 │       └── zvvnmod_codes.rs
 └── tests/
     ├── generated.rs
@@ -123,6 +129,27 @@ B_O_MEDI + IR_FINA → B_UE_FINA
 
 `replace_ir_fina()` 从左到右扫描完整 code stream。支持的 `preceding + IR_FINA` helper sequence 会替换为特定 final-form code；无法匹配的 `IR_FINA` 返回 `IrFinaReplacementError`，不会静默保留或删除。
 
+## Reviewed mapping replacement
+
+`data/zvvnmod-utn57-map.json` byte-for-byte 来自
+`Satsrag/satsrag.github.io@966bd99943ab6dbd6846258491d0abd4caa689d9` 的
+`mapping/data/zvvnmod-utn57-map.json`；锁定 SHA-256 为
+`10dc660f941f28bb16671bce9c4ae9bf4df4f1b8a62f52ba6e51aada6ff612b2`。
+
+`convert_zvvnmod_run()` 依次执行：
+
+1. 删除旧 U+E140–U+E143；
+2. 执行 `Ir_fina` replacement；
+3. 分解普通 merged codes，同时保留 reviewed chachlag forms；
+4. 对 reviewed relation 执行 longest-match。
+
+输入表示一个 connected written-form run。因此，完整 run 只有 `AA_FINA` 时输出
+`Aa:isol`；接在连接 form 后时输出 `Aa:fina`。ZVVNMOD 的 K/K2 共用 shape：
+默认输出 K；调用方拥有 nominal/context 信息时，可通过 `Utn57ConversionOptions`
+显式选择 K2。
+
+Nirugu 输出为 `Utn57Unit::Nirugu` + `Utn57Position::Control`，不会虚构 positional Nirugu。
+
 ## 生成
 
 分别生成 code 定义、decomposition Map 和 replacement：
@@ -131,6 +158,7 @@ B_O_MEDI + IR_FINA → B_UE_FINA
 python3 scripts/generate_zvvnmod_codes.py
 python3 scripts/generate_code_decomposition_map.py
 python3 scripts/generate_ir_fina.py
+python3 scripts/generate_utn57_mapping.py
 ```
 
 也可以一次生成全部输出：
@@ -143,24 +171,20 @@ python3 scripts/generate_zvvnmod.py
 
 ```rust
 use zvvnmod_utn57::{
-    discard_legacy_controls, replace_ir_fina, zvvnmod_code_decomposition_map,
-    ZvvnmodCode, A_INIT, B_INIT, B_I_INIT, I_MEDI, IR_FINA, O_MEDI, UE_FINA,
+    convert_zvvnmod_run, convert_zvvnmod_run_with_options, Utn57ConversionOptions,
+    Utn57KVariant, Utn57Position, Utn57Unit, Utn57WrittenUnit, B_I_INIT, K_INIT,
 };
 
-let cleaned = discard_legacy_controls(&[
-    A_INIT,
-    ZvvnmodCode(0xE140),
-    O_MEDI,
-    IR_FINA,
-]);
-let replaced = replace_ir_fina(&cleaned).unwrap();
-assert_eq!(replaced, vec![A_INIT, UE_FINA]);
-
-let map = zvvnmod_code_decomposition_map();
 assert_eq!(
-    map.get(&B_I_INIT),
-    Some(&[B_INIT, I_MEDI].as_slice()),
+    convert_zvvnmod_run(&[B_I_INIT]).unwrap(),
+    vec![
+        Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init),
+        Utn57WrittenUnit::new(Utn57Unit::I, Utn57Position::Medi),
+    ],
 );
+
+let options = Utn57ConversionOptions { k_variant: Utn57KVariant::K2 };
+assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit, Utn57Unit::K2);
 ```
 
 ## 验证

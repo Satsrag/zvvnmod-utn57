@@ -1,0 +1,2290 @@
+{
+  "schema": "zvvnmod-utn57-map-v3",
+  "description": "Editable aligned Rust-named ZVVNMOD and UTN57 code sequences; either side may be empty or contain multiple codes.",
+  "sources": [
+    {
+      "id": "A_INIT",
+      "name": "A i",
+      "codepoint": "U+E000",
+      "value": 57344,
+      "glyph": "",
+      "order": 0
+    },
+    {
+      "id": "A_MEDI",
+      "name": "A m",
+      "codepoint": "U+E005",
+      "value": 57349,
+      "glyph": "",
+      "order": 1
+    },
+    {
+      "id": "A_FINA",
+      "name": "A f",
+      "codepoint": "U+E00C",
+      "value": 57356,
+      "glyph": "",
+      "order": 2
+    },
+    {
+      "id": "AA_FINA",
+      "name": "Aa f",
+      "codepoint": "U+E00D",
+      "value": 57357,
+      "glyph": "",
+      "order": 3
+    },
+    {
+      "id": "B_INIT",
+      "name": "B i",
+      "codepoint": "U+E029",
+      "value": 57385,
+      "glyph": "",
+      "order": 4
+    },
+    {
+      "id": "B_MEDI",
+      "name": "B m",
+      "codepoint": "U+E02A",
+      "value": 57386,
+      "glyph": "",
+      "order": 5
+    },
+    {
+      "id": "B_FINA",
+      "name": "B f",
+      "codepoint": "U+E02B",
+      "value": 57387,
+      "glyph": "",
+      "order": 6
+    },
+    {
+      "id": "C_INIT",
+      "name": "C i",
+      "codepoint": "U+E05F",
+      "value": 57439,
+      "glyph": "",
+      "order": 7
+    },
+    {
+      "id": "C_MEDI",
+      "name": "C m",
+      "codepoint": "U+E060",
+      "value": 57440,
+      "glyph": "",
+      "order": 8
+    },
+    {
+      "id": "C_FINA",
+      "name": "C f",
+      "codepoint": "U+E061",
+      "value": 57441,
+      "glyph": "",
+      "order": 9
+    },
+    {
+      "id": "CH_INIT",
+      "name": "Ch i",
+      "codepoint": "U+E04A",
+      "value": 57418,
+      "glyph": "",
+      "order": 10
+    },
+    {
+      "id": "CH_MEDI",
+      "name": "Ch m",
+      "codepoint": "U+E04B",
+      "value": 57419,
+      "glyph": "",
+      "order": 11
+    },
+    {
+      "id": "CH_FINA",
+      "name": "Ch f",
+      "codepoint": "U+E04C",
+      "value": 57420,
+      "glyph": "",
+      "order": 12
+    },
+    {
+      "id": "D_INIT",
+      "name": "D i",
+      "codepoint": "U+E045",
+      "value": 57413,
+      "glyph": "",
+      "order": 13
+    },
+    {
+      "id": "D_MEDI",
+      "name": "D m",
+      "codepoint": "U+E046",
+      "value": 57414,
+      "glyph": "",
+      "order": 14
+    },
+    {
+      "id": "D_FINA",
+      "name": "D f",
+      "codepoint": "U+E049",
+      "value": 57417,
+      "glyph": "",
+      "order": 15
+    },
+    {
+      "id": "F_INIT",
+      "name": "F i",
+      "codepoint": "U+E059",
+      "value": 57433,
+      "glyph": "",
+      "order": 16
+    },
+    {
+      "id": "F_MEDI",
+      "name": "F m",
+      "codepoint": "U+E05A",
+      "value": 57434,
+      "glyph": "",
+      "order": 17
+    },
+    {
+      "id": "F_FINA",
+      "name": "F f",
+      "codepoint": "U+E05B",
+      "value": 57435,
+      "glyph": "",
+      "order": 18
+    },
+    {
+      "id": "G_INIT",
+      "name": "G i",
+      "codepoint": "U+E030",
+      "value": 57392,
+      "glyph": "",
+      "order": 19
+    },
+    {
+      "id": "G_MEDI",
+      "name": "G m",
+      "codepoint": "U+E031",
+      "value": 57393,
+      "glyph": "",
+      "order": 20
+    },
+    {
+      "id": "H_INIT",
+      "name": "H i",
+      "codepoint": "U+E02F",
+      "value": 57391,
+      "glyph": "",
+      "order": 21
+    },
+    {
+      "id": "H_FINA",
+      "name": "H f",
+      "codepoint": "U+E032",
+      "value": 57394,
+      "glyph": "",
+      "order": 22
+    },
+    {
+      "id": "HR_MEDI",
+      "name": "Hr m",
+      "codepoint": "U+E066",
+      "value": 57446,
+      "glyph": "",
+      "order": 23
+    },
+    {
+      "id": "HR_FINA",
+      "name": "Hr f",
+      "codepoint": "U+E067",
+      "value": 57447,
+      "glyph": "",
+      "order": 24
+    },
+    {
+      "id": "HX_INIT",
+      "name": "Hx i",
+      "codepoint": "U+E034",
+      "value": 57396,
+      "glyph": "",
+      "order": 25
+    },
+    {
+      "id": "HX_AA_FINA",
+      "name": "Hx f Aa f",
+      "codepoint": "U+E09D",
+      "value": 57501,
+      "glyph": "",
+      "order": 26
+    },
+    {
+      "id": "I_ISOL",
+      "name": "I isol",
+      "codepoint": "U+E01A",
+      "value": 57370,
+      "glyph": "",
+      "order": 27
+    },
+    {
+      "id": "I_INIT",
+      "name": "I i",
+      "codepoint": "U+E04D",
+      "value": 57421,
+      "glyph": "",
+      "order": 28
+    },
+    {
+      "id": "I_MEDI",
+      "name": "I m",
+      "codepoint": "U+E006",
+      "value": 57350,
+      "glyph": "",
+      "order": 29
+    },
+    {
+      "id": "I_FINA",
+      "name": "I f",
+      "codepoint": "U+E00E",
+      "value": 57358,
+      "glyph": "",
+      "order": 30
+    },
+    {
+      "id": "J_MEDI",
+      "name": "J m",
+      "codepoint": "U+E04E",
+      "value": 57422,
+      "glyph": "",
+      "order": 31
+    },
+    {
+      "id": "J_FINA",
+      "name": "J f",
+      "codepoint": "U+E04F",
+      "value": 57423,
+      "glyph": "",
+      "order": 32
+    },
+    {
+      "id": "K_INIT",
+      "name": "K i",
+      "codepoint": "U+E05C",
+      "value": 57436,
+      "glyph": "",
+      "order": 33
+    },
+    {
+      "id": "K_MEDI",
+      "name": "K m",
+      "codepoint": "U+E05D",
+      "value": 57437,
+      "glyph": "",
+      "order": 34
+    },
+    {
+      "id": "K_FINA",
+      "name": "K f",
+      "codepoint": "U+E05E",
+      "value": 57438,
+      "glyph": "",
+      "order": 35
+    },
+    {
+      "id": "L_INIT",
+      "name": "L i",
+      "codepoint": "U+E039",
+      "value": 57401,
+      "glyph": "",
+      "order": 36
+    },
+    {
+      "id": "L_MEDI",
+      "name": "L m",
+      "codepoint": "U+E03A",
+      "value": 57402,
+      "glyph": "",
+      "order": 37
+    },
+    {
+      "id": "L_FINA",
+      "name": "L f",
+      "codepoint": "U+E03B",
+      "value": 57403,
+      "glyph": "",
+      "order": 38
+    },
+    {
+      "id": "M_INIT",
+      "name": "M i",
+      "codepoint": "U+E036",
+      "value": 57398,
+      "glyph": "",
+      "order": 39
+    },
+    {
+      "id": "M_MEDI",
+      "name": "M m",
+      "codepoint": "U+E037",
+      "value": 57399,
+      "glyph": "",
+      "order": 40
+    },
+    {
+      "id": "M_FINA",
+      "name": "M f",
+      "codepoint": "U+E038",
+      "value": 57400,
+      "glyph": "",
+      "order": 41
+    },
+    {
+      "id": "N_INIT",
+      "name": "N i",
+      "codepoint": "U+E027",
+      "value": 57383,
+      "glyph": "",
+      "order": 42
+    },
+    {
+      "id": "N_MEDI",
+      "name": "N m",
+      "codepoint": "U+E028",
+      "value": 57384,
+      "glyph": "",
+      "order": 43
+    },
+    {
+      "id": "N_AA_FINA",
+      "name": "N f Aa f",
+      "codepoint": "U+E077",
+      "value": 57463,
+      "glyph": "",
+      "order": 44
+    },
+    {
+      "id": "O_INIT",
+      "name": "O i",
+      "codepoint": "U+E001",
+      "value": 57345,
+      "glyph": "",
+      "order": 45
+    },
+    {
+      "id": "O_MEDI",
+      "name": "O m",
+      "codepoint": "U+E008",
+      "value": 57352,
+      "glyph": "",
+      "order": 46
+    },
+    {
+      "id": "O_FINA",
+      "name": "O f",
+      "codepoint": "U+E00F",
+      "value": 57359,
+      "glyph": "",
+      "order": 47
+    },
+    {
+      "id": "P_INIT",
+      "name": "P i",
+      "codepoint": "U+E02C",
+      "value": 57388,
+      "glyph": "",
+      "order": 48
+    },
+    {
+      "id": "P_MEDI",
+      "name": "P m",
+      "codepoint": "U+E02D",
+      "value": 57389,
+      "glyph": "",
+      "order": 49
+    },
+    {
+      "id": "P_FINA",
+      "name": "P f",
+      "codepoint": "U+E02E",
+      "value": 57390,
+      "glyph": "",
+      "order": 50
+    },
+    {
+      "id": "R_INIT",
+      "name": "R i",
+      "codepoint": "U+E053",
+      "value": 57427,
+      "glyph": "",
+      "order": 51
+    },
+    {
+      "id": "R_MEDI",
+      "name": "R m",
+      "codepoint": "U+E054",
+      "value": 57428,
+      "glyph": "",
+      "order": 52
+    },
+    {
+      "id": "R_FINA",
+      "name": "R f",
+      "codepoint": "U+E055",
+      "value": 57429,
+      "glyph": "",
+      "order": 53
+    },
+    {
+      "id": "RH_INIT",
+      "name": "Rh i",
+      "codepoint": "U+E068",
+      "value": 57448,
+      "glyph": "",
+      "order": 54
+    },
+    {
+      "id": "RH_MEDI",
+      "name": "Rh m",
+      "codepoint": "U+E069",
+      "value": 57449,
+      "glyph": "",
+      "order": 55
+    },
+    {
+      "id": "RH_FINA",
+      "name": "Rh f",
+      "codepoint": "U+E06A",
+      "value": 57450,
+      "glyph": "",
+      "order": 56
+    },
+    {
+      "id": "S_INIT",
+      "name": "S i",
+      "codepoint": "U+E03C",
+      "value": 57404,
+      "glyph": "",
+      "order": 57
+    },
+    {
+      "id": "S_MEDI",
+      "name": "S m",
+      "codepoint": "U+E03D",
+      "value": 57405,
+      "glyph": "",
+      "order": 58
+    },
+    {
+      "id": "S_FINA",
+      "name": "S f",
+      "codepoint": "U+E03E",
+      "value": 57406,
+      "glyph": "",
+      "order": 59
+    },
+    {
+      "id": "SH_INIT",
+      "name": "Sh i",
+      "codepoint": "U+E03F",
+      "value": 57407,
+      "glyph": "",
+      "order": 60
+    },
+    {
+      "id": "SH_MEDI",
+      "name": "Sh m",
+      "codepoint": "U+E040",
+      "value": 57408,
+      "glyph": "",
+      "order": 61
+    },
+    {
+      "id": "SH_FINA",
+      "name": "Sh f",
+      "codepoint": "U+E041",
+      "value": 57409,
+      "glyph": "",
+      "order": 62
+    },
+    {
+      "id": "T_INIT",
+      "name": "T i",
+      "codepoint": "U+E042",
+      "value": 57410,
+      "glyph": "",
+      "order": 63
+    },
+    {
+      "id": "T_MEDI",
+      "name": "T m",
+      "codepoint": "U+E043",
+      "value": 57411,
+      "glyph": "",
+      "order": 64
+    },
+    {
+      "id": "T_FINA",
+      "name": "T f",
+      "codepoint": "U+E044",
+      "value": 57412,
+      "glyph": "",
+      "order": 65
+    },
+    {
+      "id": "U_ISOL",
+      "name": "U isol",
+      "codepoint": "U+E01B",
+      "value": 57371,
+      "glyph": "",
+      "order": 66
+    },
+    {
+      "id": "U_FINA",
+      "name": "U f",
+      "codepoint": "U+E011",
+      "value": 57361,
+      "glyph": "",
+      "order": 67
+    },
+    {
+      "id": "UE_FINA",
+      "name": "Ue f",
+      "codepoint": "U+E010",
+      "value": 57360,
+      "glyph": "",
+      "order": 68
+    },
+    {
+      "id": "W_INIT",
+      "name": "W i",
+      "codepoint": "U+E056",
+      "value": 57430,
+      "glyph": "",
+      "order": 69
+    },
+    {
+      "id": "W_MEDI",
+      "name": "W m",
+      "codepoint": "U+E057",
+      "value": 57431,
+      "glyph": "",
+      "order": 70
+    },
+    {
+      "id": "W_FINA",
+      "name": "W f",
+      "codepoint": "U+E058",
+      "value": 57432,
+      "glyph": "",
+      "order": 71
+    },
+    {
+      "id": "Y_INIT",
+      "name": "Y i",
+      "codepoint": "U+E050",
+      "value": 57424,
+      "glyph": "",
+      "order": 72
+    },
+    {
+      "id": "Y_MEDI",
+      "name": "Y m",
+      "codepoint": "U+E051",
+      "value": 57425,
+      "glyph": "",
+      "order": 73
+    },
+    {
+      "id": "Z_INIT",
+      "name": "Z i",
+      "codepoint": "U+E062",
+      "value": 57442,
+      "glyph": "",
+      "order": 74
+    },
+    {
+      "id": "Z_MEDI",
+      "name": "Z m",
+      "codepoint": "U+E063",
+      "value": 57443,
+      "glyph": "",
+      "order": 75
+    },
+    {
+      "id": "Z_FINA",
+      "name": "Z f",
+      "codepoint": "U+E064",
+      "value": 57444,
+      "glyph": "",
+      "order": 76
+    },
+    {
+      "id": "ZR_INIT",
+      "name": "Zr i",
+      "codepoint": "U+E0E7",
+      "value": 57575,
+      "glyph": "",
+      "order": 77
+    },
+    {
+      "id": "NIRUGU",
+      "name": "Nirugu",
+      "codepoint": "U+E0E5",
+      "value": 57573,
+      "glyph": "",
+      "order": 78
+    },
+    {
+      "id": "IR_FINA",
+      "name": "Ir f",
+      "codepoint": "U+E0E6",
+      "value": 57574,
+      "glyph": "",
+      "order": 79
+    }
+  ],
+  "targets": [
+    {
+      "id": "A:isol",
+      "unit": "A",
+      "position": "isol",
+      "glyph": "",
+      "order": 0
+    },
+    {
+      "id": "A:init",
+      "unit": "A",
+      "position": "init",
+      "glyph": "",
+      "order": 1
+    },
+    {
+      "id": "A:medi",
+      "unit": "A",
+      "position": "medi",
+      "glyph": "",
+      "order": 2
+    },
+    {
+      "id": "A:fina",
+      "unit": "A",
+      "position": "fina",
+      "glyph": "",
+      "order": 3
+    },
+    {
+      "id": "Aa:isol",
+      "unit": "Aa",
+      "position": "isol",
+      "glyph": "",
+      "order": 4
+    },
+    {
+      "id": "Aa:fina",
+      "unit": "Aa",
+      "position": "fina",
+      "glyph": "",
+      "order": 5
+    },
+    {
+      "id": "B:init",
+      "unit": "B",
+      "position": "init",
+      "glyph": "",
+      "order": 6
+    },
+    {
+      "id": "B:medi",
+      "unit": "B",
+      "position": "medi",
+      "glyph": "",
+      "order": 7
+    },
+    {
+      "id": "B:fina",
+      "unit": "B",
+      "position": "fina",
+      "glyph": "",
+      "order": 8
+    },
+    {
+      "id": "B2:fina",
+      "unit": "B2",
+      "position": "fina",
+      "glyph": "",
+      "order": 9
+    },
+    {
+      "id": "C:init",
+      "unit": "C",
+      "position": "init",
+      "glyph": "",
+      "order": 10
+    },
+    {
+      "id": "C:medi",
+      "unit": "C",
+      "position": "medi",
+      "glyph": "",
+      "order": 11
+    },
+    {
+      "id": "C:fina",
+      "unit": "C",
+      "position": "fina",
+      "glyph": "",
+      "order": 12
+    },
+    {
+      "id": "Ch:init",
+      "unit": "Ch",
+      "position": "init",
+      "glyph": "",
+      "order": 13
+    },
+    {
+      "id": "Ch:medi",
+      "unit": "Ch",
+      "position": "medi",
+      "glyph": "",
+      "order": 14
+    },
+    {
+      "id": "Ch:fina",
+      "unit": "Ch",
+      "position": "fina",
+      "glyph": "",
+      "order": 15
+    },
+    {
+      "id": "Cr:init",
+      "unit": "Cr",
+      "position": "init",
+      "glyph": "",
+      "order": 16
+    },
+    {
+      "id": "D:init",
+      "unit": "D",
+      "position": "init",
+      "glyph": "",
+      "order": 17
+    },
+    {
+      "id": "D:medi",
+      "unit": "D",
+      "position": "medi",
+      "glyph": "",
+      "order": 18
+    },
+    {
+      "id": "D:fina",
+      "unit": "D",
+      "position": "fina",
+      "glyph": "",
+      "order": 19
+    },
+    {
+      "id": "Dd:medi",
+      "unit": "Dd",
+      "position": "medi",
+      "glyph": "",
+      "order": 20
+    },
+    {
+      "id": "Dd:fina",
+      "unit": "Dd",
+      "position": "fina",
+      "glyph": "",
+      "order": 21
+    },
+    {
+      "id": "F:init",
+      "unit": "F",
+      "position": "init",
+      "glyph": "",
+      "order": 22
+    },
+    {
+      "id": "F:medi",
+      "unit": "F",
+      "position": "medi",
+      "glyph": "",
+      "order": 23
+    },
+    {
+      "id": "F:fina",
+      "unit": "F",
+      "position": "fina",
+      "glyph": "",
+      "order": 24
+    },
+    {
+      "id": "G:init",
+      "unit": "G",
+      "position": "init",
+      "glyph": "",
+      "order": 25
+    },
+    {
+      "id": "G:medi",
+      "unit": "G",
+      "position": "medi",
+      "glyph": "",
+      "order": 26
+    },
+    {
+      "id": "G:fina",
+      "unit": "G",
+      "position": "fina",
+      "glyph": "",
+      "order": 27
+    },
+    {
+      "id": "Gx:init",
+      "unit": "Gx",
+      "position": "init",
+      "glyph": "",
+      "order": 28
+    },
+    {
+      "id": "Gx:medi",
+      "unit": "Gx",
+      "position": "medi",
+      "glyph": "",
+      "order": 29
+    },
+    {
+      "id": "H:init",
+      "unit": "H",
+      "position": "init",
+      "glyph": "",
+      "order": 30
+    },
+    {
+      "id": "H:medi",
+      "unit": "H",
+      "position": "medi",
+      "glyph": "",
+      "order": 31
+    },
+    {
+      "id": "H:fina",
+      "unit": "H",
+      "position": "fina",
+      "glyph": "",
+      "order": 32
+    },
+    {
+      "id": "Hr:medi",
+      "unit": "Hr",
+      "position": "medi",
+      "glyph": "",
+      "order": 33
+    },
+    {
+      "id": "Hr:fina",
+      "unit": "Hr",
+      "position": "fina",
+      "glyph": "",
+      "order": 34
+    },
+    {
+      "id": "Hx:init",
+      "unit": "Hx",
+      "position": "init",
+      "glyph": "",
+      "order": 35
+    },
+    {
+      "id": "Hx:medi",
+      "unit": "Hx",
+      "position": "medi",
+      "glyph": "",
+      "order": 36
+    },
+    {
+      "id": "Hx:fina",
+      "unit": "Hx",
+      "position": "fina",
+      "glyph": "",
+      "order": 37
+    },
+    {
+      "id": "I:isol",
+      "unit": "I",
+      "position": "isol",
+      "glyph": "",
+      "order": 38
+    },
+    {
+      "id": "I:init",
+      "unit": "I",
+      "position": "init",
+      "glyph": "",
+      "order": 39
+    },
+    {
+      "id": "I:medi",
+      "unit": "I",
+      "position": "medi",
+      "glyph": "",
+      "order": 40
+    },
+    {
+      "id": "I:fina",
+      "unit": "I",
+      "position": "fina",
+      "glyph": "",
+      "order": 41
+    },
+    {
+      "id": "Ix:isol",
+      "unit": "Ix",
+      "position": "isol",
+      "glyph": "",
+      "order": 42
+    },
+    {
+      "id": "J:medi",
+      "unit": "J",
+      "position": "medi",
+      "glyph": "",
+      "order": 43
+    },
+    {
+      "id": "J:fina",
+      "unit": "J",
+      "position": "fina",
+      "glyph": "",
+      "order": 44
+    },
+    {
+      "id": "K:init",
+      "unit": "K",
+      "position": "init",
+      "glyph": "",
+      "order": 45
+    },
+    {
+      "id": "K:medi",
+      "unit": "K",
+      "position": "medi",
+      "glyph": "",
+      "order": 46
+    },
+    {
+      "id": "K:fina",
+      "unit": "K",
+      "position": "fina",
+      "glyph": "",
+      "order": 47
+    },
+    {
+      "id": "K2:init",
+      "unit": "K2",
+      "position": "init",
+      "glyph": "",
+      "order": 48
+    },
+    {
+      "id": "K2:medi",
+      "unit": "K2",
+      "position": "medi",
+      "glyph": "",
+      "order": 49
+    },
+    {
+      "id": "K2:fina",
+      "unit": "K2",
+      "position": "fina",
+      "glyph": "",
+      "order": 50
+    },
+    {
+      "id": "L:init",
+      "unit": "L",
+      "position": "init",
+      "glyph": "",
+      "order": 51
+    },
+    {
+      "id": "L:medi",
+      "unit": "L",
+      "position": "medi",
+      "glyph": "",
+      "order": 52
+    },
+    {
+      "id": "L:fina",
+      "unit": "L",
+      "position": "fina",
+      "glyph": "",
+      "order": 53
+    },
+    {
+      "id": "M:init",
+      "unit": "M",
+      "position": "init",
+      "glyph": "",
+      "order": 54
+    },
+    {
+      "id": "M:medi",
+      "unit": "M",
+      "position": "medi",
+      "glyph": "",
+      "order": 55
+    },
+    {
+      "id": "M:fina",
+      "unit": "M",
+      "position": "fina",
+      "glyph": "",
+      "order": 56
+    },
+    {
+      "id": "N:init",
+      "unit": "N",
+      "position": "init",
+      "glyph": "",
+      "order": 57
+    },
+    {
+      "id": "N:medi",
+      "unit": "N",
+      "position": "medi",
+      "glyph": "",
+      "order": 58
+    },
+    {
+      "id": "N:fina",
+      "unit": "N",
+      "position": "fina",
+      "glyph": "",
+      "order": 59
+    },
+    {
+      "id": "O:init",
+      "unit": "O",
+      "position": "init",
+      "glyph": "",
+      "order": 60
+    },
+    {
+      "id": "O:medi",
+      "unit": "O",
+      "position": "medi",
+      "glyph": "",
+      "order": 61
+    },
+    {
+      "id": "O:fina",
+      "unit": "O",
+      "position": "fina",
+      "glyph": "",
+      "order": 62
+    },
+    {
+      "id": "P:init",
+      "unit": "P",
+      "position": "init",
+      "glyph": "",
+      "order": 63
+    },
+    {
+      "id": "P:medi",
+      "unit": "P",
+      "position": "medi",
+      "glyph": "",
+      "order": 64
+    },
+    {
+      "id": "P:fina",
+      "unit": "P",
+      "position": "fina",
+      "glyph": "",
+      "order": 65
+    },
+    {
+      "id": "R:init",
+      "unit": "R",
+      "position": "init",
+      "glyph": "",
+      "order": 66
+    },
+    {
+      "id": "R:medi",
+      "unit": "R",
+      "position": "medi",
+      "glyph": "",
+      "order": 67
+    },
+    {
+      "id": "R:fina",
+      "unit": "R",
+      "position": "fina",
+      "glyph": "",
+      "order": 68
+    },
+    {
+      "id": "Rh:init",
+      "unit": "Rh",
+      "position": "init",
+      "glyph": "",
+      "order": 69
+    },
+    {
+      "id": "Rh:medi",
+      "unit": "Rh",
+      "position": "medi",
+      "glyph": "",
+      "order": 70
+    },
+    {
+      "id": "Rh:fina",
+      "unit": "Rh",
+      "position": "fina",
+      "glyph": "",
+      "order": 71
+    },
+    {
+      "id": "S:init",
+      "unit": "S",
+      "position": "init",
+      "glyph": "",
+      "order": 72
+    },
+    {
+      "id": "S:medi",
+      "unit": "S",
+      "position": "medi",
+      "glyph": "",
+      "order": 73
+    },
+    {
+      "id": "S:fina",
+      "unit": "S",
+      "position": "fina",
+      "glyph": "",
+      "order": 74
+    },
+    {
+      "id": "Sh:init",
+      "unit": "Sh",
+      "position": "init",
+      "glyph": "",
+      "order": 75
+    },
+    {
+      "id": "Sh:medi",
+      "unit": "Sh",
+      "position": "medi",
+      "glyph": "",
+      "order": 76
+    },
+    {
+      "id": "Sh:fina",
+      "unit": "Sh",
+      "position": "fina",
+      "glyph": "",
+      "order": 77
+    },
+    {
+      "id": "Sz:fina",
+      "unit": "Sz",
+      "position": "fina",
+      "glyph": "",
+      "order": 78
+    },
+    {
+      "id": "T:init",
+      "unit": "T",
+      "position": "init",
+      "glyph": "",
+      "order": 79
+    },
+    {
+      "id": "T:medi",
+      "unit": "T",
+      "position": "medi",
+      "glyph": "",
+      "order": 80
+    },
+    {
+      "id": "T:fina",
+      "unit": "T",
+      "position": "fina",
+      "glyph": "",
+      "order": 81
+    },
+    {
+      "id": "U:isol",
+      "unit": "U",
+      "position": "isol",
+      "glyph": "",
+      "order": 82
+    },
+    {
+      "id": "U:fina",
+      "unit": "U",
+      "position": "fina",
+      "glyph": "",
+      "order": 83
+    },
+    {
+      "id": "Ue:fina",
+      "unit": "Ue",
+      "position": "fina",
+      "glyph": "",
+      "order": 84
+    },
+    {
+      "id": "Ux:isol",
+      "unit": "Ux",
+      "position": "isol",
+      "glyph": "",
+      "order": 85
+    },
+    {
+      "id": "W:init",
+      "unit": "W",
+      "position": "init",
+      "glyph": "",
+      "order": 86
+    },
+    {
+      "id": "W:medi",
+      "unit": "W",
+      "position": "medi",
+      "glyph": "",
+      "order": 87
+    },
+    {
+      "id": "W:fina",
+      "unit": "W",
+      "position": "fina",
+      "glyph": "",
+      "order": 88
+    },
+    {
+      "id": "Y:init",
+      "unit": "Y",
+      "position": "init",
+      "glyph": "",
+      "order": 89
+    },
+    {
+      "id": "Y:medi",
+      "unit": "Y",
+      "position": "medi",
+      "glyph": "",
+      "order": 90
+    },
+    {
+      "id": "Z:init",
+      "unit": "Z",
+      "position": "init",
+      "glyph": "",
+      "order": 91
+    },
+    {
+      "id": "Z:medi",
+      "unit": "Z",
+      "position": "medi",
+      "glyph": "",
+      "order": 92
+    },
+    {
+      "id": "Z:fina",
+      "unit": "Z",
+      "position": "fina",
+      "glyph": "",
+      "order": 93
+    },
+    {
+      "id": "Zr:init",
+      "unit": "Zr",
+      "position": "init",
+      "glyph": "",
+      "order": 94
+    },
+    {
+      "id": "Nirugu",
+      "unit": "Nirugu",
+      "position": "control",
+      "glyph": "᠊",
+      "order": 95
+    }
+  ],
+  "mappings": [
+    {
+      "id": "source:A_INIT",
+      "sources": [
+        "A_INIT"
+      ],
+      "targets": [
+        "A:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:A_MEDI",
+      "sources": [
+        "A_MEDI"
+      ],
+      "targets": [
+        "A:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:A_FINA",
+      "sources": [
+        "A_FINA"
+      ],
+      "targets": [
+        "A:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:AA_FINA",
+      "sources": [
+        "AA_FINA"
+      ],
+      "targets": [
+        "Aa:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:B_INIT",
+      "sources": [
+        "B_INIT"
+      ],
+      "targets": [
+        "B:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:B_MEDI",
+      "sources": [
+        "B_MEDI"
+      ],
+      "targets": [
+        "B:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:B_FINA",
+      "sources": [
+        "B_FINA"
+      ],
+      "targets": [
+        "B:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:C_INIT",
+      "sources": [
+        "C_INIT"
+      ],
+      "targets": [
+        "C:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:C_MEDI",
+      "sources": [
+        "C_MEDI"
+      ],
+      "targets": [
+        "C:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:C_FINA",
+      "sources": [
+        "C_FINA"
+      ],
+      "targets": [
+        "C:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:CH_INIT",
+      "sources": [
+        "CH_INIT"
+      ],
+      "targets": [
+        "Ch:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:CH_MEDI",
+      "sources": [
+        "CH_MEDI"
+      ],
+      "targets": [
+        "Ch:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:CH_FINA",
+      "sources": [
+        "CH_FINA"
+      ],
+      "targets": [
+        "Ch:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:D_INIT",
+      "sources": [
+        "D_INIT"
+      ],
+      "targets": [
+        "D:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:D_MEDI",
+      "sources": [
+        "D_MEDI"
+      ],
+      "targets": [
+        "D:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:D_FINA",
+      "sources": [
+        "D_FINA"
+      ],
+      "targets": [
+        "D:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:F_INIT",
+      "sources": [
+        "F_INIT"
+      ],
+      "targets": [
+        "F:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:F_MEDI",
+      "sources": [
+        "F_MEDI"
+      ],
+      "targets": [
+        "F:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:F_FINA",
+      "sources": [
+        "F_FINA"
+      ],
+      "targets": [
+        "F:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:G_INIT",
+      "sources": [
+        "G_INIT"
+      ],
+      "targets": [
+        "G:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:G_MEDI",
+      "sources": [
+        "G_MEDI"
+      ],
+      "targets": [
+        "G:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:H_INIT",
+      "sources": [
+        "H_INIT"
+      ],
+      "targets": [
+        "H:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:H_FINA",
+      "sources": [
+        "H_FINA"
+      ],
+      "targets": [
+        "H:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:HR_MEDI",
+      "sources": [
+        "HR_MEDI"
+      ],
+      "targets": [
+        "Hr:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:HR_FINA",
+      "sources": [
+        "HR_FINA"
+      ],
+      "targets": [
+        "Hr:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:HX_INIT",
+      "sources": [
+        "HX_INIT"
+      ],
+      "targets": [
+        "Hx:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:HX_AA_FINA",
+      "sources": [
+        "HX_AA_FINA"
+      ],
+      "targets": [
+        "Hx:fina",
+        "Aa:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:I_ISOL",
+      "sources": [
+        "I_ISOL"
+      ],
+      "targets": [
+        "I:isol"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:I_INIT",
+      "sources": [
+        "I_INIT"
+      ],
+      "targets": [
+        "I:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:I_MEDI",
+      "sources": [
+        "I_MEDI"
+      ],
+      "targets": [
+        "I:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:I_FINA",
+      "sources": [
+        "I_FINA"
+      ],
+      "targets": [
+        "I:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:J_MEDI",
+      "sources": [
+        "J_MEDI"
+      ],
+      "targets": [
+        "J:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:J_FINA",
+      "sources": [
+        "J_FINA"
+      ],
+      "targets": [
+        "J:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:K_INIT",
+      "sources": [
+        "K_INIT"
+      ],
+      "targets": [
+        "K:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:K_MEDI",
+      "sources": [
+        "K_MEDI"
+      ],
+      "targets": [
+        "K:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:K_FINA",
+      "sources": [
+        "K_FINA"
+      ],
+      "targets": [
+        "K:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:L_INIT",
+      "sources": [
+        "L_INIT"
+      ],
+      "targets": [
+        "L:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:L_MEDI",
+      "sources": [
+        "L_MEDI"
+      ],
+      "targets": [
+        "L:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:L_FINA",
+      "sources": [
+        "L_FINA"
+      ],
+      "targets": [
+        "L:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:M_INIT",
+      "sources": [
+        "M_INIT"
+      ],
+      "targets": [
+        "M:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:M_MEDI",
+      "sources": [
+        "M_MEDI"
+      ],
+      "targets": [
+        "M:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:M_FINA",
+      "sources": [
+        "M_FINA"
+      ],
+      "targets": [
+        "M:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:N_INIT",
+      "sources": [
+        "N_INIT"
+      ],
+      "targets": [
+        "N:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:N_MEDI",
+      "sources": [
+        "N_MEDI"
+      ],
+      "targets": [
+        "N:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:N_AA_FINA",
+      "sources": [
+        "N_AA_FINA"
+      ],
+      "targets": [
+        "N:fina",
+        "Aa:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:O_INIT",
+      "sources": [
+        "O_INIT"
+      ],
+      "targets": [
+        "O:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:O_MEDI",
+      "sources": [
+        "O_MEDI"
+      ],
+      "targets": [
+        "O:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:O_FINA",
+      "sources": [
+        "O_FINA"
+      ],
+      "targets": [
+        "O:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:P_INIT",
+      "sources": [
+        "P_INIT"
+      ],
+      "targets": [
+        "P:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:P_MEDI",
+      "sources": [
+        "P_MEDI"
+      ],
+      "targets": [
+        "P:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:P_FINA",
+      "sources": [
+        "P_FINA"
+      ],
+      "targets": [
+        "P:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:R_INIT",
+      "sources": [
+        "R_INIT"
+      ],
+      "targets": [
+        "R:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:R_MEDI",
+      "sources": [
+        "R_MEDI"
+      ],
+      "targets": [
+        "R:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:R_FINA",
+      "sources": [
+        "R_FINA"
+      ],
+      "targets": [
+        "R:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:RH_INIT",
+      "sources": [
+        "RH_INIT"
+      ],
+      "targets": [
+        "Rh:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:RH_MEDI",
+      "sources": [
+        "RH_MEDI"
+      ],
+      "targets": [
+        "Rh:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:RH_FINA",
+      "sources": [
+        "RH_FINA"
+      ],
+      "targets": [
+        "Rh:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:S_INIT",
+      "sources": [
+        "S_INIT"
+      ],
+      "targets": [
+        "S:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:S_MEDI",
+      "sources": [
+        "S_MEDI"
+      ],
+      "targets": [
+        "S:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:S_FINA",
+      "sources": [
+        "S_FINA"
+      ],
+      "targets": [
+        "S:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:SH_INIT",
+      "sources": [
+        "SH_INIT"
+      ],
+      "targets": [
+        "Sh:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:SH_MEDI",
+      "sources": [
+        "SH_MEDI"
+      ],
+      "targets": [
+        "Sh:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:SH_FINA",
+      "sources": [
+        "SH_FINA"
+      ],
+      "targets": [
+        "Sh:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:T_INIT",
+      "sources": [
+        "T_INIT"
+      ],
+      "targets": [
+        "T:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:T_MEDI",
+      "sources": [
+        "T_MEDI"
+      ],
+      "targets": [
+        "T:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:T_FINA",
+      "sources": [
+        "T_FINA"
+      ],
+      "targets": [
+        "T:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:U_ISOL",
+      "sources": [
+        "U_ISOL"
+      ],
+      "targets": [
+        "U:isol"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:U_FINA",
+      "sources": [
+        "U_FINA"
+      ],
+      "targets": [
+        "U:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:UE_FINA",
+      "sources": [
+        "UE_FINA"
+      ],
+      "targets": [
+        "Ue:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:W_INIT",
+      "sources": [
+        "W_INIT"
+      ],
+      "targets": [
+        "W:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:W_MEDI",
+      "sources": [
+        "W_MEDI"
+      ],
+      "targets": [
+        "W:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:W_FINA",
+      "sources": [
+        "W_FINA"
+      ],
+      "targets": [
+        "W:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:Y_INIT",
+      "sources": [
+        "Y_INIT"
+      ],
+      "targets": [
+        "Y:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:Y_MEDI",
+      "sources": [
+        "Y_MEDI"
+      ],
+      "targets": [
+        "Y:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:Z_INIT",
+      "sources": [
+        "Z_INIT"
+      ],
+      "targets": [
+        "Z:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:Z_MEDI",
+      "sources": [
+        "Z_MEDI"
+      ],
+      "targets": [
+        "Z:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:Z_FINA",
+      "sources": [
+        "Z_FINA"
+      ],
+      "targets": [
+        "Z:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:ZR_INIT",
+      "sources": [
+        "ZR_INIT"
+      ],
+      "targets": [
+        "Zr:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:NIRUGU",
+      "sources": [
+        "NIRUGU"
+      ],
+      "targets": [
+        "Nirugu"
+      ],
+      "note": ""
+    },
+    {
+      "id": "source:IR_FINA",
+      "sources": [
+        "IR_FINA"
+      ],
+      "targets": [],
+      "note": ""
+    },
+    {
+      "id": "target:A:isol",
+      "sources": [
+        "A_INIT",
+        "AA_FINA"
+      ],
+      "targets": [
+        "A:isol"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:Aa:isol",
+      "sources": [
+        "AA_FINA"
+      ],
+      "targets": [
+        "Aa:isol"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:B2:fina",
+      "sources": [
+        "O_MEDI",
+        "AA_FINA"
+      ],
+      "targets": [
+        "B2:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:Cr:init",
+      "sources": [
+        "O_INIT",
+        "O_MEDI"
+      ],
+      "targets": [
+        "Cr:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:Dd:medi",
+      "sources": [
+        "O_MEDI",
+        "A_MEDI"
+      ],
+      "targets": [
+        "Dd:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:Dd:fina",
+      "sources": [
+        "O_MEDI",
+        "A_FINA"
+      ],
+      "targets": [
+        "Dd:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:G:fina",
+      "sources": [
+        "I_MEDI",
+        "AA_FINA"
+      ],
+      "targets": [
+        "G:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:Gx:init",
+      "sources": [],
+      "targets": [
+        "Gx:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:Gx:medi",
+      "sources": [],
+      "targets": [
+        "Gx:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:H:medi",
+      "sources": [
+        "A_MEDI",
+        "A_MEDI"
+      ],
+      "targets": [
+        "H:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:Hx:medi",
+      "sources": [
+        "M_MEDI",
+        "M_MEDI"
+      ],
+      "targets": [
+        "Hx:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:Ix:isol",
+      "sources": [],
+      "targets": [
+        "Ix:isol"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:K2:init",
+      "sources": [
+        "K_INIT"
+      ],
+      "targets": [
+        "K2:init"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:K2:medi",
+      "sources": [
+        "K_MEDI"
+      ],
+      "targets": [
+        "K2:medi"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:K2:fina",
+      "sources": [
+        "K_FINA"
+      ],
+      "targets": [
+        "K2:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:Sz:fina",
+      "sources": [],
+      "targets": [
+        "Sz:fina"
+      ],
+      "note": ""
+    },
+    {
+      "id": "target:Ux:isol",
+      "sources": [],
+      "targets": [
+        "Ux:isol"
+      ],
+      "note": ""
+    }
+  ]
+}

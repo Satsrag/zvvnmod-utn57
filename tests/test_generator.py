@@ -1,4 +1,6 @@
+import hashlib
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
@@ -8,6 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = ROOT / "scripts" / "generate_zvvnmod.py"
 NAMES = ROOT / "data" / "zvvnmod-unicode-names.csv"
 IR_FINA_RULES = ROOT / "data" / "ir-fina-replacements.csv"
+MAPPING = ROOT / "data" / "zvvnmod-utn57-map.json"
+MAPPING_SHA256 = "10dc660f941f28bb16671bce9c4ae9bf4df4f1b8a62f52ba6e51aada6ff612b2"
 
 
 def load_generator():
@@ -220,6 +224,45 @@ class ShapeNamingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             generated = Path(directory) / "ir_fina.rs"
             gen.generate_ir_fina(NAMES, IR_FINA_RULES, generated)
+            self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
+
+    def test_unreviewed_mapping_ambiguity_is_rejected(self):
+        gen = load_generator()
+        payload = json.loads(MAPPING.read_text(encoding="utf-8"))
+        payload["mappings"].append(
+            {
+                "id": "test:conflict",
+                "note": "",
+                "sources": ["B_INIT"],
+                "targets": ["C:init"],
+            }
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "mapping.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            model = gen.build_model(gen.read_csv(NAMES))
+            with self.assertRaisesRegex(ValueError, "unsupported ambiguous mapping"):
+                gen.read_utn57_mapping_json(path, model)
+
+    def test_reviewed_mapping_artifact_and_generated_relation_are_locked(self):
+        gen = load_generator()
+        self.assertEqual(hashlib.sha256(MAPPING.read_bytes()).hexdigest(), MAPPING_SHA256)
+        model = gen.build_model(gen.read_csv(NAMES))
+        mapping = gen.read_utn57_mapping_json(MAPPING, model)
+        self.assertEqual(len(mapping.targets), 96)
+        self.assertEqual(len(mapping.rules), 91)
+        self.assertEqual(mapping.targets[-1].id, "Nirugu")
+        self.assertEqual(mapping.targets[-1].position, "control")
+        nirugu_rule = next(rule for rule in mapping.rules if rule.id == "source:NIRUGU")
+        self.assertEqual([entry.const_name for entry in nirugu_rule.sources], ["NIRUGU"])
+        self.assertEqual([target.id for target in nirugu_rule.targets], ["Nirugu"])
+
+    def test_checked_in_utn57_mapping_is_fresh(self):
+        gen = load_generator()
+        checked_in = ROOT / "src" / "generated" / "utn57_mapping.rs"
+        with tempfile.TemporaryDirectory() as directory:
+            generated = Path(directory) / "utn57_mapping.rs"
+            gen.generate_utn57_mapping(NAMES, MAPPING, generated)
             self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
 
 

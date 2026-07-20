@@ -10,9 +10,11 @@ The current first milestone includes:
 - semantic Rust constants for ZVVNMOD codes;
 - a `merged ZVVNMOD code → component ZVVNMOD code sequence` decomposition map;
 - legacy FVS1/FVS2/FVS3/MVS removal from input streams;
-- 30 user-confirmed `Ir_fina` replacement rules.
+- 30 user-confirmed `Ir_fina` replacement rules;
+- a typed, generated relation containing 96 UTN #57 targets and 91 non-empty reviewed mapping rows;
+- executable longest-match replacement from one ZVVNMOD written-form run to UTN #57 written units.
 
-The complete bidirectional conversion algorithm has not been added yet. Legacy-control removal and `Ir_fina` replacement are the first two implemented conversion stages.
+Forward mapping replacement is implemented through the reviewed written-unit stage. Canonical MVS/ZWJ reconstruction, particle-boundary handling, target serialization, and reverse conversion are not implemented in this change; the library does not guess rules that are absent from the main reviewed mapping.
 
 ## Layout
 
@@ -24,18 +26,22 @@ The complete bidirectional conversion algorithm has not been added yet. Legacy-c
 ├── README.zh-CN.md
 ├── data/
 │   ├── ir-fina-replacements.csv
-│   └── zvvnmod-unicode-names.csv
+│   ├── zvvnmod-unicode-names.csv
+│   └── zvvnmod-utn57-map.json
 ├── scripts/
 │   ├── generate_ir_fina.py
+│   ├── generate_utn57_mapping.py
 │   ├── generate_zvvnmod.py
 │   ├── generate_zvvnmod_codes.py
 │   └── generate_code_decomposition_map.py
 ├── src/
 │   ├── lib.rs
+│   ├── conversion.rs
 │   ├── preprocess.rs
 │   └── generated/
 │       ├── code_decomposition_map.rs
 │       ├── ir_fina.rs
+│       ├── utn57_mapping.rs
 │       └── zvvnmod_codes.rs
 └── tests/
     ├── generated.rs
@@ -125,6 +131,29 @@ The 30 authoritative rules are stored in `data/ir-fina-replacements.csv` with re
 
 `replace_ir_fina()` scans a complete code stream from left to right. A supported `preceding + IR_FINA` helper sequence is replaced with its specific final-form code. An unmatched `IR_FINA` returns `IrFinaReplacementError` instead of being silently retained or dropped.
 
+## Reviewed mapping replacement
+
+`data/zvvnmod-utn57-map.json` is vendored byte-for-byte from
+`Satsrag/satsrag.github.io@966bd99943ab6dbd6846258491d0abd4caa689d9`, path
+`mapping/data/zvvnmod-utn57-map.json`. Its locked SHA-256 is
+`10dc660f941f28bb16671bce9c4ae9bf4df4f1b8a62f52ba6e51aada6ff612b2`.
+
+The generated relation preserves all reviewed non-empty rows. `convert_zvvnmod_run()`
+applies these stages in order:
+
+1. discard legacy U+E140–U+E143 values;
+2. replace `Ir_fina` helpers;
+3. decompose general merged codes while retaining reviewed chachlag forms;
+4. apply the reviewed relation with longest-match.
+
+The input is one connected written-form run. `AA_FINA` is therefore `Aa:isol` when
+it is the complete run and `Aa:fina` after a connected form. ZVVNMOD uses the same
+shapes for UTN K and K2: default conversion emits K, while callers with nominal or
+other context can explicitly select K2 with `Utn57ConversionOptions`.
+
+Nirugu is emitted as `Utn57Unit::Nirugu` with `Utn57Position::Control`; no
+positional Nirugu form is invented.
+
 ## Generation
 
 Generate code definitions, the decomposition map, and replacements separately:
@@ -133,6 +162,7 @@ Generate code definitions, the decomposition map, and replacements separately:
 python3 scripts/generate_zvvnmod_codes.py
 python3 scripts/generate_code_decomposition_map.py
 python3 scripts/generate_ir_fina.py
+python3 scripts/generate_utn57_mapping.py
 ```
 
 All outputs can also be generated at once:
@@ -145,24 +175,20 @@ python3 scripts/generate_zvvnmod.py
 
 ```rust
 use zvvnmod_utn57::{
-    discard_legacy_controls, replace_ir_fina, zvvnmod_code_decomposition_map,
-    ZvvnmodCode, A_INIT, B_INIT, B_I_INIT, I_MEDI, IR_FINA, O_MEDI, UE_FINA,
+    convert_zvvnmod_run, convert_zvvnmod_run_with_options, Utn57ConversionOptions,
+    Utn57KVariant, Utn57Position, Utn57Unit, Utn57WrittenUnit, B_I_INIT, K_INIT,
 };
 
-let cleaned = discard_legacy_controls(&[
-    A_INIT,
-    ZvvnmodCode(0xE140),
-    O_MEDI,
-    IR_FINA,
-]);
-let replaced = replace_ir_fina(&cleaned).unwrap();
-assert_eq!(replaced, vec![A_INIT, UE_FINA]);
-
-let map = zvvnmod_code_decomposition_map();
 assert_eq!(
-    map.get(&B_I_INIT),
-    Some(&[B_INIT, I_MEDI].as_slice()),
+    convert_zvvnmod_run(&[B_I_INIT]).unwrap(),
+    vec![
+        Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init),
+        Utn57WrittenUnit::new(Utn57Unit::I, Utn57Position::Medi),
+    ],
 );
+
+let options = Utn57ConversionOptions { k_variant: Utn57KVariant::K2 };
+assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit, Utn57Unit::K2);
 ```
 
 ## Validation
