@@ -306,6 +306,7 @@ def read_utn57_targets_csv(path: Path) -> tuple[Utn57Target, ...]:
 
     targets: list[Utn57Target] = []
     seen_ids: set[str] = set()
+    seen_const_names: set[str] = set()
     with path.open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
         expected_fields = ["id", "unit", "position"]
@@ -314,6 +315,10 @@ def read_utn57_targets_csv(path: Path) -> tuple[Utn57Target, ...]:
                 f"UTN57 target CSV: expected headers {expected_fields!r}, got {reader.fieldnames!r}"
             )
         for order, row in enumerate(reader, start=0):
+            if set(row) != set(expected_fields) or any(
+                not isinstance(row[field], str) for field in expected_fields
+            ):
+                raise ValueError(f"UTN57 target row {order}: malformed CSV row")
             target_id = row["id"].strip()
             unit = row["unit"].strip()
             position = row["position"].strip()
@@ -327,7 +332,13 @@ def read_utn57_targets_csv(path: Path) -> tuple[Utn57Target, ...]:
             if target_id != expected_id:
                 raise ValueError(f"UTN57 target row {order}: expected ID {expected_id!r}")
             seen_ids.add(target_id)
-            targets.append(Utn57Target(target_id, unit, position, order))
+            target = Utn57Target(target_id, unit, position, order)
+            if target.const_name in seen_const_names:
+                raise ValueError(
+                    f"UTN57 target row {order}: duplicate Rust constant {target.const_name}"
+                )
+            seen_const_names.add(target.const_name)
+            targets.append(target)
     if not targets:
         raise ValueError("UTN57 target CSV must contain at least one target")
     return tuple(targets)

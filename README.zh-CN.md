@@ -135,7 +135,7 @@ B_O_MEDI + IR_FINA → B_UE_FINA
 来自 `Satsrag/satsrag.github.io@966bd99943ab6dbd6846258491d0abd4caa689d9` 的 reviewed website snapshot 被规范化为两个不重复的权威数据源：
 
 - `data/utn57-written-units.csv` 定义96个 typed UTN #57 targets；锁定 SHA-256 为 `a7635637c245f25144ee5d938a76c4dc83063953100bf7d7f8c61353826dfc26`。
-- `data/zvvnmod-utn57-map.json` 只保存 reviewed sequence relation；锁定 SHA-256 为 `c54b7c71835c9429b999c36382c56c14c295feae070e9553553faaf3374ec13c`。
+- `data/zvvnmod-utn57-map.json` 只保存91条双边非空的 reviewed sequence relations；锁定 SHA-256 为 `93591875d237f0e73b51ec0b787137279783717697e4e2657e4c6dd0fa4357d9`。
 
 relation中的 ZVVNMOD source identifiers通过 `data/zvvnmod-unicode-names.csv` 解析；mapping JSON不再重复保存 source或target catalogues。
 

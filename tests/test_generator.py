@@ -12,7 +12,7 @@ NAMES = ROOT / "data" / "zvvnmod-unicode-names.csv"
 IR_FINA_RULES = ROOT / "data" / "ir-fina-replacements.csv"
 MAPPING = ROOT / "data" / "zvvnmod-utn57-map.json"
 TARGETS = ROOT / "data" / "utn57-written-units.csv"
-MAPPING_SHA256 = "c54b7c71835c9429b999c36382c56c14c295feae070e9553553faaf3374ec13c"
+MAPPING_SHA256 = "93591875d237f0e73b51ec0b787137279783717697e4e2657e4c6dd0fa4357d9"
 TARGETS_SHA256 = "a7635637c245f25144ee5d938a76c4dc83063953100bf7d7f8c61353826dfc26"
 
 
@@ -243,6 +243,32 @@ class ShapeNamingTests(unittest.TestCase):
         self.assertEqual(targets[0].id, "A:isol")
         self.assertEqual(targets[-1].id, "Nirugu")
         self.assertEqual(targets[-1].position, "control")
+
+    def test_target_csv_rejects_surplus_columns_and_rust_name_collisions(self):
+        gen = load_generator()
+        cases = (
+            (
+                "id,unit,position\nA:init,A,init,unexpected\n",
+                "malformed CSV row",
+            ),
+            (
+                "id,unit,position\nAa:init,Aa,init\nAA:init,AA,init\n",
+                "duplicate Rust constant UTN57_AA_INIT",
+            ),
+        )
+        for content, message in cases:
+            with self.subTest(message=message), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "targets.csv"
+                path.write_text(content, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, message):
+                    gen.read_utn57_targets_csv(path)
+
+    def test_mapping_json_rows_are_all_non_empty_relations(self):
+        payload = json.loads(MAPPING.read_text(encoding="utf-8"))
+        self.assertEqual(len(payload["mappings"]), 91)
+        self.assertTrue(
+            all(row["sources"] and row["targets"] for row in payload["mappings"])
+        )
 
     def test_mapping_sources_are_validated_against_authoritative_csv(self):
         gen = load_generator()

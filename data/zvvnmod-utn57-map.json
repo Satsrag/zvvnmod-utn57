@@ -795,14 +795,6 @@
       "note": ""
     },
     {
-      "id": "source:IR_FINA",
-      "sources": [
-        "IR_FINA"
-      ],
-      "targets": [],
-      "note": ""
-    },
-    {
       "id": "target:A:isol",
       "sources": [
         "A_INIT",
@@ -879,22 +871,6 @@
       "note": ""
     },
     {
-      "id": "target:Gx:init",
-      "sources": [],
-      "targets": [
-        "Gx:init"
-      ],
-      "note": ""
-    },
-    {
-      "id": "target:Gx:medi",
-      "sources": [],
-      "targets": [
-        "Gx:medi"
-      ],
-      "note": ""
-    },
-    {
       "id": "target:H:medi",
       "sources": [
         "A_MEDI",
@@ -913,14 +889,6 @@
       ],
       "targets": [
         "Hx:medi"
-      ],
-      "note": ""
-    },
-    {
-      "id": "target:Ix:isol",
-      "sources": [],
-      "targets": [
-        "Ix:isol"
       ],
       "note": ""
     },
@@ -951,22 +919,6 @@
       ],
       "targets": [
         "K2:fina"
-      ],
-      "note": ""
-    },
-    {
-      "id": "target:Sz:fina",
-      "sources": [],
-      "targets": [
-        "Sz:fina"
-      ],
-      "note": ""
-    },
-    {
-      "id": "target:Ux:isol",
-      "sources": [],
-      "targets": [
-        "Ux:isol"
       ],
       "note": ""
     }

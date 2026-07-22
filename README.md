@@ -137,7 +137,7 @@ The 30 authoritative rules are stored in `data/ir-fina-replacements.csv` with re
 The reviewed website snapshot at `Satsrag/satsrag.github.io@966bd99943ab6dbd6846258491d0abd4caa689d9` is normalized into two non-duplicating authorities:
 
 - `data/utn57-written-units.csv` defines the 96 typed UTN #57 targets; its locked SHA-256 is `a7635637c245f25144ee5d938a76c4dc83063953100bf7d7f8c61353826dfc26`.
-- `data/zvvnmod-utn57-map.json` contains only the reviewed sequence relation; its locked SHA-256 is `c54b7c71835c9429b999c36382c56c14c295feae070e9553553faaf3374ec13c`.
+- `data/zvvnmod-utn57-map.json` contains only the 91 non-empty reviewed sequence relations; its locked SHA-256 is `93591875d237f0e73b51ec0b787137279783717697e4e2657e4c6dd0fa4357d9`.
 
 ZVVNMOD source identifiers in the relation are resolved against `data/zvvnmod-unicode-names.csv`; source and target catalogues are not duplicated in the mapping JSON.
 
