@@ -11,7 +11,7 @@ GENERATOR = ROOT / "scripts" / "generate_zvvnmod.py"
 NAMES = ROOT / "data" / "zvvnmod-unicode-names.csv"
 IR_FINA_RULES = ROOT / "data" / "ir-fina-replacements.csv"
 MAPPING = ROOT / "data" / "zvvnmod-utn57-map.json"
-MAPPING_SHA256 = "10dc660f941f28bb16671bce9c4ae9bf4df4f1b8a62f52ba6e51aada6ff612b2"
+MAPPING_SHA256 = "fca0e9568e061a87fc2c0dc96f98a045af2872147091a00c4e0cca7804d053c8"
 
 
 def load_generator():
@@ -225,6 +225,24 @@ class ShapeNamingTests(unittest.TestCase):
             generated = Path(directory) / "ir_fina.rs"
             gen.generate_ir_fina(NAMES, IR_FINA_RULES, generated)
             self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
+
+    def test_mapping_omits_redundant_source_catalogue(self):
+        payload = json.loads(MAPPING.read_text(encoding="utf-8"))
+        self.assertEqual(
+            set(payload),
+            {"schema", "description", "targets", "mappings"},
+        )
+
+    def test_mapping_sources_are_validated_against_authoritative_csv(self):
+        gen = load_generator()
+        payload = json.loads(MAPPING.read_text(encoding="utf-8"))
+        payload["mappings"][0]["sources"] = ["UNKNOWN_SOURCE"]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "mapping.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            model = gen.build_model(gen.read_csv(NAMES))
+            with self.assertRaisesRegex(ValueError, "unknown source 'UNKNOWN_SOURCE'"):
+                gen.read_utn57_mapping_json(path, model)
 
     def test_unreviewed_mapping_ambiguity_is_rejected(self):
         gen = load_generator()

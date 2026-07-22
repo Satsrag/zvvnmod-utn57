@@ -309,42 +309,13 @@ def read_utn57_mapping_json(path: Path, model: Model) -> Utn57MappingModel:
         raise ValueError("UTN57 mapping root must be an object")
     _require_json_keys(
         payload,
-        {"schema", "description", "sources", "targets", "mappings"},
+        {"schema", "description", "targets", "mappings"},
         "UTN57 mapping root",
     )
     if payload["schema"] != "zvvnmod-utn57-map-v3":
         raise ValueError(f"unsupported UTN57 mapping schema {payload['schema']!r}")
 
     code_by_name = {entry.const_name: entry for entry in model.codes}
-    source_ids: set[str] = set()
-    sources = payload["sources"]
-    if not isinstance(sources, list):
-        raise ValueError("UTN57 mapping sources must be an array")
-    for order, source in enumerate(sources):
-        if not isinstance(source, dict):
-            raise ValueError(f"source {order}: expected an object")
-        _require_json_keys(
-            source,
-            {"id", "name", "codepoint", "value", "glyph", "order"},
-            f"source {order}",
-        )
-        source_id = source["id"]
-        if not isinstance(source_id, str) or source_id in source_ids:
-            raise ValueError(f"source {order}: invalid or duplicate ID {source_id!r}")
-        source_ids.add(source_id)
-        entry = code_by_name.get(source_id)
-        if entry is None:
-            raise ValueError(f"source {order}: unknown ZVVNMOD code {source_id!r}")
-        expected_codepoint = f"U+{entry.codepoint:04X}"
-        if (
-            source["name"] != entry.source_name
-            or source["codepoint"] != expected_codepoint
-            or source["value"] != entry.codepoint
-            or source["glyph"] != chr(entry.codepoint)
-            or source["order"] != order
-        ):
-            raise ValueError(f"source {order}: metadata drift for {source_id}")
-
     targets_payload = payload["targets"]
     if not isinstance(targets_payload, list):
         raise ValueError("UTN57 mapping targets must be an array")
@@ -405,8 +376,6 @@ def read_utn57_mapping_json(path: Path, model: Model) -> Utn57MappingModel:
             source_entries = tuple(code_by_name[item] for item in row["sources"])
         except KeyError as error:
             raise ValueError(f"mapping {row_id}: unknown source {error.args[0]!r}") from error
-        if any(item not in source_ids for item in row["sources"]):
-            raise ValueError(f"mapping {row_id}: source is outside the editable catalogue")
         try:
             target_entries = tuple(targets_by_id[item] for item in row["targets"])
         except KeyError as error:
