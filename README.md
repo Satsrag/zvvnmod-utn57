@@ -26,6 +26,7 @@ Forward mapping replacement is implemented through the reviewed written-unit sta
 ├── README.zh-CN.md
 ├── data/
 │   ├── ir-fina-replacements.csv
+│   ├── utn57-written-units.csv
 │   ├── zvvnmod-unicode-names.csv
 │   └── zvvnmod-utn57-map.json
 ├── scripts/
@@ -133,10 +134,12 @@ The 30 authoritative rules are stored in `data/ir-fina-replacements.csv` with re
 
 ## Reviewed mapping replacement
 
-`data/zvvnmod-utn57-map.json` is vendored byte-for-byte from
-`Satsrag/satsrag.github.io@966bd99943ab6dbd6846258491d0abd4caa689d9`, path
-`mapping/data/zvvnmod-utn57-map.json`. Its locked SHA-256 is
-`10dc660f941f28bb16671bce9c4ae9bf4df4f1b8a62f52ba6e51aada6ff612b2`.
+The reviewed website snapshot at `Satsrag/satsrag.github.io@966bd99943ab6dbd6846258491d0abd4caa689d9` is normalized into two non-duplicating authorities:
+
+- `data/utn57-written-units.csv` defines the 96 typed UTN #57 targets; its locked SHA-256 is `a7635637c245f25144ee5d938a76c4dc83063953100bf7d7f8c61353826dfc26`.
+- `data/zvvnmod-utn57-map.json` contains only the reviewed sequence relation; its locked SHA-256 is `c54b7c71835c9429b999c36382c56c14c295feae070e9553553faaf3374ec13c`.
+
+ZVVNMOD source identifiers in the relation are resolved against `data/zvvnmod-unicode-names.csv`; source and target catalogues are not duplicated in the mapping JSON.
 
 The generated relation preserves all reviewed non-empty rows. `convert_zvvnmod_run()`
 applies these stages in order:

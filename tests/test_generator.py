@@ -11,7 +11,9 @@ GENERATOR = ROOT / "scripts" / "generate_zvvnmod.py"
 NAMES = ROOT / "data" / "zvvnmod-unicode-names.csv"
 IR_FINA_RULES = ROOT / "data" / "ir-fina-replacements.csv"
 MAPPING = ROOT / "data" / "zvvnmod-utn57-map.json"
-MAPPING_SHA256 = "fca0e9568e061a87fc2c0dc96f98a045af2872147091a00c4e0cca7804d053c8"
+TARGETS = ROOT / "data" / "utn57-written-units.csv"
+MAPPING_SHA256 = "c54b7c71835c9429b999c36382c56c14c295feae070e9553553faaf3374ec13c"
+TARGETS_SHA256 = "a7635637c245f25144ee5d938a76c4dc83063953100bf7d7f8c61353826dfc26"
 
 
 def load_generator():
@@ -226,12 +228,21 @@ class ShapeNamingTests(unittest.TestCase):
             gen.generate_ir_fina(NAMES, IR_FINA_RULES, generated)
             self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
 
-    def test_mapping_omits_redundant_source_catalogue(self):
+    def test_mapping_json_contains_only_the_reviewed_relation(self):
         payload = json.loads(MAPPING.read_text(encoding="utf-8"))
         self.assertEqual(
             set(payload),
-            {"schema", "description", "targets", "mappings"},
+            {"schema", "description", "mappings"},
         )
+
+    def test_target_csv_is_the_typed_utn57_authority(self):
+        gen = load_generator()
+        self.assertEqual(hashlib.sha256(TARGETS.read_bytes()).hexdigest(), TARGETS_SHA256)
+        targets = gen.read_utn57_targets_csv(TARGETS)
+        self.assertEqual(len(targets), 96)
+        self.assertEqual(targets[0].id, "A:isol")
+        self.assertEqual(targets[-1].id, "Nirugu")
+        self.assertEqual(targets[-1].position, "control")
 
     def test_mapping_sources_are_validated_against_authoritative_csv(self):
         gen = load_generator()
@@ -242,7 +253,9 @@ class ShapeNamingTests(unittest.TestCase):
             path.write_text(json.dumps(payload), encoding="utf-8")
             model = gen.build_model(gen.read_csv(NAMES))
             with self.assertRaisesRegex(ValueError, "unknown source 'UNKNOWN_SOURCE'"):
-                gen.read_utn57_mapping_json(path, model)
+                gen.read_utn57_mapping_json(
+                    path, model, gen.read_utn57_targets_csv(TARGETS)
+                )
 
     def test_unreviewed_mapping_ambiguity_is_rejected(self):
         gen = load_generator()
@@ -260,13 +273,17 @@ class ShapeNamingTests(unittest.TestCase):
             path.write_text(json.dumps(payload), encoding="utf-8")
             model = gen.build_model(gen.read_csv(NAMES))
             with self.assertRaisesRegex(ValueError, "unsupported ambiguous mapping"):
-                gen.read_utn57_mapping_json(path, model)
+                gen.read_utn57_mapping_json(
+                    path, model, gen.read_utn57_targets_csv(TARGETS)
+                )
 
     def test_reviewed_mapping_artifact_and_generated_relation_are_locked(self):
         gen = load_generator()
         self.assertEqual(hashlib.sha256(MAPPING.read_bytes()).hexdigest(), MAPPING_SHA256)
         model = gen.build_model(gen.read_csv(NAMES))
-        mapping = gen.read_utn57_mapping_json(MAPPING, model)
+        mapping = gen.read_utn57_mapping_json(
+            MAPPING, model, gen.read_utn57_targets_csv(TARGETS)
+        )
         self.assertEqual(len(mapping.targets), 96)
         self.assertEqual(len(mapping.rules), 91)
         self.assertEqual(mapping.targets[-1].id, "Nirugu")
@@ -280,7 +297,7 @@ class ShapeNamingTests(unittest.TestCase):
         checked_in = ROOT / "src" / "generated" / "utn57_mapping.rs"
         with tempfile.TemporaryDirectory() as directory:
             generated = Path(directory) / "utn57_mapping.rs"
-            gen.generate_utn57_mapping(NAMES, MAPPING, generated)
+            gen.generate_utn57_mapping(NAMES, TARGETS, MAPPING, generated)
             self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
 
 

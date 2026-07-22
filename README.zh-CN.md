@@ -26,6 +26,7 @@
 ├── README.zh-CN.md
 ├── data/
 │   ├── ir-fina-replacements.csv
+│   ├── utn57-written-units.csv
 │   ├── zvvnmod-unicode-names.csv
 │   └── zvvnmod-utn57-map.json
 ├── scripts/
@@ -131,10 +132,12 @@ B_O_MEDI + IR_FINA → B_UE_FINA
 
 ## Reviewed mapping replacement
 
-`data/zvvnmod-utn57-map.json` byte-for-byte 来自
-`Satsrag/satsrag.github.io@966bd99943ab6dbd6846258491d0abd4caa689d9` 的
-`mapping/data/zvvnmod-utn57-map.json`；锁定 SHA-256 为
-`10dc660f941f28bb16671bce9c4ae9bf4df4f1b8a62f52ba6e51aada6ff612b2`。
+来自 `Satsrag/satsrag.github.io@966bd99943ab6dbd6846258491d0abd4caa689d9` 的 reviewed website snapshot 被规范化为两个不重复的权威数据源：
+
+- `data/utn57-written-units.csv` 定义96个 typed UTN #57 targets；锁定 SHA-256 为 `a7635637c245f25144ee5d938a76c4dc83063953100bf7d7f8c61353826dfc26`。
+- `data/zvvnmod-utn57-map.json` 只保存 reviewed sequence relation；锁定 SHA-256 为 `c54b7c71835c9429b999c36382c56c14c295feae070e9553553faaf3374ec13c`。
+
+relation中的 ZVVNMOD source identifiers通过 `data/zvvnmod-unicode-names.csv` 解析；mapping JSON不再重复保存 source或target catalogues。
 
 `convert_zvvnmod_run()` 依次执行：
 

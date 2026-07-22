@@ -19,6 +19,11 @@ def main() -> None:
         default=root / "data" / "zvvnmod-unicode-names.csv",
     )
     parser.add_argument(
+        "--targets-input",
+        type=Path,
+        default=root / "data" / "utn57-written-units.csv",
+    )
+    parser.add_argument(
         "--mapping-input",
         type=Path,
         default=root / "data" / "zvvnmod-utn57-map.json",
@@ -30,7 +35,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     mapping = generate_utn57_mapping(
-        args.names_input, args.mapping_input, args.output
+        args.names_input, args.targets_input, args.mapping_input, args.output
     )
     print(
         f"generated {len(mapping.targets)} UTN57 targets and "
