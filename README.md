@@ -11,10 +11,10 @@ The current first milestone includes:
 - a `merged ZVVNMOD code → component ZVVNMOD code sequence` decomposition map;
 - legacy FVS1/FVS2/FVS3/MVS removal from input streams;
 - 30 user-confirmed `Ir_fina` replacement rules;
-- a typed, generated relation containing 96 UTN #57 targets and 91 non-empty reviewed mapping rows;
+- a typed, generated relation containing 96 UTN #57 targets and 138 non-empty reviewed mapping rows (91 main + 47 particle);
 - executable longest-match replacement from one ZVVNMOD written-form run to UTN #57 written units.
 
-Forward mapping replacement is implemented through the reviewed written-unit stage. Canonical MVS/ZWJ reconstruction, particle-boundary handling, target serialization, and reverse conversion are not implemented in this change; the library does not guess rules that are absent from the main reviewed mapping.
+Forward mapping replacement is implemented through the reviewed written-unit stage, including reviewed particle sequence corrections. Canonical MVS/ZWJ reconstruction, particle-boundary handling (including leading particle MVS), target serialization, and reverse conversion are not implemented in this change; the library does not guess structural rules that are absent from the relation.
 
 ## Layout
 
@@ -28,7 +28,7 @@ Forward mapping replacement is implemented through the reviewed written-unit sta
 │   ├── ir-fina-replacements.csv
 │   ├── utn57-written-units.csv
 │   ├── zvvnmod-unicode-names.csv
-│   └── zvvnmod-utn57-map.json
+│   └── zvvnmod-utn57-map.csv
 ├── scripts/
 │   ├── generate_ir_fina.py
 │   ├── generate_utn57_mapping.py
@@ -137,9 +137,9 @@ The 30 authoritative rules are stored in `data/ir-fina-replacements.csv` with re
 The reviewed website snapshot at `Satsrag/satsrag.github.io@966bd99943ab6dbd6846258491d0abd4caa689d9` is normalized into two non-duplicating authorities:
 
 - `data/utn57-written-units.csv` defines the 96 typed UTN #57 targets; its locked SHA-256 is `a7635637c245f25144ee5d938a76c4dc83063953100bf7d7f8c61353826dfc26`.
-- `data/zvvnmod-utn57-map.json` contains only the 91 non-empty reviewed sequence relations; its locked SHA-256 is `93591875d237f0e73b51ec0b787137279783717697e4e2657e4c6dd0fa4357d9`.
+- `data/zvvnmod-utn57-map.csv` contains 138 non-empty reviewed sequence relation rows: 91 main mappings plus all 47 particle mappings from `zvvnmod-utn57-particles.json` in that snapshot. Ordered `sources` and `targets` are space-delimited IDs within strict CSV fields. The particle source artifact SHA-256 is `e1ea535e8e40bd61e7b8e1beb9ec782a38a40e1bf8dda3d265dd6bcffabee09b`; the locked runtime relation SHA-256 is `5816e1d56e8b3fa7da7f2114562da463c4d449528aac3f9b73aade3afa157da0`.
 
-ZVVNMOD source identifiers in the relation are resolved against `data/zvvnmod-unicode-names.csv`; source and target catalogues are not duplicated in the mapping JSON.
+ZVVNMOD source identifiers in the relation are resolved against `data/zvvnmod-unicode-names.csv`; source and target catalogues are not duplicated in the mapping CSV.
 
 The generated relation preserves all reviewed non-empty rows. `convert_zvvnmod_run()`
 applies these stages in order:

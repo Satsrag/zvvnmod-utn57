@@ -26,7 +26,7 @@ def main() -> None:
     parser.add_argument(
         "--mapping-input",
         type=Path,
-        default=root / "data" / "zvvnmod-utn57-map.json",
+        default=root / "data" / "zvvnmod-utn57-map.csv",
     )
     parser.add_argument(
         "--output",

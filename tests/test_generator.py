@@ -1,5 +1,7 @@
+import csv
 import hashlib
 import importlib.util
+import io
 import json
 import sys
 import tempfile
@@ -10,10 +12,11 @@ ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = ROOT / "scripts" / "generate_zvvnmod.py"
 NAMES = ROOT / "data" / "zvvnmod-unicode-names.csv"
 IR_FINA_RULES = ROOT / "data" / "ir-fina-replacements.csv"
-MAPPING = ROOT / "data" / "zvvnmod-utn57-map.json"
+MAPPING = ROOT / "data" / "zvvnmod-utn57-map.csv"
 TARGETS = ROOT / "data" / "utn57-written-units.csv"
-MAPPING_SHA256 = "93591875d237f0e73b51ec0b787137279783717697e4e2657e4c6dd0fa4357d9"
+MAPPING_SHA256 = "5816e1d56e8b3fa7da7f2114562da463c4d449528aac3f9b73aade3afa157da0"
 TARGETS_SHA256 = "a7635637c245f25144ee5d938a76c4dc83063953100bf7d7f8c61353826dfc26"
+PARTICLE_RELATIONS_SHA256 = "396563dfa46cad6225fc92d07e7a6cc2e7c563f155bf70351ceb9448fbf75e5e"
 
 
 def load_generator():
@@ -23,6 +26,40 @@ def load_generator():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def read_mapping_rows(path=MAPPING):
+    with path.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    return [
+        {
+            "id": row["id"],
+            "note": row["note"],
+            "sources": row["sources"].split(),
+            "targets": row["targets"].split(),
+        }
+        for row in rows
+    ]
+
+
+def write_mapping_rows(path, rows):
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=["id", "sources", "targets", "note"],
+        lineterminator="\n",
+    )
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(
+            {
+                "id": row["id"],
+                "sources": " ".join(row["sources"]),
+                "targets": " ".join(row["targets"]),
+                "note": row["note"],
+            }
+        )
+    path.write_text(buffer.getvalue(), encoding="utf-8")
 
 
 class ShapeNamingTests(unittest.TestCase):
@@ -228,13 +265,6 @@ class ShapeNamingTests(unittest.TestCase):
             gen.generate_ir_fina(NAMES, IR_FINA_RULES, generated)
             self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
 
-    def test_mapping_json_contains_only_the_reviewed_relation(self):
-        payload = json.loads(MAPPING.read_text(encoding="utf-8"))
-        self.assertEqual(
-            set(payload),
-            {"schema", "description", "mappings"},
-        )
-
     def test_target_csv_is_the_typed_utn57_authority(self):
         gen = load_generator()
         self.assertEqual(hashlib.sha256(TARGETS.read_bytes()).hexdigest(), TARGETS_SHA256)
@@ -263,30 +293,90 @@ class ShapeNamingTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     gen.read_utn57_targets_csv(path)
 
-    def test_mapping_json_rows_are_all_non_empty_relations(self):
-        payload = json.loads(MAPPING.read_text(encoding="utf-8"))
-        self.assertEqual(len(payload["mappings"]), 91)
-        self.assertTrue(
-            all(row["sources"] and row["targets"] for row in payload["mappings"])
+    def test_mapping_csv_rows_are_all_non_empty_ordered_relations(self):
+        rows = read_mapping_rows()
+        self.assertEqual(len(rows), 138)
+        self.assertTrue(all(row["sources"] and row["targets"] for row in rows))
+        particle_37 = next(row for row in rows if row["id"] == "particle:37")
+        self.assertEqual(
+            particle_37["sources"], ["D_INIT", "A_MEDI", "I_MEDI", "AA_FINA"]
         )
 
-    def test_mapping_sources_are_validated_against_authoritative_csv(self):
+    def test_particle_relation_subset_is_complete_and_locked(self):
+        particles = [
+            row for row in read_mapping_rows() if row["id"].startswith("particle:")
+        ]
+        self.assertEqual(
+            [row["id"] for row in particles],
+            [f"particle:{index:02d}" for index in range(1, 48)],
+        )
+        canonical = json.dumps(
+            particles, ensure_ascii=False, separators=(",", ":")
+        ).encode("utf-8")
+        self.assertEqual(
+            hashlib.sha256(canonical).hexdigest(), PARTICLE_RELATIONS_SHA256
+        )
+        self.assertEqual(
+            len(
+                {
+                    (tuple(row["sources"]), tuple(row["targets"]))
+                    for row in particles
+                }
+            ),
+            34,
+        )
+        corrections = {
+            row["id"]: (row["sources"], row["targets"])
+            for row in particles
+            if row["id"]
+            in {
+                "particle:05",
+                "particle:15",
+                "particle:16",
+                "particle:25",
+                "particle:32",
+                "particle:37",
+                "particle:44",
+            }
+        }
+        self.assertEqual(len(corrections), 7)
+        self.assertEqual(
+            corrections["particle:37"],
+            (
+                ["D_INIT", "A_MEDI", "I_MEDI", "AA_FINA"],
+                ["D:init", "A:medi", "G:fina"],
+            ),
+        )
+
+    def test_mapping_csv_is_fail_closed(self):
         gen = load_generator()
-        payload = json.loads(MAPPING.read_text(encoding="utf-8"))
-        payload["mappings"][0]["sources"] = ["UNKNOWN_SOURCE"]
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "mapping.json"
-            path.write_text(json.dumps(payload), encoding="utf-8")
-            model = gen.build_model(gen.read_csv(NAMES))
-            with self.assertRaisesRegex(ValueError, "unknown source 'UNKNOWN_SOURCE'"):
-                gen.read_utn57_mapping_json(
-                    path, model, gen.read_utn57_targets_csv(TARGETS)
-                )
+        model = gen.build_model(gen.read_csv(NAMES))
+        targets = gen.read_utn57_targets_csv(TARGETS)
+        cases = (
+            (
+                "id,sources,targets,note\ntest,UNKNOWN_SOURCE,B:init,\n",
+                "unknown source 'UNKNOWN_SOURCE'",
+            ),
+            (
+                "id,sources,targets,note\ntest,B_INIT,B:init,,surplus\n",
+                "malformed CSV row",
+            ),
+            (
+                "id,sources,targets,note\ntest,,B:init,\n",
+                "source and target sequences must be non-empty",
+            ),
+        )
+        for content, message in cases:
+            with self.subTest(message=message), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "mapping.csv"
+                path.write_text(content, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, message):
+                    gen.read_utn57_mapping_csv(path, model, targets)
 
     def test_unreviewed_mapping_ambiguity_is_rejected(self):
         gen = load_generator()
-        payload = json.loads(MAPPING.read_text(encoding="utf-8"))
-        payload["mappings"].append(
+        rows = read_mapping_rows()
+        rows.append(
             {
                 "id": "test:conflict",
                 "note": "",
@@ -295,11 +385,11 @@ class ShapeNamingTests(unittest.TestCase):
             }
         )
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "mapping.json"
-            path.write_text(json.dumps(payload), encoding="utf-8")
+            path = Path(directory) / "mapping.csv"
+            write_mapping_rows(path, rows)
             model = gen.build_model(gen.read_csv(NAMES))
             with self.assertRaisesRegex(ValueError, "unsupported ambiguous mapping"):
-                gen.read_utn57_mapping_json(
+                gen.read_utn57_mapping_csv(
                     path, model, gen.read_utn57_targets_csv(TARGETS)
                 )
 
@@ -307,11 +397,11 @@ class ShapeNamingTests(unittest.TestCase):
         gen = load_generator()
         self.assertEqual(hashlib.sha256(MAPPING.read_bytes()).hexdigest(), MAPPING_SHA256)
         model = gen.build_model(gen.read_csv(NAMES))
-        mapping = gen.read_utn57_mapping_json(
+        mapping = gen.read_utn57_mapping_csv(
             MAPPING, model, gen.read_utn57_targets_csv(TARGETS)
         )
         self.assertEqual(len(mapping.targets), 96)
-        self.assertEqual(len(mapping.rules), 91)
+        self.assertEqual(len(mapping.rules), 138)
         self.assertEqual(mapping.targets[-1].id, "Nirugu")
         self.assertEqual(mapping.targets[-1].position, "control")
         nirugu_rule = next(rule for rule in mapping.rules if rule.id == "source:NIRUGU")

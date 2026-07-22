@@ -11,10 +11,10 @@
 - 生成 `merged ZVVNMOD code → component ZVVNMOD code sequence` 分解 Map；
 - 从输入 stream 删除旧 FVS1/FVS2/FVS3/MVS；
 - 生成 30 条用户确认的 `Ir_fina` 替换规则；
-- 生成包含 96 个 UTN #57 targets 与 91 条非空 reviewed rows 的 typed relation；
+- 生成包含96个 UTN #57 targets与138条非空 reviewed rows（91条main + 47条particle）的 typed relation；
 - 对一个 ZVVNMOD written-form run 执行 longest-match replacement。
 
-已实现正向 reviewed written-unit mapping replacement。本次不猜测 main mapping 尚未编码的 canonical MVS/ZWJ reconstruction、particle boundary、target serialization 或反向转换规则。
+已实现正向 reviewed written-unit mapping replacement，包括 reviewed particle sequence corrections。本次不猜测尚未编码的 canonical MVS/ZWJ reconstruction、particle boundary（包括 particle前导 MVS）、target serialization或反向转换结构规则。
 
 ## 目录
 
@@ -28,7 +28,7 @@
 │   ├── ir-fina-replacements.csv
 │   ├── utn57-written-units.csv
 │   ├── zvvnmod-unicode-names.csv
-│   └── zvvnmod-utn57-map.json
+│   └── zvvnmod-utn57-map.csv
 ├── scripts/
 │   ├── generate_ir_fina.py
 │   ├── generate_utn57_mapping.py
@@ -135,9 +135,9 @@ B_O_MEDI + IR_FINA → B_UE_FINA
 来自 `Satsrag/satsrag.github.io@966bd99943ab6dbd6846258491d0abd4caa689d9` 的 reviewed website snapshot 被规范化为两个不重复的权威数据源：
 
 - `data/utn57-written-units.csv` 定义96个 typed UTN #57 targets；锁定 SHA-256 为 `a7635637c245f25144ee5d938a76c4dc83063953100bf7d7f8c61353826dfc26`。
-- `data/zvvnmod-utn57-map.json` 只保存91条双边非空的 reviewed sequence relations；锁定 SHA-256 为 `93591875d237f0e73b51ec0b787137279783717697e4e2657e4c6dd0fa4357d9`。
+- `data/zvvnmod-utn57-map.csv` 保存138条双边非空的 reviewed sequence relation rows：91条main mappings及该snapshot中全部47条particle mappings。ordered `sources`与`targets`在严格CSV fields内以空格分隔ID。particle source artifact SHA-256为 `e1ea535e8e40bd61e7b8e1beb9ec782a38a40e1bf8dda3d265dd6bcffabee09b`；锁定 runtime relation SHA-256为 `5816e1d56e8b3fa7da7f2114562da463c4d449528aac3f9b73aade3afa157da0`。
 
-relation中的 ZVVNMOD source identifiers通过 `data/zvvnmod-unicode-names.csv` 解析；mapping JSON不再重复保存 source或target catalogues。
+relation中的 ZVVNMOD source identifiers通过 `data/zvvnmod-unicode-names.csv` 解析；mapping CSV不再重复保存 source或target catalogues。
 
 `convert_zvvnmod_run()` 依次执行：
 

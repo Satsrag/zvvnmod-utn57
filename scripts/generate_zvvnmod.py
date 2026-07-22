@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -294,13 +293,6 @@ def read_ir_fina_csv(path: Path, model: Model) -> list[IrFinaReplacement]:
     return rules
 
 
-def _require_json_keys(value: dict, expected: set[str], label: str) -> None:
-    if set(value) != expected:
-        raise ValueError(
-            f"{label}: expected keys {sorted(expected)}, got {sorted(value)}"
-        )
-
-
 def read_utn57_targets_csv(path: Path) -> tuple[Utn57Target, ...]:
     """读取 typed UTN57 target inventory。 / Read the typed UTN57 target inventory."""
 
@@ -344,61 +336,47 @@ def read_utn57_targets_csv(path: Path) -> tuple[Utn57Target, ...]:
     return tuple(targets)
 
 
-def read_utn57_mapping_json(
+def read_utn57_mapping_csv(
     path: Path, model: Model, targets: tuple[Utn57Target, ...]
 ) -> Utn57MappingModel:
-    """读取并验证 reviewed mapping。 / Read and validate the reviewed mapping."""
-
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError("UTN57 mapping root must be an object")
-    _require_json_keys(
-        payload,
-        {"schema", "description", "mappings"},
-        "UTN57 mapping root",
-    )
-    if payload["schema"] != "zvvnmod-utn57-map-v3":
-        raise ValueError(f"unsupported UTN57 mapping schema {payload['schema']!r}")
+    """读取并验证 reviewed mapping CSV。 / Read and validate the reviewed mapping CSV."""
 
     code_by_name = {entry.const_name: entry for entry in model.codes}
     targets_by_id = {target.id: target for target in targets}
-
-    mappings = payload["mappings"]
-    if not isinstance(mappings, list):
-        raise ValueError("UTN57 mappings must be an array")
     rules: list[Utn57MappingRule] = []
     row_ids: set[str] = set()
-    for index, row in enumerate(mappings):
-        if not isinstance(row, dict):
-            raise ValueError(f"mapping {index}: expected an object")
-        _require_json_keys(row, {"id", "note", "sources", "targets"}, f"mapping {index}")
-        row_id = row["id"]
-        if not isinstance(row_id, str) or row_id in row_ids:
-            raise ValueError(f"mapping {index}: invalid or duplicate ID {row_id!r}")
-        row_ids.add(row_id)
-        if not isinstance(row["note"], str):
-            raise ValueError(f"mapping {row_id}: note must be a string")
-        if not isinstance(row["sources"], list) or not all(
-            isinstance(item, str) for item in row["sources"]
-        ):
-            raise ValueError(f"mapping {row_id}: sources must be a string array")
-        if not isinstance(row["targets"], list) or not all(
-            isinstance(item, str) for item in row["targets"]
-        ):
-            raise ValueError(f"mapping {row_id}: targets must be a string array")
-        if not row["sources"] and not row["targets"]:
-            raise ValueError(f"mapping {row_id}: both sides are empty")
-        try:
-            source_entries = tuple(code_by_name[item] for item in row["sources"])
-        except KeyError as error:
-            raise ValueError(f"mapping {row_id}: unknown source {error.args[0]!r}") from error
-        try:
-            target_entries = tuple(targets_by_id[item] for item in row["targets"])
-        except KeyError as error:
-            raise ValueError(f"mapping {row_id}: unknown target {error.args[0]!r}") from error
-        if source_entries and target_entries:
+    with path.open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        expected_fields = ["id", "sources", "targets", "note"]
+        if reader.fieldnames != expected_fields:
+            raise ValueError(
+                f"UTN57 mapping CSV: expected headers {expected_fields!r}, got {reader.fieldnames!r}"
+            )
+        for index, row in enumerate(reader):
+            if set(row) != set(expected_fields) or any(
+                not isinstance(row[field], str) for field in expected_fields
+            ):
+                raise ValueError(f"mapping {index}: malformed CSV row")
+            row_id = row["id"].strip()
+            if not row_id or row_id in row_ids:
+                raise ValueError(f"mapping {index}: invalid or duplicate ID {row_id!r}")
+            row_ids.add(row_id)
+            source_ids = tuple(row["sources"].split())
+            target_ids = tuple(row["targets"].split())
+            if not source_ids or not target_ids:
+                raise ValueError(f"mapping {row_id}: source and target sequences must be non-empty")
+            try:
+                source_entries = tuple(code_by_name[item] for item in source_ids)
+            except KeyError as error:
+                raise ValueError(f"mapping {row_id}: unknown source {error.args[0]!r}") from error
+            try:
+                target_entries = tuple(targets_by_id[item] for item in target_ids)
+            except KeyError as error:
+                raise ValueError(f"mapping {row_id}: unknown target {error.args[0]!r}") from error
             rules.append(Utn57MappingRule(row_id, source_entries, target_entries))
 
+    if not rules:
+        raise ValueError("UTN57 mapping CSV must contain at least one relation")
     targets_by_sources: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
     for rule in rules:
         sources_key = tuple(entry.const_name for entry in rule.sources)
@@ -506,12 +484,18 @@ def render_utn57_mapping_rust(
         ]
     )
     for rule in mapping.rules:
-        sources = _render_code_list(list(rule.sources))
-        targets = ", ".join(target.const_name for target in rule.targets)
+        source_names = [entry.const_name for entry in rule.sources]
+        target_names = [target.const_name for target in rule.targets]
         lines.append(f"    // {rule.id}")
         lines.append("    ZvvnmodToUtn57Mapping {")
-        lines.append(f"        sources: &[{sources}],")
-        lines.append(f"        targets: &[{targets}],")
+        for field, names in (("sources", source_names), ("targets", target_names)):
+            inline = f"        {field}: &[{', '.join(names)}],"
+            if len(inline) <= 88:
+                lines.append(inline)
+            else:
+                lines.append(f"        {field}: &[")
+                lines.extend(f"            {name}," for name in names)
+                lines.append("        ],")
         lines.append("    },")
     lines.extend(["];", ""])
     return "\n".join(lines)
@@ -704,7 +688,7 @@ def generate_utn57_mapping(
 
     model = build_model(read_csv(names_path))
     targets = read_utn57_targets_csv(targets_path)
-    mapping = read_utn57_mapping_json(mapping_path, model, targets)
+    mapping = read_utn57_mapping_csv(mapping_path, model, targets)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
         render_utn57_mapping_rust(
@@ -743,7 +727,7 @@ def main() -> None:
     parser.add_argument(
         "--mapping-input",
         type=Path,
-        default=root / "data" / "zvvnmod-utn57-map.json",
+        default=root / "data" / "zvvnmod-utn57-map.csv",
     )
     parser.add_argument(
         "--mapping-output",

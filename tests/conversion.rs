@@ -1,8 +1,9 @@
 use zvvnmod_utn57::{
     convert_zvvnmod_run, convert_zvvnmod_run_with_options, IrFinaReplacementError,
     Utn57ConversionError, Utn57ConversionOptions, Utn57KVariant, Utn57MappingError, Utn57Position,
-    Utn57Unit, Utn57WrittenUnit, ZvvnmodCode, AA_FINA, A_INIT, B_INIT, B_I_INIT, HX_AA_FINA,
-    IR_FINA, I_MEDI, K_INIT, NIRUGU, N_AA_FINA, O_MEDI, UE_FINA,
+    Utn57Unit, Utn57WrittenUnit, ZvvnmodCode, AA_FINA, A_FINA, A_INIT, A_MEDI, B_INIT, B_I_INIT,
+    CH_MEDI, D_INIT, G_MEDI, HX_AA_FINA, IR_FINA, I_MEDI, K_INIT, NIRUGU, N_AA_FINA, N_INIT,
+    N_MEDI, O_INIT, O_MEDI, R_FINA, UE_FINA,
 };
 
 #[test]
@@ -99,6 +100,72 @@ fn retained_chachlag_codes_map_without_invented_decomposition() {
             Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Fina),
         ],
     );
+}
+
+#[test]
+fn reviewed_particle_corrections_win_over_direct_code_mappings() {
+    let u = Utn57WrittenUnit::new;
+    let cases = [
+        (
+            vec![A_INIT, CH_MEDI, A_MEDI, N_MEDI, N_MEDI, A_MEDI, A_FINA],
+            vec![
+                u(Utn57Unit::A, Utn57Position::Init),
+                u(Utn57Unit::Ch, Utn57Position::Medi),
+                u(Utn57Unit::A, Utn57Position::Medi),
+                u(Utn57Unit::Hx, Utn57Position::Medi),
+                u(Utn57Unit::A, Utn57Position::Medi),
+                u(Utn57Unit::A, Utn57Position::Fina),
+            ],
+        ),
+        (
+            vec![O_INIT, O_MEDI, A_FINA],
+            vec![
+                u(Utn57Unit::O, Utn57Position::Init),
+                u(Utn57Unit::Dd, Utn57Position::Fina),
+            ],
+        ),
+        (
+            vec![N_INIT, O_MEDI, G_MEDI, O_MEDI, A_FINA],
+            vec![
+                u(Utn57Unit::N, Utn57Position::Init),
+                u(Utn57Unit::O, Utn57Position::Medi),
+                u(Utn57Unit::G, Utn57Position::Medi),
+                u(Utn57Unit::O, Utn57Position::Medi),
+                u(Utn57Unit::Dd, Utn57Position::Fina),
+            ],
+        ),
+        (
+            vec![D_INIT, A_MEDI, N_MEDI, N_MEDI, A_MEDI, A_FINA],
+            vec![
+                u(Utn57Unit::D, Utn57Position::Init),
+                u(Utn57Unit::A, Utn57Position::Medi),
+                u(Utn57Unit::Hx, Utn57Position::Medi),
+                u(Utn57Unit::A, Utn57Position::Medi),
+                u(Utn57Unit::A, Utn57Position::Fina),
+            ],
+        ),
+        (
+            vec![D_INIT, A_MEDI, I_MEDI, AA_FINA],
+            vec![
+                u(Utn57Unit::D, Utn57Position::Init),
+                u(Utn57Unit::A, Utn57Position::Medi),
+                u(Utn57Unit::G, Utn57Position::Fina),
+            ],
+        ),
+        (
+            vec![D_INIT, O_MEDI, N_MEDI, N_MEDI, A_MEDI, R_FINA],
+            vec![
+                u(Utn57Unit::D, Utn57Position::Init),
+                u(Utn57Unit::O, Utn57Position::Medi),
+                u(Utn57Unit::Hx, Utn57Position::Medi),
+                u(Utn57Unit::A, Utn57Position::Medi),
+                u(Utn57Unit::R, Utn57Position::Fina),
+            ],
+        ),
+    ];
+    for (sources, expected) in cases {
+        assert_eq!(convert_zvvnmod_run(&sources).unwrap(), expected);
+    }
 }
 
 #[test]
