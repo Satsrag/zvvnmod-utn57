@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
+from strict_csv import parse_metadata_table, parse_table
+
 POSITION_WORDS = {
     "i": ("INIT", "Init"),
     "m": ("MEDI", "Medi"),
@@ -20,8 +22,11 @@ POSITION_WORDS = {
     "isol": ("ISOL", "Isol"),
 }
 
+REVIEWED_RUNTIME_BASELINE = (
+    "sha256:e0ebea2d2696bc41b7e62d72993b76f0e19bea7bc90aec0ad566ad47b31e6624"
+)
+
 REVIEWED_MAPPING_AMBIGUITIES = {
-    ("AA_FINA",): {("Aa:fina",), ("Aa:isol",)},
     ("K_INIT",): {("K:init",), ("K2:init",)},
     ("K_MEDI",): {("K:medi",), ("K2:medi",)},
     ("K_FINA",): {("K:fina",), ("K2:fina",)},
@@ -71,6 +76,7 @@ class Utn57Target:
     id: str
     unit: str
     position: str
+    glyph: str
     order: int
 
     @property
@@ -90,6 +96,7 @@ class Utn57MappingRule:
 class Utn57MappingModel:
     targets: tuple[Utn57Target, ...]
     rules: tuple[Utn57MappingRule, ...]
+    baseline: str
 
 
 @dataclass
@@ -296,41 +303,38 @@ def read_ir_fina_csv(path: Path, model: Model) -> list[IrFinaReplacement]:
 def read_utn57_targets_csv(path: Path) -> tuple[Utn57Target, ...]:
     """读取 typed UTN57 target inventory。 / Read the typed UTN57 target inventory."""
 
+    expected_fields = ["id", "unit", "position", "glyph"]
+    try:
+        rows = parse_table(path.read_text(encoding="utf-8"), expected_fields)
+    except ValueError as error:
+        raise ValueError(f"UTN57 target CSV: {error}") from error
     targets: list[Utn57Target] = []
     seen_ids: set[str] = set()
     seen_const_names: set[str] = set()
-    with path.open(newline="", encoding="utf-8") as handle:
-        reader = csv.DictReader(handle)
-        expected_fields = ["id", "unit", "position"]
-        if reader.fieldnames != expected_fields:
+    for order, row in enumerate(rows, start=0):
+        target_id = row["id"]
+        unit = row["unit"]
+        position = row["position"]
+        glyph = row["glyph"]
+        if not target_id or any(character.isspace() for character in target_id) or target_id in seen_ids:
+            raise ValueError(f"UTN57 target row {order}: invalid or duplicate ID {target_id!r}")
+        if re.fullmatch(r"[A-Z][A-Za-z0-9]*", unit) is None:
+            raise ValueError(f"UTN57 target row {order}: invalid unit {unit!r}")
+        if position not in {"isol", "init", "medi", "fina", "control"}:
+            raise ValueError(f"UTN57 target row {order}: invalid position {position!r}")
+        if not glyph:
+            raise ValueError(f"UTN57 target row {order}: glyph must be non-empty")
+        expected_id = unit if position == "control" else f"{unit}:{position}"
+        if target_id != expected_id:
+            raise ValueError(f"UTN57 target row {order}: expected ID {expected_id!r}")
+        seen_ids.add(target_id)
+        target = Utn57Target(target_id, unit, position, glyph, order)
+        if target.const_name in seen_const_names:
             raise ValueError(
-                f"UTN57 target CSV: expected headers {expected_fields!r}, got {reader.fieldnames!r}"
+                f"UTN57 target row {order}: duplicate Rust constant {target.const_name}"
             )
-        for order, row in enumerate(reader, start=0):
-            if set(row) != set(expected_fields) or any(
-                not isinstance(row[field], str) for field in expected_fields
-            ):
-                raise ValueError(f"UTN57 target row {order}: malformed CSV row")
-            target_id = row["id"].strip()
-            unit = row["unit"].strip()
-            position = row["position"].strip()
-            if not target_id or target_id in seen_ids:
-                raise ValueError(f"UTN57 target row {order}: invalid or duplicate ID {target_id!r}")
-            if re.fullmatch(r"[A-Z][A-Za-z0-9]*", unit) is None:
-                raise ValueError(f"UTN57 target row {order}: invalid unit {unit!r}")
-            if position not in {"isol", "init", "medi", "fina", "control"}:
-                raise ValueError(f"UTN57 target row {order}: invalid position {position!r}")
-            expected_id = unit if position == "control" else f"{unit}:{position}"
-            if target_id != expected_id:
-                raise ValueError(f"UTN57 target row {order}: expected ID {expected_id!r}")
-            seen_ids.add(target_id)
-            target = Utn57Target(target_id, unit, position, order)
-            if target.const_name in seen_const_names:
-                raise ValueError(
-                    f"UTN57 target row {order}: duplicate Rust constant {target.const_name}"
-                )
-            seen_const_names.add(target.const_name)
-            targets.append(target)
+        seen_const_names.add(target.const_name)
+        targets.append(target)
     if not targets:
         raise ValueError("UTN57 target CSV must contain at least one target")
     return tuple(targets)
@@ -343,37 +347,45 @@ def read_utn57_mapping_csv(
 
     code_by_name = {entry.const_name: entry for entry in model.codes}
     targets_by_id = {target.id: target for target in targets}
+    expected_fields = ["id", "sources", "targets", "note"]
+    try:
+        metadata, rows = parse_metadata_table(
+            path.read_text(encoding="utf-8"),
+            expected_fields,
+            ["schema", "baseline"],
+        )
+    except ValueError as error:
+        raise ValueError(f"UTN57 mapping CSV: {error}") from error
+    if (
+        metadata["schema"] != "zvvnmod-utn57-runtime-map-v1"
+        or metadata["baseline"] != REVIEWED_RUNTIME_BASELINE
+    ):
+        raise ValueError("UTN57 mapping CSV metadata differs from schema")
     rules: list[Utn57MappingRule] = []
     row_ids: set[str] = set()
-    with path.open(newline="", encoding="utf-8") as handle:
-        reader = csv.DictReader(handle)
-        expected_fields = ["id", "sources", "targets", "note"]
-        if reader.fieldnames != expected_fields:
-            raise ValueError(
-                f"UTN57 mapping CSV: expected headers {expected_fields!r}, got {reader.fieldnames!r}"
-            )
-        for index, row in enumerate(reader):
-            if set(row) != set(expected_fields) or any(
-                not isinstance(row[field], str) for field in expected_fields
-            ):
-                raise ValueError(f"mapping {index}: malformed CSV row")
-            row_id = row["id"].strip()
-            if not row_id or row_id in row_ids:
-                raise ValueError(f"mapping {index}: invalid or duplicate ID {row_id!r}")
-            row_ids.add(row_id)
-            source_ids = tuple(row["sources"].split())
-            target_ids = tuple(row["targets"].split())
-            if not source_ids or not target_ids:
-                raise ValueError(f"mapping {row_id}: source and target sequences must be non-empty")
-            try:
-                source_entries = tuple(code_by_name[item] for item in source_ids)
-            except KeyError as error:
-                raise ValueError(f"mapping {row_id}: unknown source {error.args[0]!r}") from error
-            try:
-                target_entries = tuple(targets_by_id[item] for item in target_ids)
-            except KeyError as error:
-                raise ValueError(f"mapping {row_id}: unknown target {error.args[0]!r}") from error
-            rules.append(Utn57MappingRule(row_id, source_entries, target_entries))
+    for index, row in enumerate(rows):
+        row_id = row["id"]
+        if not row_id or row_id in row_ids:
+            raise ValueError(f"mapping {index}: invalid or duplicate ID {row_id!r}")
+        row_ids.add(row_id)
+        if row["sources"] == "" or row["targets"] == "":
+            raise ValueError(f"mapping {row_id}: source and target sequences must be non-empty")
+        source_ids = tuple(row["sources"].split(" "))
+        target_ids = tuple(row["targets"].split(" "))
+        if (
+            any(not item or any(character.isspace() for character in item) for item in source_ids)
+            or any(not item or any(character.isspace() for character in item) for item in target_ids)
+        ):
+            raise ValueError(f"mapping {row_id}: source and target sequences must use single spaces")
+        try:
+            source_entries = tuple(code_by_name[item] for item in source_ids)
+        except KeyError as error:
+            raise ValueError(f"mapping {row_id}: unknown source {error.args[0]!r}") from error
+        try:
+            target_entries = tuple(targets_by_id[item] for item in target_ids)
+        except KeyError as error:
+            raise ValueError(f"mapping {row_id}: unknown target {error.args[0]!r}") from error
+        rules.append(Utn57MappingRule(row_id, source_entries, target_entries))
 
     if not rules:
         raise ValueError("UTN57 mapping CSV must contain at least one relation")
@@ -393,7 +405,7 @@ def read_utn57_mapping_csv(
             f"expected {REVIEWED_MAPPING_AMBIGUITIES!r}, got {ambiguities!r}"
         )
 
-    return Utn57MappingModel(tuple(targets), tuple(rules))
+    return Utn57MappingModel(tuple(targets), tuple(rules), metadata["baseline"])
 
 
 def _render_code_list(entries: list[CodeEntry]) -> str:

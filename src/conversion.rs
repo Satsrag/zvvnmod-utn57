@@ -85,7 +85,8 @@ pub struct Utn57ConversionOptions {
 ///
 /// The function discards legacy controls, applies `Ir_fina` replacement,
 /// decomposes general merged codes, and then applies reviewed longest-match
-/// mapping. It does not yet reconstruct MVS/ZWJ or particle boundaries.
+/// mapping, including reviewed MVS targets. It does not yet reconstruct ZWJ or
+/// particle boundaries.
 pub fn convert_zvvnmod_run(
     input: &[ZvvnmodCode],
 ) -> Result<Vec<Utn57WrittenUnit>, Utn57ConversionError> {
@@ -133,39 +134,25 @@ pub fn convert_zvvnmod_run_with_options(
             index,
             code: input[index],
         })?;
-        let aa_candidate = longest == 1 && input[index] == crate::AA_FINA;
-        let rule = if aa_candidate {
-            let expected = if index == 0 && input.len() == 1 {
-                crate::UTN57_AA_ISOL
-            } else {
-                crate::UTN57_AA_FINA
-            };
-            candidates
+        let rule = match options.k_variant {
+            Utn57KVariant::K => candidates
                 .iter()
                 .copied()
-                .find(|rule| rule.targets == [expected])
-                .unwrap_or(first)
-        } else {
-            match options.k_variant {
-                Utn57KVariant::K => candidates
-                    .iter()
-                    .copied()
-                    .find(|rule| {
-                        rule.targets
-                            .iter()
-                            .any(|target| target.unit == crate::Utn57Unit::K)
-                    })
-                    .unwrap_or(first),
-                Utn57KVariant::K2 => candidates
-                    .iter()
-                    .copied()
-                    .find(|rule| {
-                        rule.targets
-                            .iter()
-                            .any(|target| target.unit == crate::Utn57Unit::K2)
-                    })
-                    .unwrap_or(first),
-            }
+                .find(|rule| {
+                    rule.targets
+                        .iter()
+                        .any(|target| target.unit == crate::Utn57Unit::K)
+                })
+                .unwrap_or(first),
+            Utn57KVariant::K2 => candidates
+                .iter()
+                .copied()
+                .find(|rule| {
+                    rule.targets
+                        .iter()
+                        .any(|target| target.unit == crate::Utn57Unit::K2)
+                })
+                .unwrap_or(first),
         };
         output.extend_from_slice(rule.targets);
         index += rule.sources.len();

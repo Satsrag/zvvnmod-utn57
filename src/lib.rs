@@ -3,12 +3,12 @@
 //! ZVVNMOD ↔ UTN #57 conversion primitives.
 //!
 //! 当前包含显式字体 shape 的自动生成 ZVVNMOD code 定义、legacy control 删除、
-//! `Ir_fina` replacement、merged-code decomposition，以及由 reviewed mapping JSON
+//! `Ir_fina` replacement、merged-code decomposition，以及由 reviewed runtime CSV
 //! 生成的 typed UTN #57 written-unit replacement。
 //!
 //! The crate contains generated ZVVNMOD code definitions for explicit font shapes,
 //! legacy-control removal, `Ir_fina` replacement, merged-code decomposition, and
-//! typed UTN #57 written-unit replacement generated from the reviewed mapping JSON.
+//! typed UTN #57 written-unit replacement generated directly from the reviewed runtime CSV.
 
 pub mod generated {
     pub mod code_decomposition_map;

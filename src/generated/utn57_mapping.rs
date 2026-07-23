@@ -45,6 +45,7 @@ pub enum Utn57Unit {
     Z,
     Zr,
     Nirugu,
+    MVS,
 }
 
 /// A UTN #57 joining position or non-positional control kind.
@@ -296,6 +297,9 @@ pub const UTN57_ZR_INIT: Utn57WrittenUnit =
 /// Reviewed target `Nirugu`.
 pub const UTN57_NIRUGU_CONTROL: Utn57WrittenUnit =
     Utn57WrittenUnit::new(Utn57Unit::Nirugu, Utn57Position::Control);
+/// Reviewed target `MVS`.
+pub const UTN57_MVS_CONTROL: Utn57WrittenUnit =
+    Utn57WrittenUnit::new(Utn57Unit::MVS, Utn57Position::Control);
 
 /// One reviewed ZVVNMOD sequence → UTN #57 sequence relation row.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -329,7 +333,7 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
     // source:AA_FINA
     ZvvnmodToUtn57Mapping {
         sources: &[AA_FINA],
-        targets: &[UTN57_AA_FINA],
+        targets: &[UTN57_AA_ISOL],
     },
     // source:B_INIT
     ZvvnmodToUtn57Mapping {
@@ -444,7 +448,7 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
     // source:HX_AA_FINA
     ZvvnmodToUtn57Mapping {
         sources: &[HX_AA_FINA],
-        targets: &[UTN57_HX_FINA, UTN57_AA_FINA],
+        targets: &[UTN57_HX_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
     },
     // source:I_ISOL
     ZvvnmodToUtn57Mapping {
@@ -534,7 +538,7 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
     // source:N_AA_FINA
     ZvvnmodToUtn57Mapping {
         sources: &[N_AA_FINA],
-        targets: &[UTN57_N_FINA, UTN57_AA_FINA],
+        targets: &[UTN57_N_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
     },
     // source:O_INIT
     ZvvnmodToUtn57Mapping {
@@ -711,11 +715,6 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
         sources: &[A_INIT, AA_FINA],
         targets: &[UTN57_A_ISOL],
     },
-    // target:Aa:isol
-    ZvvnmodToUtn57Mapping {
-        sources: &[AA_FINA],
-        targets: &[UTN57_AA_ISOL],
-    },
     // target:B2:fina
     ZvvnmodToUtn57Mapping {
         sources: &[O_MEDI, AA_FINA],
@@ -765,6 +764,46 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
     ZvvnmodToUtn57Mapping {
         sources: &[K_FINA],
         targets: &[UTN57_K2_FINA],
+    },
+    // chachlag:M_FINA_AA_FINA
+    ZvvnmodToUtn57Mapping {
+        sources: &[M_FINA, AA_FINA],
+        targets: &[UTN57_M_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+    },
+    // chachlag:L_FINA_AA_FINA
+    ZvvnmodToUtn57Mapping {
+        sources: &[L_FINA, AA_FINA],
+        targets: &[UTN57_L_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+    },
+    // chachlag:S_FINA_AA_FINA
+    ZvvnmodToUtn57Mapping {
+        sources: &[S_FINA, AA_FINA],
+        targets: &[UTN57_S_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+    },
+    // chachlag:R_FINA_AA_FINA
+    ZvvnmodToUtn57Mapping {
+        sources: &[R_FINA, AA_FINA],
+        targets: &[UTN57_R_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+    },
+    // chachlag:I_ISOL_AA_FINA
+    ZvvnmodToUtn57Mapping {
+        sources: &[I_ISOL, AA_FINA],
+        targets: &[UTN57_I_ISOL, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+    },
+    // chachlag:I_FINA_AA_FINA
+    ZvvnmodToUtn57Mapping {
+        sources: &[I_FINA, AA_FINA],
+        targets: &[UTN57_I_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+    },
+    // chachlag:U_FINA_AA_FINA
+    ZvvnmodToUtn57Mapping {
+        sources: &[U_FINA, AA_FINA],
+        targets: &[UTN57_U_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+    },
+    // chachlag:H_FINA_AA_FINA
+    ZvvnmodToUtn57Mapping {
+        sources: &[H_FINA, AA_FINA],
+        targets: &[UTN57_H_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
     },
     // particle:01
     ZvvnmodToUtn57Mapping {

@@ -2,8 +2,8 @@ use zvvnmod_utn57::{
     convert_zvvnmod_run, convert_zvvnmod_run_with_options, IrFinaReplacementError,
     Utn57ConversionError, Utn57ConversionOptions, Utn57KVariant, Utn57MappingError, Utn57Position,
     Utn57Unit, Utn57WrittenUnit, ZvvnmodCode, AA_FINA, A_FINA, A_INIT, A_MEDI, B_INIT, B_I_INIT,
-    CH_MEDI, D_INIT, G_MEDI, HX_AA_FINA, IR_FINA, I_MEDI, K_INIT, NIRUGU, N_AA_FINA, N_INIT,
-    N_MEDI, O_INIT, O_MEDI, R_FINA, UE_FINA,
+    CH_MEDI, D_INIT, G_MEDI, HX_AA_FINA, IR_FINA, I_MEDI, K_FINA, K_INIT, K_MEDI, NIRUGU,
+    N_AA_FINA, N_INIT, N_MEDI, O_INIT, O_MEDI, R_FINA, UE_FINA,
 };
 
 #[test]
@@ -16,10 +16,16 @@ fn direct_zvvnmod_code_maps_to_typed_utn57_written_unit() {
 
 #[test]
 fn k_is_the_default_for_the_shared_k_and_k2_shape() {
-    assert_eq!(
-        convert_zvvnmod_run(&[K_INIT]).unwrap(),
-        vec![Utn57WrittenUnit::new(Utn57Unit::K, Utn57Position::Init)],
-    );
+    for (source, position) in [
+        (K_INIT, Utn57Position::Init),
+        (K_MEDI, Utn57Position::Medi),
+        (K_FINA, Utn57Position::Fina),
+    ] {
+        assert_eq!(
+            convert_zvvnmod_run(&[source]).unwrap(),
+            vec![Utn57WrittenUnit::new(Utn57Unit::K, position)],
+        );
+    }
 }
 
 #[test]
@@ -27,14 +33,20 @@ fn caller_can_explicitly_select_k2_for_the_shared_shape() {
     let options = Utn57ConversionOptions {
         k_variant: Utn57KVariant::K2,
     };
-    assert_eq!(
-        convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap(),
-        vec![Utn57WrittenUnit::new(Utn57Unit::K2, Utn57Position::Init,)],
-    );
+    for (source, position) in [
+        (K_INIT, Utn57Position::Init),
+        (K_MEDI, Utn57Position::Medi),
+        (K_FINA, Utn57Position::Fina),
+    ] {
+        assert_eq!(
+            convert_zvvnmod_run_with_options(&[source], options).unwrap(),
+            vec![Utn57WrittenUnit::new(Utn57Unit::K2, position)],
+        );
+    }
 }
 
 #[test]
-fn aa_fina_is_contextually_isolated_when_it_is_the_complete_run() {
+fn aa_fina_uses_the_reviewed_isolated_relation() {
     assert_eq!(
         convert_zvvnmod_run(&[AA_FINA]).unwrap(),
         vec![Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol,)],
@@ -74,30 +86,32 @@ fn reviewed_multi_code_rule_wins_over_single_code_prefixes() {
 }
 
 #[test]
-fn aa_fina_after_a_connected_form_remains_final() {
+fn unreviewed_connected_aa_uses_the_direct_isolated_relation() {
     assert_eq!(
         convert_zvvnmod_run(&[B_INIT, AA_FINA]).unwrap(),
         vec![
             Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init),
-            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Fina),
+            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol),
         ],
     );
 }
 
 #[test]
-fn retained_chachlag_codes_map_without_invented_decomposition() {
+fn retained_chachlag_codes_emit_reviewed_mvs_without_decomposition() {
     assert_eq!(
         convert_zvvnmod_run(&[N_AA_FINA]).unwrap(),
         vec![
             Utn57WrittenUnit::new(Utn57Unit::N, Utn57Position::Fina),
-            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Fina),
+            Utn57WrittenUnit::new(Utn57Unit::MVS, Utn57Position::Control),
+            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol),
         ],
     );
     assert_eq!(
         convert_zvvnmod_run(&[HX_AA_FINA]).unwrap(),
         vec![
             Utn57WrittenUnit::new(Utn57Unit::Hx, Utn57Position::Fina),
-            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Fina),
+            Utn57WrittenUnit::new(Utn57Unit::MVS, Utn57Position::Control),
+            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol),
         ],
     );
 }

@@ -11,10 +11,10 @@ The current first milestone includes:
 - a `merged ZVVNMOD code → component ZVVNMOD code sequence` decomposition map;
 - legacy FVS1/FVS2/FVS3/MVS removal from input streams;
 - 30 user-confirmed `Ir_fina` replacement rules;
-- a typed, generated relation containing 96 UTN #57 targets and 138 non-empty reviewed mapping rows (91 main + 47 particle);
+- a typed, generated relation containing 97 UTN #57 targets and 145 non-empty reviewed mapping rows (98 main + 47 particle);
 - executable longest-match replacement from one ZVVNMOD written-form run to UTN #57 written units.
 
-Forward mapping replacement is implemented through the reviewed written-unit stage, including reviewed particle sequence corrections. Canonical MVS/ZWJ reconstruction, particle-boundary handling (including leading particle MVS), target serialization, and reverse conversion are not implemented in this change; the library does not guess structural rules that are absent from the relation.
+Forward mapping replacement is implemented through the reviewed written-unit stage, including reviewed particle sequence corrections and reviewed MVS targets. General ZWJ reconstruction, particle-boundary inference, target serialization, and reverse conversion are not implemented in this change; the library does not guess structural rules that are absent from the relation.
 
 ## Layout
 
@@ -30,11 +30,13 @@ Forward mapping replacement is implemented through the reviewed written-unit sta
 │   ├── zvvnmod-unicode-names.csv
 │   └── zvvnmod-utn57-map.csv
 ├── scripts/
+│   ├── check_website_contract.py
 │   ├── generate_ir_fina.py
 │   ├── generate_utn57_mapping.py
 │   ├── generate_zvvnmod.py
 │   ├── generate_zvvnmod_codes.py
-│   └── generate_code_decomposition_map.py
+│   ├── generate_code_decomposition_map.py
+│   └── strict_csv.py
 ├── src/
 │   ├── lib.rs
 │   ├── conversion.rs
@@ -134,10 +136,12 @@ The 30 authoritative rules are stored in `data/ir-fina-replacements.csv` with re
 
 ## Reviewed mapping replacement
 
-The reviewed website snapshot at `Satsrag/satsrag.github.io@966bd99943ab6dbd6846258491d0abd4caa689d9` is normalized into two non-duplicating authorities:
+The merged website contract at `Satsrag/satsrag.github.io@d2dfda398baae8c87107850a86e2ca1ec9ee4640` is consumed directly as CSV:
 
-- `data/utn57-written-units.csv` defines the 96 typed UTN #57 targets; its locked SHA-256 is `a7635637c245f25144ee5d938a76c4dc83063953100bf7d7f8c61353826dfc26`.
-- `data/zvvnmod-utn57-map.csv` contains 138 non-empty reviewed sequence relation rows: 91 main mappings plus all 47 particle mappings from `zvvnmod-utn57-particles.json` in that snapshot. Ordered `sources` and `targets` are space-delimited IDs within strict CSV fields. The particle source artifact SHA-256 is `e1ea535e8e40bd61e7b8e1beb9ec782a38a40e1bf8dda3d265dd6bcffabee09b`; the locked runtime relation SHA-256 is `5816e1d56e8b3fa7da7f2114562da463c4d449528aac3f9b73aade3afa157da0`.
+- `data/utn57-written-units.csv` is byte-for-byte identical to the website target catalogue. It defines 97 typed UTN #57 targets, including `MVS` (`U+180E`) as a control; its locked SHA-256 is `2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6`.
+- `data/zvvnmod-utn57-map.csv` is byte-for-byte identical to the website download artifact. It contains a canonical metadata comment followed by the `id,sources,targets,note` CSV header and 145 non-empty reviewed sequence relations: 98 main mappings plus all 47 particle mappings. Its locked SHA-256 is `a8f16852efddb556ee3a9430810a072197401b06134e86bf933fa8337f1b953d`; the independently locked reviewed baseline is `sha256:e0ebea2d2696bc41b7e62d72993b76f0e19bea7bc90aec0ad566ad47b31e6624`.
+
+The generator validates canonical metadata, exact CSV schemas, row widths, quote transitions, ordered single-space sequences, IDs, and the reviewed ambiguity set. `python3 scripts/check_website_contract.py --website-root ../satsrag-site-mapping-editor` reads the merged website Git blobs, proves byte identity, and runs those copied bytes through the actual generator.
 
 ZVVNMOD source identifiers in the relation are resolved against `data/zvvnmod-unicode-names.csv`; source and target catalogues are not duplicated in the mapping CSV.
 
@@ -149,10 +153,12 @@ applies these stages in order:
 3. decompose general merged codes while retaining reviewed chachlag forms;
 4. apply the reviewed relation with longest-match.
 
-The input is one connected written-form run. `AA_FINA` is therefore `Aa:isol` when
-it is the complete run and `Aa:fina` after a connected form. ZVVNMOD uses the same
-shapes for UTN K and K2: default conversion emits K, while callers with nominal or
-other context can explicitly select K2 with `Utn57ConversionOptions`.
+The reviewed direct `AA_FINA` row emits `Aa:isol`. The ten reviewed chachlag
+relations win by longest match and emit their final/isolated onset followed by
+`MVS + Aa:isol`; no additional chachlag relation is inferred. ZVVNMOD uses the
+same shapes for UTN K and K2: default conversion emits K, while callers with
+nominal or other context can explicitly select K2 with
+`Utn57ConversionOptions`.
 
 Nirugu is emitted as `Utn57Unit::Nirugu` with `Utn57Position::Control`; no
 positional Nirugu form is invented.

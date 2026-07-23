@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -14,12 +15,21 @@ NAMES = ROOT / "data" / "zvvnmod-unicode-names.csv"
 IR_FINA_RULES = ROOT / "data" / "ir-fina-replacements.csv"
 MAPPING = ROOT / "data" / "zvvnmod-utn57-map.csv"
 TARGETS = ROOT / "data" / "utn57-written-units.csv"
-MAPPING_SHA256 = "5816e1d56e8b3fa7da7f2114562da463c4d449528aac3f9b73aade3afa157da0"
-TARGETS_SHA256 = "a7635637c245f25144ee5d938a76c4dc83063953100bf7d7f8c61353826dfc26"
+WEBSITE_CHECKER = ROOT / "scripts" / "check_website_contract.py"
+MAPPING_SHA256 = "a8f16852efddb556ee3a9430810a072197401b06134e86bf933fa8337f1b953d"
+TARGETS_SHA256 = "2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6"
 PARTICLE_RELATIONS_SHA256 = "396563dfa46cad6225fc92d07e7a6cc2e7c563f155bf70351ceb9448fbf75e5e"
+TEST_MAPPING_BASELINE = "sha256:e0ebea2d2696bc41b7e62d72993b76f0e19bea7bc90aec0ad566ad47b31e6624"
+TEST_MAPPING_METADATA = (
+    '# metadata={"schema":"zvvnmod-utn57-runtime-map-v1",'
+    f'"baseline":"{TEST_MAPPING_BASELINE}"}}\n'
+)
 
 
 def load_generator():
+    scripts = str(GENERATOR.parent)
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
     spec = importlib.util.spec_from_file_location("generate_zvvnmod", GENERATOR)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
@@ -29,8 +39,11 @@ def load_generator():
 
 
 def read_mapping_rows(path=MAPPING):
-    with path.open(newline="", encoding="utf-8") as handle:
-        rows = list(csv.DictReader(handle))
+    text = path.read_text(encoding="utf-8")
+    first_line, separator, csv_text = text.partition("\n")
+    if not separator or not first_line.startswith("# metadata="):
+        raise AssertionError("mapping metadata missing")
+    rows = list(csv.DictReader(io.StringIO(csv_text, newline="")))
     return [
         {
             "id": row["id"],
@@ -59,7 +72,7 @@ def write_mapping_rows(path, rows):
                 "note": row["note"],
             }
         )
-    path.write_text(buffer.getvalue(), encoding="utf-8")
+    path.write_text(TEST_MAPPING_METADATA + buffer.getvalue(), encoding="utf-8")
 
 
 class ShapeNamingTests(unittest.TestCase):
@@ -265,24 +278,48 @@ class ShapeNamingTests(unittest.TestCase):
             gen.generate_ir_fina(NAMES, IR_FINA_RULES, generated)
             self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
 
+    def test_strict_csv_positive_dialect_is_locked(self):
+        gen = load_generator()
+        rows = gen.parse_table(
+            'id,note\r\nrow,"comma, escaped ""quote""\r\nnext line"\r\n',
+            ["id", "note"],
+        )
+        self.assertEqual(
+            rows,
+            [{"id": "row", "note": 'comma, escaped "quote"\nnext line'}],
+        )
+
+    def test_target_csv_accepts_website_schema_and_mvs_control(self):
+        gen = load_generator()
+        content = "id,unit,position,glyph\nMVS,MVS,control,᠎\n"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "targets.csv"
+            path.write_text(content, encoding="utf-8")
+            targets = gen.read_utn57_targets_csv(path)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(targets[0].id, "MVS")
+        self.assertEqual(targets[0].glyph, "᠎")
+
     def test_target_csv_is_the_typed_utn57_authority(self):
         gen = load_generator()
         self.assertEqual(hashlib.sha256(TARGETS.read_bytes()).hexdigest(), TARGETS_SHA256)
         targets = gen.read_utn57_targets_csv(TARGETS)
-        self.assertEqual(len(targets), 96)
+        self.assertEqual(len(targets), 97)
         self.assertEqual(targets[0].id, "A:isol")
-        self.assertEqual(targets[-1].id, "Nirugu")
+        self.assertEqual(targets[-2].id, "Nirugu")
+        self.assertEqual(targets[-1].id, "MVS")
         self.assertEqual(targets[-1].position, "control")
+        self.assertEqual(targets[-1].glyph, "᠎")
 
     def test_target_csv_rejects_surplus_columns_and_rust_name_collisions(self):
         gen = load_generator()
         cases = (
             (
-                "id,unit,position\nA:init,A,init,unexpected\n",
-                "malformed CSV row",
+                "id,unit,position,glyph\nA:init,A,init,a,unexpected\n",
+                "CSV row 0 has the wrong width",
             ),
             (
-                "id,unit,position\nAa:init,Aa,init\nAA:init,AA,init\n",
+                "id,unit,position,glyph\nAa:init,Aa,init,a\nAA:init,AA,init,a\n",
                 "duplicate Rust constant UTN57_AA_INIT",
             ),
         )
@@ -293,9 +330,45 @@ class ShapeNamingTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     gen.read_utn57_targets_csv(path)
 
+    def test_mapping_csv_accepts_website_metadata_preamble(self):
+        gen = load_generator()
+        metadata = TEST_MAPPING_METADATA
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "mapping.csv"
+            mapping_csv = MAPPING.read_text(encoding="utf-8").split("\n", 1)[1]
+            path.write_text(metadata + mapping_csv, encoding="utf-8")
+            model = gen.build_model(gen.read_csv(NAMES))
+            mapping = gen.read_utn57_mapping_csv(
+                path, model, gen.read_utn57_targets_csv(TARGETS)
+            )
+        self.assertEqual(len(mapping.rules), 145)
+        self.assertEqual(mapping.baseline, TEST_MAPPING_BASELINE)
+
+    def test_mapping_metadata_is_fail_closed(self):
+        gen = load_generator()
+        model = gen.build_model(gen.read_csv(NAMES))
+        targets = gen.read_utn57_targets_csv(TARGETS)
+        csv_text = MAPPING.read_text(encoding="utf-8").split("\n", 1)[1]
+        mutations = (
+            '# metadata={"schema":"wrong","baseline":"' + TEST_MAPPING_BASELINE + '"}\n',
+            '# metadata={"schema":"zvvnmod-utn57-runtime-map-v1","baseline":"sha256:' + "0" * 64 + '"}\n',
+            '# metadata={"baseline":"' + TEST_MAPPING_BASELINE + '","schema":"zvvnmod-utn57-runtime-map-v1"}\n',
+            '# metadata={"schema":"zvvnmod-utn57-runtime-map-v1","baseline":"' + TEST_MAPPING_BASELINE + '","extra":true}\n',
+            '# metadata={"schema":"zvvnmod-utn57-runtime-map-v1"}\n',
+            '# metadata={"schema":"zvvnmod-utn57-runtime-map-v1","schema":"zvvnmod-utn57-runtime-map-v1","baseline":"' + TEST_MAPPING_BASELINE + '"}\n',
+            '# metadata={"schema": "zvvnmod-utn57-runtime-map-v1","baseline":"' + TEST_MAPPING_BASELINE + '"}\n',
+            '# metadata=[]\n',
+        )
+        for metadata in mutations:
+            with self.subTest(metadata=metadata), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "mapping.csv"
+                path.write_text(metadata + csv_text, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "metadata"):
+                    gen.read_utn57_mapping_csv(path, model, targets)
+
     def test_mapping_csv_rows_are_all_non_empty_ordered_relations(self):
         rows = read_mapping_rows()
-        self.assertEqual(len(rows), 138)
+        self.assertEqual(len(rows), 145)
         self.assertTrue(all(row["sources"] and row["targets"] for row in rows))
         particle_37 = next(row for row in rows if row["id"] == "particle:37")
         self.assertEqual(
@@ -359,7 +432,27 @@ class ShapeNamingTests(unittest.TestCase):
             ),
             (
                 "id,sources,targets,note\ntest,B_INIT,B:init,,surplus\n",
-                "malformed CSV row",
+                "CSV row 0 has the wrong width",
+            ),
+            (
+                'id,sources,targets,note\ntest,B_IN"IT,B:init,\n',
+                "quote in unquoted CSV field",
+            ),
+            (
+                'id,sources,targets,note\ntest,"B_INIT"x,B:init,\n',
+                "unexpected character after quoted CSV field",
+            ),
+            (
+                'id,sources,targets,note\ntest,"B_INIT,B:init,\n',
+                "unterminated quoted CSV field",
+            ),
+            (
+                "id,sources,targets,note\ntest,B_INIT  AA_FINA,B:init,\n",
+                "sequences must use single spaces",
+            ),
+            (
+                "id,sources,targets,note\ntest,B_INIT\tAA_FINA,B:init,\n",
+                "sequences must use single spaces",
             ),
             (
                 "id,sources,targets,note\ntest,,B:init,\n",
@@ -369,7 +462,7 @@ class ShapeNamingTests(unittest.TestCase):
         for content, message in cases:
             with self.subTest(message=message), tempfile.TemporaryDirectory() as directory:
                 path = Path(directory) / "mapping.csv"
-                path.write_text(content, encoding="utf-8")
+                path.write_text(TEST_MAPPING_METADATA + content, encoding="utf-8")
                 with self.assertRaisesRegex(ValueError, message):
                     gen.read_utn57_mapping_csv(path, model, targets)
 
@@ -400,20 +493,65 @@ class ShapeNamingTests(unittest.TestCase):
         mapping = gen.read_utn57_mapping_csv(
             MAPPING, model, gen.read_utn57_targets_csv(TARGETS)
         )
-        self.assertEqual(len(mapping.targets), 96)
-        self.assertEqual(len(mapping.rules), 138)
-        self.assertEqual(mapping.targets[-1].id, "Nirugu")
+        self.assertEqual(len(mapping.targets), 97)
+        self.assertEqual(len(mapping.rules), 145)
+        self.assertEqual(
+            mapping.baseline,
+            "sha256:e0ebea2d2696bc41b7e62d72993b76f0e19bea7bc90aec0ad566ad47b31e6624",
+        )
+        self.assertEqual(mapping.targets[-1].id, "MVS")
         self.assertEqual(mapping.targets[-1].position, "control")
         nirugu_rule = next(rule for rule in mapping.rules if rule.id == "source:NIRUGU")
         self.assertEqual([entry.const_name for entry in nirugu_rule.sources], ["NIRUGU"])
         self.assertEqual([target.id for target in nirugu_rule.targets], ["Nirugu"])
+        mvs_rules = {
+            tuple(entry.const_name for entry in rule.sources): tuple(
+                target.id for target in rule.targets
+            )
+            for rule in mapping.rules
+            if any(target.id == "MVS" for target in rule.targets)
+        }
+        self.assertEqual(
+            mvs_rules,
+            {
+                ("N_AA_FINA",): ("N:fina", "MVS", "Aa:isol"),
+                ("HX_AA_FINA",): ("Hx:fina", "MVS", "Aa:isol"),
+                ("M_FINA", "AA_FINA"): ("M:fina", "MVS", "Aa:isol"),
+                ("L_FINA", "AA_FINA"): ("L:fina", "MVS", "Aa:isol"),
+                ("S_FINA", "AA_FINA"): ("S:fina", "MVS", "Aa:isol"),
+                ("R_FINA", "AA_FINA"): ("R:fina", "MVS", "Aa:isol"),
+                ("I_ISOL", "AA_FINA"): ("I:isol", "MVS", "Aa:isol"),
+                ("I_FINA", "AA_FINA"): ("I:fina", "MVS", "Aa:isol"),
+                ("U_FINA", "AA_FINA"): ("U:fina", "MVS", "Aa:isol"),
+                ("H_FINA", "AA_FINA"): ("H:fina", "MVS", "Aa:isol"),
+            },
+        )
+        aa_rule = next(rule for rule in mapping.rules if rule.id == "source:AA_FINA")
+        self.assertEqual([target.id for target in aa_rule.targets], ["Aa:isol"])
+
+    def test_merged_website_checkout_is_directly_consumable(self):
+        website_root = ROOT.parent / "satsrag-site-mapping-editor"
+        if not website_root.is_dir():
+            self.skipTest("merged website checkout is not available")
+        result = subprocess.run(
+            [sys.executable, str(WEBSITE_CHECKER), "--website-root", str(website_root)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("website CSV contract passed", result.stdout)
 
     def test_checked_in_utn57_mapping_is_fresh(self):
         gen = load_generator()
         checked_in = ROOT / "src" / "generated" / "utn57_mapping.rs"
         with tempfile.TemporaryDirectory() as directory:
-            generated = Path(directory) / "utn57_mapping.rs"
+            generated = Path(directory) / "first" / "utn57_mapping.rs"
+            regenerated = Path(directory) / "second" / "utn57_mapping.rs"
             gen.generate_utn57_mapping(NAMES, TARGETS, MAPPING, generated)
+            gen.generate_utn57_mapping(NAMES, TARGETS, MAPPING, regenerated)
+            self.assertEqual(generated.read_bytes(), regenerated.read_bytes())
             self.assertEqual(generated.read_bytes(), checked_in.read_bytes())
 
 

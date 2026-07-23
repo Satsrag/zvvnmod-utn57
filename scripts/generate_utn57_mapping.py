@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""从 reviewed JSON 生成 Rust ZVVNMOD→UTN57 mapping relation。
+"""从 reviewed runtime CSV 生成 Rust ZVVNMOD→UTN57 mapping relation。
 
-Generate the Rust ZVVNMOD→UTN57 mapping relation from the reviewed JSON.
+Generate the Rust ZVVNMOD→UTN57 mapping relation directly from the reviewed runtime CSV.
 """
 
 import argparse

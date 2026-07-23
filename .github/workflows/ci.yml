@@ -21,6 +21,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Check out merged website CSV contract
+        uses: actions/checkout@v4
+        with:
+          repository: Satsrag/satsrag.github.io
+          ref: d2dfda398baae8c87107850a86e2ca1ec9ee4640
+          path: website-contract
+          persist-credentials: false
+
       - name: Install Python
         uses: actions/setup-python@v5
         with:
@@ -28,6 +36,12 @@ jobs:
 
       - name: Run Python tests
         run: python3 -m unittest discover -s tests -v
+
+      - name: Verify merged website CSVs are direct generator inputs
+        run: >-
+          python3 scripts/check_website_contract.py
+          --website-root website-contract
+          --website-ref HEAD
 
       - name: Regenerate Rust sources
         run: python3 scripts/generate_zvvnmod.py
