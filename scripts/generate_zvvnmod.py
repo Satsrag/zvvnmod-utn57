@@ -1,22 +1,35 @@
 #!/usr/bin/env python3
-"""从已审核的 CSV 生成 Rust ZVVNMOD code 定义和 code decomposition Map。
+"""从已审核数据生成 Rust ZVVNMOD 定义、replacement 与 UTN57 mapping。
 
-Generate Rust ZVVNMOD code definitions and the code decomposition map from the reviewed CSV.
+Generate Rust ZVVNMOD definitions, replacements, and UTN57 mapping from reviewed data.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+
+from strict_csv import parse_metadata_table, parse_table
 
 POSITION_WORDS = {
     "i": ("INIT", "Init"),
     "m": ("MEDI", "Medi"),
     "f": ("FINA", "Fina"),
     "isol": ("ISOL", "Isol"),
+}
+
+REVIEWED_RUNTIME_BASELINE = (
+    "sha256:e0ebea2d2696bc41b7e62d72993b76f0e19bea7bc90aec0ad566ad47b31e6624"
+)
+
+REVIEWED_MAPPING_AMBIGUITIES = {
+    ("K_INIT",): {("K:init",), ("K2:init",)},
+    ("K_MEDI",): {("K:medi",), ("K2:medi",)},
+    ("K_FINA",): {("K:fina",), ("K2:fina",)},
 }
 
 @dataclass(frozen=True)
@@ -56,6 +69,34 @@ class IrFinaReplacement:
     suffix: CodeEntry
     result: CodeEntry
     source: str
+
+
+@dataclass(frozen=True)
+class Utn57Target:
+    id: str
+    unit: str
+    position: str
+    glyph: str
+    order: int
+
+    @property
+    def const_name(self) -> str:
+        suffix = "CONTROL" if self.position == "control" else self.position.upper()
+        return f"UTN57_{_unit_identifier(self.unit)}_{suffix}"
+
+
+@dataclass(frozen=True)
+class Utn57MappingRule:
+    id: str
+    sources: tuple[CodeEntry, ...]
+    targets: tuple[Utn57Target, ...]
+
+
+@dataclass(frozen=True)
+class Utn57MappingModel:
+    targets: tuple[Utn57Target, ...]
+    rules: tuple[Utn57MappingRule, ...]
+    baseline: str
 
 
 @dataclass
@@ -259,8 +300,217 @@ def read_ir_fina_csv(path: Path, model: Model) -> list[IrFinaReplacement]:
     return rules
 
 
+def read_utn57_targets_csv(path: Path) -> tuple[Utn57Target, ...]:
+    """读取 typed UTN57 target inventory。 / Read the typed UTN57 target inventory."""
+
+    expected_fields = ["id", "unit", "position", "glyph"]
+    try:
+        rows = parse_table(path.read_text(encoding="utf-8"), expected_fields)
+    except ValueError as error:
+        raise ValueError(f"UTN57 target CSV: {error}") from error
+    targets: list[Utn57Target] = []
+    seen_ids: set[str] = set()
+    seen_const_names: set[str] = set()
+    for order, row in enumerate(rows, start=0):
+        target_id = row["id"]
+        unit = row["unit"]
+        position = row["position"]
+        glyph = row["glyph"]
+        if not target_id or any(character.isspace() for character in target_id) or target_id in seen_ids:
+            raise ValueError(f"UTN57 target row {order}: invalid or duplicate ID {target_id!r}")
+        if re.fullmatch(r"[A-Z][A-Za-z0-9]*", unit) is None:
+            raise ValueError(f"UTN57 target row {order}: invalid unit {unit!r}")
+        if position not in {"isol", "init", "medi", "fina", "control"}:
+            raise ValueError(f"UTN57 target row {order}: invalid position {position!r}")
+        if not glyph:
+            raise ValueError(f"UTN57 target row {order}: glyph must be non-empty")
+        expected_id = unit if position == "control" else f"{unit}:{position}"
+        if target_id != expected_id:
+            raise ValueError(f"UTN57 target row {order}: expected ID {expected_id!r}")
+        seen_ids.add(target_id)
+        target = Utn57Target(target_id, unit, position, glyph, order)
+        if target.const_name in seen_const_names:
+            raise ValueError(
+                f"UTN57 target row {order}: duplicate Rust constant {target.const_name}"
+            )
+        seen_const_names.add(target.const_name)
+        targets.append(target)
+    if not targets:
+        raise ValueError("UTN57 target CSV must contain at least one target")
+    return tuple(targets)
+
+
+def read_utn57_mapping_csv(
+    path: Path, model: Model, targets: tuple[Utn57Target, ...]
+) -> Utn57MappingModel:
+    """读取并验证 reviewed mapping CSV。 / Read and validate the reviewed mapping CSV."""
+
+    code_by_name = {entry.const_name: entry for entry in model.codes}
+    targets_by_id = {target.id: target for target in targets}
+    expected_fields = ["id", "sources", "targets", "note"]
+    try:
+        metadata, rows = parse_metadata_table(
+            path.read_text(encoding="utf-8"),
+            expected_fields,
+            ["schema", "baseline"],
+        )
+    except ValueError as error:
+        raise ValueError(f"UTN57 mapping CSV: {error}") from error
+    if (
+        metadata["schema"] != "zvvnmod-utn57-runtime-map-v1"
+        or metadata["baseline"] != REVIEWED_RUNTIME_BASELINE
+    ):
+        raise ValueError("UTN57 mapping CSV metadata differs from schema")
+    rules: list[Utn57MappingRule] = []
+    row_ids: set[str] = set()
+    for index, row in enumerate(rows):
+        row_id = row["id"]
+        if not row_id or row_id in row_ids:
+            raise ValueError(f"mapping {index}: invalid or duplicate ID {row_id!r}")
+        row_ids.add(row_id)
+        if row["sources"] == "" or row["targets"] == "":
+            raise ValueError(f"mapping {row_id}: source and target sequences must be non-empty")
+        source_ids = tuple(row["sources"].split(" "))
+        target_ids = tuple(row["targets"].split(" "))
+        if (
+            any(not item or any(character.isspace() for character in item) for item in source_ids)
+            or any(not item or any(character.isspace() for character in item) for item in target_ids)
+        ):
+            raise ValueError(f"mapping {row_id}: source and target sequences must use single spaces")
+        try:
+            source_entries = tuple(code_by_name[item] for item in source_ids)
+        except KeyError as error:
+            raise ValueError(f"mapping {row_id}: unknown source {error.args[0]!r}") from error
+        try:
+            target_entries = tuple(targets_by_id[item] for item in target_ids)
+        except KeyError as error:
+            raise ValueError(f"mapping {row_id}: unknown target {error.args[0]!r}") from error
+        rules.append(Utn57MappingRule(row_id, source_entries, target_entries))
+
+    if not rules:
+        raise ValueError("UTN57 mapping CSV must contain at least one relation")
+    targets_by_sources: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
+    for rule in rules:
+        sources_key = tuple(entry.const_name for entry in rule.sources)
+        targets_key = tuple(target.id for target in rule.targets)
+        targets_by_sources.setdefault(sources_key, set()).add(targets_key)
+    ambiguities = {
+        sources_key: target_sequences
+        for sources_key, target_sequences in targets_by_sources.items()
+        if len(target_sequences) > 1
+    }
+    if ambiguities != REVIEWED_MAPPING_AMBIGUITIES:
+        raise ValueError(
+            "unsupported ambiguous mapping set: "
+            f"expected {REVIEWED_MAPPING_AMBIGUITIES!r}, got {ambiguities!r}"
+        )
+
+    return Utn57MappingModel(tuple(targets), tuple(rules), metadata["baseline"])
+
+
 def _render_code_list(entries: list[CodeEntry]) -> str:
     return ", ".join(entry.const_name for entry in entries)
+
+
+def render_utn57_mapping_rust(
+    mapping: Utn57MappingModel,
+    names_source: str,
+    targets_source: str,
+    mapping_source: str,
+) -> str:
+    units = list(dict.fromkeys(target.unit for target in mapping.targets))
+    lines = [
+        "// Generated by scripts/generate_utn57_mapping.py — DO NOT EDIT.",
+        f"// Sources: {names_source}, {targets_source}, {mapping_source}",
+        "",
+        "use super::zvvnmod_codes::*;",
+        "",
+        "/// A semantic UTN #57 written unit.",
+        "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]",
+        "pub enum Utn57Unit {",
+    ]
+    lines.extend(f"    {unit}," for unit in units)
+    lines.extend(
+        [
+            "}",
+            "",
+            "/// A UTN #57 joining position or non-positional control kind.",
+            "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]",
+            "pub enum Utn57Position {",
+            "    Isol,",
+            "    Init,",
+            "    Medi,",
+            "    Fina,",
+            "    Control,",
+            "}",
+            "",
+            "/// One typed UTN #57 written unit target.",
+            "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]",
+            "pub struct Utn57WrittenUnit {",
+            "    /// Semantic unit identity.",
+            "    pub unit: Utn57Unit,",
+            "    /// Joining position, or `Control` for a non-positional control.",
+            "    pub position: Utn57Position,",
+            "}",
+            "",
+            "impl Utn57WrittenUnit {",
+            "    /// Construct a typed UTN #57 written unit.",
+            "    pub const fn new(unit: Utn57Unit, position: Utn57Position) -> Self {",
+            "        Self { unit, position }",
+            "    }",
+            "}",
+            "",
+        ]
+    )
+    for target in mapping.targets:
+        position = "Control" if target.position == "control" else target.position.title()
+        lines.append(f"/// Reviewed target `{target.id}`.")
+        declaration = (
+            f"pub const {target.const_name}: Utn57WrittenUnit = "
+            f"Utn57WrittenUnit::new(Utn57Unit::{target.unit}, Utn57Position::{position});"
+        )
+        if len(declaration) <= 100:
+            lines.append(declaration)
+        else:
+            lines.append(f"pub const {target.const_name}: Utn57WrittenUnit =")
+            lines.append(
+                f"    Utn57WrittenUnit::new(Utn57Unit::{target.unit}, Utn57Position::{position});"
+            )
+    lines.extend(
+        [
+            "",
+            "/// One reviewed ZVVNMOD sequence → UTN #57 sequence relation row.",
+            "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
+            "pub struct ZvvnmodToUtn57Mapping {",
+            "    /// Ordered ZVVNMOD source sequence.",
+            "    pub sources: &'static [ZvvnmodCode],",
+            "    /// Ordered UTN #57 target sequence.",
+            "    pub targets: &'static [Utn57WrittenUnit],",
+            "}",
+            "",
+            "/// Complete non-empty reviewed mapping relation.",
+            "///",
+            "/// The relation intentionally preserves contextual and K/K2 alternatives;",
+            "/// executable conversion applies the documented resolution policy.",
+            "pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[",
+        ]
+    )
+    for rule in mapping.rules:
+        source_names = [entry.const_name for entry in rule.sources]
+        target_names = [target.const_name for target in rule.targets]
+        lines.append(f"    // {rule.id}")
+        lines.append("    ZvvnmodToUtn57Mapping {")
+        for field, names in (("sources", source_names), ("targets", target_names)):
+            inline = f"        {field}: &[{', '.join(names)}],"
+            if len(inline) <= 88:
+                lines.append(inline)
+            else:
+                lines.append(f"        {field}: &[")
+                lines.extend(f"            {name}," for name in names)
+                lines.append("        ],")
+        lines.append("    },")
+    lines.extend(["];", ""])
+    return "\n".join(lines)
 
 
 def render_codes_rust(model: Model, source_name: str) -> str:
@@ -443,6 +693,24 @@ def generate_ir_fina(
     return rules
 
 
+def generate_utn57_mapping(
+    names_path: Path, targets_path: Path, mapping_path: Path, output_path: Path
+) -> Utn57MappingModel:
+    """生成 reviewed UTN57 mapping Rust API。 / Generate the reviewed UTN57 mapping Rust API."""
+
+    model = build_model(read_csv(names_path))
+    targets = read_utn57_targets_csv(targets_path)
+    mapping = read_utn57_mapping_csv(mapping_path, model, targets)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        render_utn57_mapping_rust(
+            mapping, names_path.name, targets_path.name, mapping_path.name
+        ),
+        encoding="utf-8",
+    )
+    return mapping
+
+
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
@@ -463,15 +731,35 @@ def main() -> None:
         type=Path,
         default=root / "src" / "generated" / "ir_fina.rs",
     )
+    parser.add_argument(
+        "--targets-input",
+        type=Path,
+        default=root / "data" / "utn57-written-units.csv",
+    )
+    parser.add_argument(
+        "--mapping-input",
+        type=Path,
+        default=root / "data" / "zvvnmod-utn57-map.csv",
+    )
+    parser.add_argument(
+        "--mapping-output",
+        type=Path,
+        default=root / "src" / "generated" / "utn57_mapping.rs",
+    )
     args = parser.parse_args()
     model = generate_codes(args.input, args.codes_output)
     generate_code_decomposition_map(args.input, args.decomposition_map_output)
     rules = generate_ir_fina(args.input, args.ir_fina_input, args.ir_fina_output)
+    mapping = generate_utn57_mapping(
+        args.input, args.targets_input, args.mapping_input, args.mapping_output
+    )
     print(
         f"generated {len(model.codes)} codes, "
         f"{len(model.code_decompositions)} code decompositions, "
-        f"{len(rules)} Ir_fina replacements -> "
-        f"{args.codes_output}, {args.decomposition_map_output}, {args.ir_fina_output}"
+        f"{len(rules)} Ir_fina replacements, "
+        f"{len(mapping.targets)} UTN57 targets, and {len(mapping.rules)} mapping rows -> "
+        f"{args.codes_output}, {args.decomposition_map_output}, {args.ir_fina_output}, "
+        f"{args.mapping_output}"
     )
 
 

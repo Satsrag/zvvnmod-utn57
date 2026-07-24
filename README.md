@@ -10,9 +10,11 @@ The current first milestone includes:
 - semantic Rust constants for ZVVNMOD codes;
 - a `merged ZVVNMOD code → component ZVVNMOD code sequence` decomposition map;
 - legacy FVS1/FVS2/FVS3/MVS removal from input streams;
-- 30 user-confirmed `Ir_fina` replacement rules.
+- 30 user-confirmed `Ir_fina` replacement rules;
+- a typed, generated relation containing 97 UTN #57 targets and 145 non-empty reviewed mapping rows (98 main + 47 particle);
+- executable longest-match replacement from one ZVVNMOD written-form run to UTN #57 written units.
 
-The complete bidirectional conversion algorithm has not been added yet. Legacy-control removal and `Ir_fina` replacement are the first two implemented conversion stages.
+Forward mapping replacement is implemented through the reviewed written-unit stage, including reviewed particle sequence corrections and reviewed MVS targets. General ZWJ reconstruction, particle-boundary inference, target serialization, and reverse conversion are not implemented in this change; the library does not guess structural rules that are absent from the relation.
 
 ## Layout
 
@@ -24,18 +26,25 @@ The complete bidirectional conversion algorithm has not been added yet. Legacy-c
 ├── README.zh-CN.md
 ├── data/
 │   ├── ir-fina-replacements.csv
-│   └── zvvnmod-unicode-names.csv
+│   ├── utn57-written-units.csv
+│   ├── zvvnmod-unicode-names.csv
+│   └── zvvnmod-utn57-map.csv
 ├── scripts/
+│   ├── check_website_contract.py
 │   ├── generate_ir_fina.py
+│   ├── generate_utn57_mapping.py
 │   ├── generate_zvvnmod.py
 │   ├── generate_zvvnmod_codes.py
-│   └── generate_code_decomposition_map.py
+│   ├── generate_code_decomposition_map.py
+│   └── strict_csv.py
 ├── src/
 │   ├── lib.rs
+│   ├── conversion.rs
 │   ├── preprocess.rs
 │   └── generated/
 │       ├── code_decomposition_map.rs
 │       ├── ir_fina.rs
+│       ├── utn57_mapping.rs
 │       └── zvvnmod_codes.rs
 └── tests/
     ├── generated.rs
@@ -125,6 +134,35 @@ The 30 authoritative rules are stored in `data/ir-fina-replacements.csv` with re
 
 `replace_ir_fina()` scans a complete code stream from left to right. A supported `preceding + IR_FINA` helper sequence is replaced with its specific final-form code. An unmatched `IR_FINA` returns `IrFinaReplacementError` instead of being silently retained or dropped.
 
+## Reviewed mapping replacement
+
+The merged website contract at `Satsrag/satsrag.github.io@d2dfda398baae8c87107850a86e2ca1ec9ee4640` is consumed directly as CSV:
+
+- `data/utn57-written-units.csv` is byte-for-byte identical to the website target catalogue. It defines 97 typed UTN #57 targets, including `MVS` (`U+180E`) as a control; its locked SHA-256 is `2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6`.
+- `data/zvvnmod-utn57-map.csv` is byte-for-byte identical to the website download artifact. It contains a canonical metadata comment followed by the `id,sources,targets,note` CSV header and 145 non-empty reviewed sequence relations: 98 main mappings plus all 47 particle mappings. Its locked SHA-256 is `a8f16852efddb556ee3a9430810a072197401b06134e86bf933fa8337f1b953d`; the independently locked reviewed baseline is `sha256:e0ebea2d2696bc41b7e62d72993b76f0e19bea7bc90aec0ad566ad47b31e6624`.
+
+The generator validates canonical metadata, exact CSV schemas, row widths, quote transitions, ordered single-space sequences, IDs, and the reviewed ambiguity set. `python3 scripts/check_website_contract.py --website-root ../satsrag-site-mapping-editor` reads the merged website Git blobs, proves byte identity, and runs those copied bytes through the actual generator.
+
+ZVVNMOD source identifiers in the relation are resolved against `data/zvvnmod-unicode-names.csv`; source and target catalogues are not duplicated in the mapping CSV.
+
+The generated relation preserves all reviewed non-empty rows. `convert_zvvnmod_run()`
+applies these stages in order:
+
+1. discard legacy U+E140–U+E143 values;
+2. replace `Ir_fina` helpers;
+3. decompose general merged codes while retaining reviewed chachlag forms;
+4. apply the reviewed relation with longest-match.
+
+The reviewed direct `AA_FINA` row emits `Aa:isol`. The ten reviewed chachlag
+relations win by longest match and emit their final/isolated onset followed by
+`MVS + Aa:isol`; no additional chachlag relation is inferred. ZVVNMOD uses the
+same shapes for UTN K and K2: default conversion emits K, while callers with
+nominal or other context can explicitly select K2 with
+`Utn57ConversionOptions`.
+
+Nirugu is emitted as `Utn57Unit::Nirugu` with `Utn57Position::Control`; no
+positional Nirugu form is invented.
+
 ## Generation
 
 Generate code definitions, the decomposition map, and replacements separately:
@@ -133,6 +171,7 @@ Generate code definitions, the decomposition map, and replacements separately:
 python3 scripts/generate_zvvnmod_codes.py
 python3 scripts/generate_code_decomposition_map.py
 python3 scripts/generate_ir_fina.py
+python3 scripts/generate_utn57_mapping.py
 ```
 
 All outputs can also be generated at once:
@@ -145,24 +184,20 @@ python3 scripts/generate_zvvnmod.py
 
 ```rust
 use zvvnmod_utn57::{
-    discard_legacy_controls, replace_ir_fina, zvvnmod_code_decomposition_map,
-    ZvvnmodCode, A_INIT, B_INIT, B_I_INIT, I_MEDI, IR_FINA, O_MEDI, UE_FINA,
+    convert_zvvnmod_run, convert_zvvnmod_run_with_options, Utn57ConversionOptions,
+    Utn57KVariant, Utn57Position, Utn57Unit, Utn57WrittenUnit, B_I_INIT, K_INIT,
 };
 
-let cleaned = discard_legacy_controls(&[
-    A_INIT,
-    ZvvnmodCode(0xE140),
-    O_MEDI,
-    IR_FINA,
-]);
-let replaced = replace_ir_fina(&cleaned).unwrap();
-assert_eq!(replaced, vec![A_INIT, UE_FINA]);
-
-let map = zvvnmod_code_decomposition_map();
 assert_eq!(
-    map.get(&B_I_INIT),
-    Some(&[B_INIT, I_MEDI].as_slice()),
+    convert_zvvnmod_run(&[B_I_INIT]).unwrap(),
+    vec![
+        Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init),
+        Utn57WrittenUnit::new(Utn57Unit::I, Utn57Position::Medi),
+    ],
 );
+
+let options = Utn57ConversionOptions { k_variant: Utn57KVariant::K2 };
+assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit, Utn57Unit::K2);
 ```
 
 ## Validation
