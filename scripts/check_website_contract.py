@@ -14,7 +14,7 @@ from generate_zvvnmod import generate_utn57_mapping, read_utn57_mapping_csv, rea
 ROOT = Path(__file__).resolve().parents[1]
 WEBSITE_MAP = "mapping/data/zvvnmod-utn57-map.csv"
 WEBSITE_TARGETS = "mapping/data/utn57-written-units.csv"
-EXPECTED_WEBSITE_REVISION = "d2dfda398baae8c87107850a86e2ca1ec9ee4640"
+EXPECTED_WEBSITE_REVISION = "0b50ba5b9f5c0ee66040ce6e8f343230b8832513"
 
 
 def resolve_revision(repository: Path, revision: str) -> str:
@@ -75,14 +75,14 @@ def check(website_root: Path, website_ref: str) -> None:
         model = build_model(read_csv(ROOT / "data" / "zvvnmod-unicode-names.csv"))
         targets = read_utn57_targets_csv(copied_targets)
         mapping = read_utn57_mapping_csv(copied_map, model, targets)
-        if len(targets) != 97 or len(mapping.rules) != 145:
+        if len(targets) != 97 or len(mapping.rules) != 147:
             raise ValueError("website CSV contract has unexpected target or relation counts")
 
     print(
         "website CSV contract passed: "
         f"map sha256={hashlib.sha256(producer_map).hexdigest()}, "
         f"targets sha256={hashlib.sha256(producer_targets).hexdigest()}, "
-        "97 targets, 145 relations"
+        "97 targets, 147 relations"
     )
 
 

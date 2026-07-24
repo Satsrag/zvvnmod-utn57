@@ -1,9 +1,9 @@
 use zvvnmod_utn57::{
     convert_zvvnmod_run, convert_zvvnmod_run_with_options, IrFinaReplacementError,
     Utn57ConversionError, Utn57ConversionOptions, Utn57KVariant, Utn57MappingError, Utn57Position,
-    Utn57Unit, Utn57WrittenUnit, ZvvnmodCode, AA_FINA, A_FINA, A_INIT, A_MEDI, B_INIT, B_I_INIT,
-    CH_MEDI, D_INIT, G_MEDI, HX_AA_FINA, IR_FINA, I_MEDI, K_FINA, K_INIT, K_MEDI, NIRUGU,
-    N_AA_FINA, N_INIT, N_MEDI, O_INIT, O_MEDI, R_FINA, UE_FINA,
+    Utn57Unit, Utn57WrittenUnit, ZvvnmodCode, AA_FINA, A_FINA, A_INIT, A_MEDI, B_A_INIT, B_INIT,
+    B_I_INIT, CH_MEDI, D_INIT, G_MEDI, HX_AA_FINA, IR_FINA, I_MEDI, K_FINA, K_INIT, K_MEDI, NIRUGU,
+    N_AA_FINA, N_INIT, N_MEDI, O_INIT, O_MEDI, R_FINA, S_FINA, S_INIT, UE_FINA,
 };
 
 #[test]
@@ -46,10 +46,70 @@ fn caller_can_explicitly_select_k2_for_the_shared_shape() {
 }
 
 #[test]
-fn aa_fina_uses_the_reviewed_isolated_relation() {
+fn k_variant_option_is_independent_of_actual_match_position() {
+    let cases = [
+        vec![K_INIT, A_FINA],
+        vec![B_INIT, K_MEDI, A_FINA],
+        vec![B_INIT, K_FINA],
+    ];
+    for input in cases {
+        let default = convert_zvvnmod_run(&input).unwrap();
+        assert!(default.iter().any(|target| target.unit == Utn57Unit::K));
+        assert!(!default.iter().any(|target| target.unit == Utn57Unit::K2));
+
+        let k2 = convert_zvvnmod_run_with_options(
+            &input,
+            Utn57ConversionOptions {
+                k_variant: Utn57KVariant::K2,
+            },
+        )
+        .unwrap();
+        assert!(k2.iter().any(|target| target.unit == Utn57Unit::K2));
+        assert!(!k2.iter().any(|target| target.unit == Utn57Unit::K));
+    }
+}
+
+#[test]
+fn aa_fina_uses_the_isolated_candidate_for_a_whole_run() {
     assert_eq!(
         convert_zvvnmod_run(&[AA_FINA]).unwrap(),
         vec![Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol,)],
+    );
+}
+
+#[test]
+fn connected_aa_fina_uses_the_actual_final_position_candidate() {
+    assert_eq!(
+        convert_zvvnmod_run(&[S_INIT, AA_FINA]).unwrap(),
+        vec![
+            Utn57WrittenUnit::new(Utn57Unit::S, Utn57Position::Init),
+            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Fina),
+        ],
+    );
+}
+
+#[test]
+fn medial_aa_collapse_wins_by_longest_match_after_merged_decomposition() {
+    let expected = vec![
+        Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init),
+        Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Fina),
+    ];
+    assert_eq!(convert_zvvnmod_run(&[B_A_INIT, AA_FINA]).unwrap(), expected);
+    assert_eq!(
+        convert_zvvnmod_run(&[B_INIT, A_MEDI, AA_FINA]).unwrap(),
+        expected,
+    );
+}
+
+#[test]
+fn reviewed_chachlag_long_rule_still_wins_over_aa_candidates() {
+    assert_eq!(
+        convert_zvvnmod_run(&[S_FINA, AA_FINA]).unwrap(),
+        vec![
+            Utn57WrittenUnit::new(Utn57Unit::S, Utn57Position::Fina),
+            Utn57WrittenUnit::new(Utn57Unit::MVS, Utn57Position::Control),
+            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol),
+        ],
     );
 }
 
@@ -86,12 +146,12 @@ fn reviewed_multi_code_rule_wins_over_single_code_prefixes() {
 }
 
 #[test]
-fn unreviewed_connected_aa_uses_the_direct_isolated_relation() {
+fn connected_aa_without_a_longer_rule_uses_the_final_candidate() {
     assert_eq!(
         convert_zvvnmod_run(&[B_INIT, AA_FINA]).unwrap(),
         vec![
             Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init),
-            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol),
+            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Fina),
         ],
     );
 }

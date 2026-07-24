@@ -23,10 +23,11 @@ POSITION_WORDS = {
 }
 
 REVIEWED_RUNTIME_BASELINE = (
-    "sha256:e0ebea2d2696bc41b7e62d72993b76f0e19bea7bc90aec0ad566ad47b31e6624"
+    "sha256:83a60c3e1ac9df98a14c1a6d979f7c5c8733f1e70d52b81f41de1dd321ea5016"
 )
 
 REVIEWED_MAPPING_AMBIGUITIES = {
+    ("AA_FINA",): {("Aa:isol",), ("Aa:fina",)},
     ("K_INIT",): {("K:init",), ("K2:init",)},
     ("K_MEDI",): {("K:medi",), ("K2:medi",)},
     ("K_FINA",): {("K:fina",), ("K2:fina",)},
@@ -365,7 +366,10 @@ def read_utn57_mapping_csv(
     row_ids: set[str] = set()
     for index, row in enumerate(rows):
         row_id = row["id"]
-        if not row_id or row_id in row_ids:
+        if (
+            re.fullmatch(r"[A-Za-z0-9:_-]+", row_id) is None
+            or row_id in row_ids
+        ):
             raise ValueError(f"mapping {index}: invalid or duplicate ID {row_id!r}")
         row_ids.add(row_id)
         if row["sources"] == "" or row["targets"] == "":
@@ -410,6 +414,27 @@ def read_utn57_mapping_csv(
 
 def _render_code_list(entries: list[CodeEntry]) -> str:
     return ", ".join(entry.const_name for entry in entries)
+
+
+# Derive the source sequence's overall position from its outer joining edges.
+# 通过source sequence最外侧的连接边界推导整体位置。
+def _source_sequence_position(entries: tuple[CodeEntry, ...]) -> str | None:
+    positions = [
+        parsed.position
+        for entry in entries
+        if (parsed := parse_code_name(entry.source_name, entry.codepoint, entry.source)).position
+        is not None
+    ]
+    if not positions:
+        return None
+    left_connected = positions[0] in {"Medi", "Fina"}
+    right_connected = positions[-1] in {"Init", "Medi"}
+    return {
+        (False, False): "Isol",
+        (False, True): "Init",
+        (True, True): "Medi",
+        (True, False): "Fina",
+    }[(left_connected, right_connected)]
 
 
 def render_utn57_mapping_rust(
@@ -482,10 +507,14 @@ def render_utn57_mapping_rust(
             "/// One reviewed ZVVNMOD sequence → UTN #57 sequence relation row.",
             "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
             "pub struct ZvvnmodToUtn57Mapping {",
+            "    /// Stable reviewed relation row ID.",
+            "    pub id: &'static str,",
             "    /// Ordered ZVVNMOD source sequence.",
             "    pub sources: &'static [ZvvnmodCode],",
             "    /// Ordered UTN #57 target sequence.",
             "    pub targets: &'static [Utn57WrittenUnit],",
+            "    /// Overall joining position implied by the source sequence.",
+            "    pub intrinsic_position: Option<Utn57Position>,",
             "}",
             "",
             "/// Complete non-empty reviewed mapping relation.",
@@ -498,8 +527,10 @@ def render_utn57_mapping_rust(
     for rule in mapping.rules:
         source_names = [entry.const_name for entry in rule.sources]
         target_names = [target.const_name for target in rule.targets]
+        intrinsic_position = _source_sequence_position(rule.sources)
         lines.append(f"    // {rule.id}")
         lines.append("    ZvvnmodToUtn57Mapping {")
+        lines.append(f'        id: "{rule.id}",')
         for field, names in (("sources", source_names), ("targets", target_names)):
             inline = f"        {field}: &[{', '.join(names)}],"
             if len(inline) <= 88:
@@ -508,6 +539,12 @@ def render_utn57_mapping_rust(
                 lines.append(f"        {field}: &[")
                 lines.extend(f"            {name}," for name in names)
                 lines.append("        ],")
+        position_value = (
+            f"Some(Utn57Position::{intrinsic_position})"
+            if intrinsic_position is not None
+            else "None"
+        )
+        lines.append(f"        intrinsic_position: {position_value},")
         lines.append("    },")
     lines.extend(["];", ""])
     return "\n".join(lines)

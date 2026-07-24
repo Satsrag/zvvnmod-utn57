@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Satsrag/satsrag.github.io
-          ref: d2dfda398baae8c87107850a86e2ca1ec9ee4640
+          ref: 0b50ba5b9f5c0ee66040ce6e8f343230b8832513
           path: website-contract
           persist-credentials: false
 
