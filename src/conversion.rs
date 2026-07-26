@@ -226,10 +226,10 @@ fn resolve_candidates<'a>(
     if candidates.len() == 1 || candidates.iter().all(|rule| rule.targets == first.targets) {
         return Ok(first);
     }
-    if let Some(rule) = resolve_by_position(candidates, actual_position) {
+    if let Some(rule) = resolve_k_variant(candidates, options.k_variant) {
         return Ok(rule);
     }
-    if let Some(rule) = resolve_k_variant(candidates, options.k_variant) {
+    if let Some(rule) = resolve_by_position(candidates, actual_position) {
         return Ok(rule);
     }
     let mut candidate_ids: Vec<_> = candidates.iter().map(|rule| rule.id).collect();
@@ -308,8 +308,8 @@ pub fn convert_zvvnmod_run_with_options(
 mod tests {
     use super::*;
     use crate::{
-        A_FINA, B_INIT, O_MEDI, UTN57_A_FINA, UTN57_B_INIT, UTN57_C_INIT, UTN57_MVS_CONTROL,
-        UTN57_O_INIT, UTN57_O_MEDI,
+        A_FINA, B_INIT, K_INIT, O_MEDI, UTN57_A_FINA, UTN57_B_INIT, UTN57_C_INIT, UTN57_K2_FINA,
+        UTN57_K_INIT, UTN57_MVS_CONTROL, UTN57_O_INIT, UTN57_O_MEDI,
     };
 
     static C_SOURCES: &[ZvvnmodCode] = &[O_MEDI, A_FINA];
@@ -327,6 +327,35 @@ mod tests {
         targets: FINA_TARGETS,
         intrinsic_position: Some(Utn57Position::Fina),
     };
+
+    #[test]
+    fn k_variant_semantics_are_resolved_before_position() {
+        static SOURCES: &[ZvvnmodCode] = &[K_INIT];
+        static K_TARGETS: &[Utn57WrittenUnit] = &[UTN57_K_INIT];
+        static K2_TARGETS: &[Utn57WrittenUnit] = &[UTN57_K2_FINA];
+        static K: ZvvnmodToUtn57Mapping = ZvvnmodToUtn57Mapping {
+            id: "test:k-init",
+            sources: SOURCES,
+            targets: K_TARGETS,
+            intrinsic_position: Some(Utn57Position::Fina),
+        };
+        static K2: ZvvnmodToUtn57Mapping = ZvvnmodToUtn57Mapping {
+            id: "test:k2-fina",
+            sources: SOURCES,
+            targets: K2_TARGETS,
+            intrinsic_position: Some(Utn57Position::Fina),
+        };
+        let selected = resolve_candidates(
+            &[&K, &K2],
+            Utn57Position::Init,
+            Utn57ConversionOptions {
+                k_variant: Utn57KVariant::K2,
+            },
+            0,
+        )
+        .unwrap();
+        assert_eq!(selected.id, "test:k2-fina");
+    }
 
     #[test]
     fn actual_position_overrides_the_intrinsic_fallback_otherwise_fallback_is_used() {
