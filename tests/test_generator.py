@@ -16,10 +16,10 @@ IR_FINA_RULES = ROOT / "data" / "ir-fina-replacements.csv"
 MAPPING = ROOT / "data" / "zvvnmod-utn57-map.csv"
 TARGETS = ROOT / "data" / "utn57-written-units.csv"
 WEBSITE_CHECKER = ROOT / "scripts" / "check_website_contract.py"
-MAPPING_SHA256 = "a8f16852efddb556ee3a9430810a072197401b06134e86bf933fa8337f1b953d"
+MAPPING_SHA256 = "cc58b012ea2e3a1709d723d115ad9eed00de13d32bba166991a1447c889a358c"
 TARGETS_SHA256 = "2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6"
 PARTICLE_RELATIONS_SHA256 = "396563dfa46cad6225fc92d07e7a6cc2e7c563f155bf70351ceb9448fbf75e5e"
-TEST_MAPPING_BASELINE = "sha256:e0ebea2d2696bc41b7e62d72993b76f0e19bea7bc90aec0ad566ad47b31e6624"
+TEST_MAPPING_BASELINE = "sha256:83a60c3e1ac9df98a14c1a6d979f7c5c8733f1e70d52b81f41de1dd321ea5016"
 TEST_MAPPING_METADATA = (
     '# metadata={"schema":"zvvnmod-utn57-runtime-map-v1",'
     f'"baseline":"{TEST_MAPPING_BASELINE}"}}\n'
@@ -330,6 +330,31 @@ class ShapeNamingTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     gen.read_utn57_targets_csv(path)
 
+    def test_mapping_generator_emits_rule_identity_and_intrinsic_position(self):
+        gen = load_generator()
+        model = gen.build_model(gen.read_csv(NAMES))
+        mapping = gen.read_utn57_mapping_csv(
+            MAPPING, model, gen.read_utn57_targets_csv(TARGETS)
+        )
+        output = gen.render_utn57_mapping_rust(
+            mapping, NAMES.name, TARGETS.name, MAPPING.name
+        )
+        self.assertIn("pub id: &'static str,", output)
+        self.assertIn("pub intrinsic_position: Option<Utn57Position>,", output)
+        for row_id in (
+            "source:AA_FINA",
+            "target:Aa:fina",
+            "context:A_MEDI_AA_FINA",
+        ):
+            marker = f'        id: "{row_id}",'
+            self.assertIn(marker, output)
+            block = output[output.index(marker) :]
+            block = block[: block.index("    },")]
+            self.assertIn(
+                "intrinsic_position: Some(Utn57Position::Fina),",
+                block,
+            )
+
     def test_mapping_csv_accepts_website_metadata_preamble(self):
         gen = load_generator()
         metadata = TEST_MAPPING_METADATA
@@ -341,7 +366,7 @@ class ShapeNamingTests(unittest.TestCase):
             mapping = gen.read_utn57_mapping_csv(
                 path, model, gen.read_utn57_targets_csv(TARGETS)
             )
-        self.assertEqual(len(mapping.rules), 145)
+        self.assertEqual(len(mapping.rules), 147)
         self.assertEqual(mapping.baseline, TEST_MAPPING_BASELINE)
 
     def test_mapping_metadata_is_fail_closed(self):
@@ -368,7 +393,7 @@ class ShapeNamingTests(unittest.TestCase):
 
     def test_mapping_csv_rows_are_all_non_empty_ordered_relations(self):
         rows = read_mapping_rows()
-        self.assertEqual(len(rows), 145)
+        self.assertEqual(len(rows), 147)
         self.assertTrue(all(row["sources"] and row["targets"] for row in rows))
         particle_37 = next(row for row in rows if row["id"] == "particle:37")
         self.assertEqual(
@@ -426,6 +451,10 @@ class ShapeNamingTests(unittest.TestCase):
         model = gen.build_model(gen.read_csv(NAMES))
         targets = gen.read_utn57_targets_csv(TARGETS)
         cases = (
+            (
+                "id,sources,targets,note\nbad/id,B_INIT,B:init,\n",
+                "invalid or duplicate ID 'bad/id'",
+            ),
             (
                 "id,sources,targets,note\ntest,UNKNOWN_SOURCE,B:init,\n",
                 "unknown source 'UNKNOWN_SOURCE'",
@@ -494,10 +523,10 @@ class ShapeNamingTests(unittest.TestCase):
             MAPPING, model, gen.read_utn57_targets_csv(TARGETS)
         )
         self.assertEqual(len(mapping.targets), 97)
-        self.assertEqual(len(mapping.rules), 145)
+        self.assertEqual(len(mapping.rules), 147)
         self.assertEqual(
             mapping.baseline,
-            "sha256:e0ebea2d2696bc41b7e62d72993b76f0e19bea7bc90aec0ad566ad47b31e6624",
+            "sha256:83a60c3e1ac9df98a14c1a6d979f7c5c8733f1e70d52b81f41de1dd321ea5016",
         )
         self.assertEqual(mapping.targets[-1].id, "MVS")
         self.assertEqual(mapping.targets[-1].position, "control")
@@ -526,8 +555,29 @@ class ShapeNamingTests(unittest.TestCase):
                 ("H_FINA", "AA_FINA"): ("H:fina", "MVS", "Aa:isol"),
             },
         )
-        aa_rule = next(rule for rule in mapping.rules if rule.id == "source:AA_FINA")
-        self.assertEqual([target.id for target in aa_rule.targets], ["Aa:isol"])
+        aa_rules = {
+            rule.id: (
+                tuple(entry.const_name for entry in rule.sources),
+                tuple(target.id for target in rule.targets),
+            )
+            for rule in mapping.rules
+            if tuple(entry.const_name for entry in rule.sources) == ("AA_FINA",)
+        }
+        self.assertEqual(
+            aa_rules,
+            {
+                "source:AA_FINA": (("AA_FINA",), ("Aa:isol",)),
+                "target:Aa:fina": (("AA_FINA",), ("Aa:fina",)),
+            },
+        )
+        context_rule = next(
+            rule for rule in mapping.rules if rule.id == "context:A_MEDI_AA_FINA"
+        )
+        self.assertEqual(
+            tuple(entry.const_name for entry in context_rule.sources),
+            ("A_MEDI", "AA_FINA"),
+        )
+        self.assertEqual(tuple(target.id for target in context_rule.targets), ("Aa:fina",))
 
     def test_merged_website_checkout_is_directly_consumable(self):
         website_root = ROOT.parent / "satsrag-site-mapping-editor"

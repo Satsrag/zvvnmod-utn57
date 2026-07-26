@@ -11,7 +11,7 @@
 - 生成 `merged ZVVNMOD code → component ZVVNMOD code sequence` 分解 Map；
 - 从输入 stream 删除旧 FVS1/FVS2/FVS3/MVS；
 - 生成 30 条用户确认的 `Ir_fina` 替换规则；
-- 生成包含97个 UTN #57 targets与145条非空 reviewed rows（98条main + 47条particle）的 typed relation；
+- 生成包含97个 UTN #57 targets与147条非空 reviewed rows（100条main + 47条particle）的 typed relation；
 - 对一个 ZVVNMOD written-form run 执行 longest-match replacement。
 
 已实现正向 reviewed written-unit mapping replacement，包括 reviewed particle sequence corrections与reviewed MVS targets。本次不猜测relation中未编码的通用ZWJ reconstruction、particle boundary、target serialization或反向转换结构规则。
@@ -134,12 +134,12 @@ B_O_MEDI + IR_FINA → B_UE_FINA
 
 ## Reviewed mapping replacement
 
-直接消费合并网站合同 `Satsrag/satsrag.github.io@d2dfda398baae8c87107850a86e2ca1ec9ee4640` 中的CSV：
+直接消费合并网站合同 `Satsrag/satsrag.github.io@0b50ba5b9f5c0ee66040ce6e8f343230b8832513` 中的CSV：
 
 - `data/utn57-written-units.csv` 与网站target catalogue逐字节相同，定义97个typed UTN #57 targets，其中包括control `MVS`（`U+180E`）；锁定SHA-256为`2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6`。
-- `data/zvvnmod-utn57-map.csv` 与网站下载artifact逐字节相同。文件先包含canonical metadata comment，随后是`id,sources,targets,note` CSV header与145条双边非空reviewed sequence relations：98条main mappings和全部47条particle mappings。锁定SHA-256为`a8f16852efddb556ee3a9430810a072197401b06134e86bf933fa8337f1b953d`；独立锁定的reviewed baseline为`sha256:e0ebea2d2696bc41b7e62d72993b76f0e19bea7bc90aec0ad566ad47b31e6624`。
+- `data/zvvnmod-utn57-map.csv` 与网站下载artifact逐字节相同。文件先包含canonical metadata comment，随后是`id,sources,targets,note` CSV header与147条双边非空reviewed sequence relations：100条main mappings和全部47条particle mappings。锁定SHA-256为`cc58b012ea2e3a1709d723d115ad9eed00de13d32bba166991a1447c889a358c`；独立锁定的reviewed baseline为`sha256:83a60c3e1ac9df98a14c1a6d979f7c5c8733f1e70d52b81f41de1dd321ea5016`。
 
-生成器验证canonical metadata、exact CSV schemas、row widths、quote transitions、单空格ordered sequences、IDs与reviewed ambiguity set。`python3 scripts/check_website_contract.py --website-root ../satsrag-site-mapping-editor`读取网站已合并的Git blobs，证明byte identity，并把原样复制的bytes交给实际generator。
+生成器验证canonical metadata、exact CSV schemas、row widths、quote transitions、单空格ordered sequences、稳定row ID语法与reviewed ambiguity set。`python3 scripts/check_website_contract.py --website-root ../satsrag-site-mapping-editor`读取网站已合并的Git blobs，证明byte identity，并把原样复制的bytes交给实际generator。
 
 relation中的 ZVVNMOD source identifiers通过 `data/zvvnmod-unicode-names.csv` 解析；mapping CSV不再重复保存 source或target catalogues。
 
@@ -148,12 +148,23 @@ relation中的 ZVVNMOD source identifiers通过 `data/zvvnmod-unicode-names.csv`
 1. 删除旧 U+E140–U+E143；
 2. 执行 `Ir_fina` replacement；
 3. 分解普通 merged codes，同时保留 reviewed chachlag forms；
-4. 对 reviewed relation 执行 longest-match。
+4. 执行longest-match并保留全部equal-longest candidates；
+5. 通过位置resolver和已注册的语义resolver选择candidate。
 
-reviewed direct `AA_FINA` row输出`Aa:isol`。十条reviewed chachlag relations通过
-longest match优先，输出各自的final/isolated onset，随后输出`MVS + Aa:isol`；
-不推断额外的chachlag relation。ZVVNMOD 的 K/K2 共用 shape：默认输出 K；
-调用方拥有 nominal/context 信息时，可通过 `Utn57ConversionOptions`显式选择 K2。
+对于equal-longest位置candidates，target整体位置与source sequence理论位置一致的唯一
+candidate是fallback。若normalized run中的实际matched span位置存在另一唯一candidate，
+则覆盖fallback；若不存在，则继续使用fallback。Target sequence的整体位置由第一个
+position-bearing unit的左边界和最后一个position-bearing unit的右边界共同决定；`MVS`、
+Nirugu等control不承担边界。K/K2仍是独立的调用方语义选择。任何其他无法唯一选择的
+family都返回typed `Utn57ConversionError::UnresolvedAmbiguity`，其中包含排序后的稳定
+candidate row IDs；CSV顺序不会决定语义结果。
+
+reviewed relation同时包含`AA_FINA → Aa:isol`和`AA_FINA → Aa:fina`。因此独占整个run的
+`AA_FINA`选择`Aa:isol`，位于实际word尾部的matched span选择`Aa:fina`。更长的
+`A_MEDI AA_FINA → Aa:fina`会先折叠该sequence，不让任一singleton candidate提前匹配。
+十条reviewed chachlag relations仍通过longest match优先，输出各自的final/isolated onset，
+随后输出`MVS + Aa:isol`；不推断额外的chachlag relation。ZVVNMOD的K/K2共用shape：
+默认输出K；调用方拥有nominal/context信息时，可通过`Utn57ConversionOptions`显式选择K2。
 
 Nirugu 输出为 `Utn57Unit::Nirugu` + `Utn57Position::Control`，不会虚构 positional Nirugu。
 

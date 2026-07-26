@@ -304,10 +304,14 @@ pub const UTN57_MVS_CONTROL: Utn57WrittenUnit =
 /// One reviewed ZVVNMOD sequence → UTN #57 sequence relation row.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ZvvnmodToUtn57Mapping {
+    /// Stable reviewed relation row ID.
+    pub id: &'static str,
     /// Ordered ZVVNMOD source sequence.
     pub sources: &'static [ZvvnmodCode],
     /// Ordered UTN #57 target sequence.
     pub targets: &'static [Utn57WrittenUnit],
+    /// Overall joining position implied by the source sequence.
+    pub intrinsic_position: Option<Utn57Position>,
 }
 
 /// Complete non-empty reviewed mapping relation.
@@ -317,516 +321,735 @@ pub struct ZvvnmodToUtn57Mapping {
 pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
     // source:A_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:A_INIT",
         sources: &[A_INIT],
         targets: &[UTN57_A_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:A_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:A_MEDI",
         sources: &[A_MEDI],
         targets: &[UTN57_A_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:A_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:A_FINA",
         sources: &[A_FINA],
         targets: &[UTN57_A_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:AA_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:AA_FINA",
         sources: &[AA_FINA],
         targets: &[UTN57_AA_ISOL],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:B_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:B_INIT",
         sources: &[B_INIT],
         targets: &[UTN57_B_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:B_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:B_MEDI",
         sources: &[B_MEDI],
         targets: &[UTN57_B_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:B_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:B_FINA",
         sources: &[B_FINA],
         targets: &[UTN57_B_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:C_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:C_INIT",
         sources: &[C_INIT],
         targets: &[UTN57_C_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:C_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:C_MEDI",
         sources: &[C_MEDI],
         targets: &[UTN57_C_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:C_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:C_FINA",
         sources: &[C_FINA],
         targets: &[UTN57_C_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:CH_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:CH_INIT",
         sources: &[CH_INIT],
         targets: &[UTN57_CH_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:CH_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:CH_MEDI",
         sources: &[CH_MEDI],
         targets: &[UTN57_CH_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:CH_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:CH_FINA",
         sources: &[CH_FINA],
         targets: &[UTN57_CH_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:D_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:D_INIT",
         sources: &[D_INIT],
         targets: &[UTN57_D_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:D_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:D_MEDI",
         sources: &[D_MEDI],
         targets: &[UTN57_D_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:D_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:D_FINA",
         sources: &[D_FINA],
         targets: &[UTN57_D_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:F_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:F_INIT",
         sources: &[F_INIT],
         targets: &[UTN57_F_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:F_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:F_MEDI",
         sources: &[F_MEDI],
         targets: &[UTN57_F_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:F_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:F_FINA",
         sources: &[F_FINA],
         targets: &[UTN57_F_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:G_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:G_INIT",
         sources: &[G_INIT],
         targets: &[UTN57_G_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:G_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:G_MEDI",
         sources: &[G_MEDI],
         targets: &[UTN57_G_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:H_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:H_INIT",
         sources: &[H_INIT],
         targets: &[UTN57_H_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:H_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:H_FINA",
         sources: &[H_FINA],
         targets: &[UTN57_H_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:HR_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:HR_MEDI",
         sources: &[HR_MEDI],
         targets: &[UTN57_HR_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:HR_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:HR_FINA",
         sources: &[HR_FINA],
         targets: &[UTN57_HR_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:HX_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:HX_INIT",
         sources: &[HX_INIT],
         targets: &[UTN57_HX_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:HX_AA_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:HX_AA_FINA",
         sources: &[HX_AA_FINA],
         targets: &[UTN57_HX_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:I_ISOL
     ZvvnmodToUtn57Mapping {
+        id: "source:I_ISOL",
         sources: &[I_ISOL],
         targets: &[UTN57_I_ISOL],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // source:I_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:I_INIT",
         sources: &[I_INIT],
         targets: &[UTN57_I_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:I_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:I_MEDI",
         sources: &[I_MEDI],
         targets: &[UTN57_I_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:I_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:I_FINA",
         sources: &[I_FINA],
         targets: &[UTN57_I_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:J_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:J_MEDI",
         sources: &[J_MEDI],
         targets: &[UTN57_J_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:J_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:J_FINA",
         sources: &[J_FINA],
         targets: &[UTN57_J_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:K_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:K_INIT",
         sources: &[K_INIT],
         targets: &[UTN57_K_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:K_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:K_MEDI",
         sources: &[K_MEDI],
         targets: &[UTN57_K_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:K_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:K_FINA",
         sources: &[K_FINA],
         targets: &[UTN57_K_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:L_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:L_INIT",
         sources: &[L_INIT],
         targets: &[UTN57_L_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:L_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:L_MEDI",
         sources: &[L_MEDI],
         targets: &[UTN57_L_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:L_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:L_FINA",
         sources: &[L_FINA],
         targets: &[UTN57_L_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:M_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:M_INIT",
         sources: &[M_INIT],
         targets: &[UTN57_M_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:M_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:M_MEDI",
         sources: &[M_MEDI],
         targets: &[UTN57_M_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:M_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:M_FINA",
         sources: &[M_FINA],
         targets: &[UTN57_M_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:N_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:N_INIT",
         sources: &[N_INIT],
         targets: &[UTN57_N_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:N_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:N_MEDI",
         sources: &[N_MEDI],
         targets: &[UTN57_N_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:N_AA_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:N_AA_FINA",
         sources: &[N_AA_FINA],
         targets: &[UTN57_N_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:O_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:O_INIT",
         sources: &[O_INIT],
         targets: &[UTN57_O_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:O_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:O_MEDI",
         sources: &[O_MEDI],
         targets: &[UTN57_O_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:O_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:O_FINA",
         sources: &[O_FINA],
         targets: &[UTN57_O_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:P_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:P_INIT",
         sources: &[P_INIT],
         targets: &[UTN57_P_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:P_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:P_MEDI",
         sources: &[P_MEDI],
         targets: &[UTN57_P_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:P_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:P_FINA",
         sources: &[P_FINA],
         targets: &[UTN57_P_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:R_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:R_INIT",
         sources: &[R_INIT],
         targets: &[UTN57_R_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:R_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:R_MEDI",
         sources: &[R_MEDI],
         targets: &[UTN57_R_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:R_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:R_FINA",
         sources: &[R_FINA],
         targets: &[UTN57_R_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:RH_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:RH_INIT",
         sources: &[RH_INIT],
         targets: &[UTN57_RH_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:RH_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:RH_MEDI",
         sources: &[RH_MEDI],
         targets: &[UTN57_RH_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:RH_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:RH_FINA",
         sources: &[RH_FINA],
         targets: &[UTN57_RH_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:S_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:S_INIT",
         sources: &[S_INIT],
         targets: &[UTN57_S_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:S_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:S_MEDI",
         sources: &[S_MEDI],
         targets: &[UTN57_S_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:S_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:S_FINA",
         sources: &[S_FINA],
         targets: &[UTN57_S_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:SH_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:SH_INIT",
         sources: &[SH_INIT],
         targets: &[UTN57_SH_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:SH_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:SH_MEDI",
         sources: &[SH_MEDI],
         targets: &[UTN57_SH_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:SH_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:SH_FINA",
         sources: &[SH_FINA],
         targets: &[UTN57_SH_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:T_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:T_INIT",
         sources: &[T_INIT],
         targets: &[UTN57_T_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:T_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:T_MEDI",
         sources: &[T_MEDI],
         targets: &[UTN57_T_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:T_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:T_FINA",
         sources: &[T_FINA],
         targets: &[UTN57_T_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:U_ISOL
     ZvvnmodToUtn57Mapping {
+        id: "source:U_ISOL",
         sources: &[U_ISOL],
         targets: &[UTN57_U_ISOL],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // source:U_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:U_FINA",
         sources: &[U_FINA],
         targets: &[UTN57_U_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:UE_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:UE_FINA",
         sources: &[UE_FINA],
         targets: &[UTN57_UE_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:W_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:W_INIT",
         sources: &[W_INIT],
         targets: &[UTN57_W_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:W_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:W_MEDI",
         sources: &[W_MEDI],
         targets: &[UTN57_W_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:W_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:W_FINA",
         sources: &[W_FINA],
         targets: &[UTN57_W_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:Y_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:Y_INIT",
         sources: &[Y_INIT],
         targets: &[UTN57_Y_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:Y_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:Y_MEDI",
         sources: &[Y_MEDI],
         targets: &[UTN57_Y_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:Z_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:Z_INIT",
         sources: &[Z_INIT],
         targets: &[UTN57_Z_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:Z_MEDI
     ZvvnmodToUtn57Mapping {
+        id: "source:Z_MEDI",
         sources: &[Z_MEDI],
         targets: &[UTN57_Z_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // source:Z_FINA
     ZvvnmodToUtn57Mapping {
+        id: "source:Z_FINA",
         sources: &[Z_FINA],
         targets: &[UTN57_Z_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:ZR_INIT
     ZvvnmodToUtn57Mapping {
+        id: "source:ZR_INIT",
         sources: &[ZR_INIT],
         targets: &[UTN57_ZR_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // source:NIRUGU
     ZvvnmodToUtn57Mapping {
+        id: "source:NIRUGU",
         sources: &[NIRUGU],
         targets: &[UTN57_NIRUGU_CONTROL],
+        intrinsic_position: None,
     },
     // target:A:isol
     ZvvnmodToUtn57Mapping {
+        id: "target:A:isol",
         sources: &[A_INIT, AA_FINA],
         targets: &[UTN57_A_ISOL],
+        intrinsic_position: Some(Utn57Position::Isol),
+    },
+    // target:Aa:fina
+    ZvvnmodToUtn57Mapping {
+        id: "target:Aa:fina",
+        sources: &[AA_FINA],
+        targets: &[UTN57_AA_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // target:B2:fina
     ZvvnmodToUtn57Mapping {
+        id: "target:B2:fina",
         sources: &[O_MEDI, AA_FINA],
         targets: &[UTN57_B2_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // target:Cr:init
     ZvvnmodToUtn57Mapping {
+        id: "target:Cr:init",
         sources: &[O_INIT, O_MEDI],
         targets: &[UTN57_CR_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // target:Dd:medi
     ZvvnmodToUtn57Mapping {
+        id: "target:Dd:medi",
         sources: &[O_MEDI, A_MEDI],
         targets: &[UTN57_DD_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // target:Dd:fina
     ZvvnmodToUtn57Mapping {
+        id: "target:Dd:fina",
         sources: &[O_MEDI, A_FINA],
         targets: &[UTN57_DD_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // target:G:fina
     ZvvnmodToUtn57Mapping {
+        id: "target:G:fina",
         sources: &[I_MEDI, AA_FINA],
         targets: &[UTN57_G_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // target:H:medi
     ZvvnmodToUtn57Mapping {
+        id: "target:H:medi",
         sources: &[A_MEDI, A_MEDI],
         targets: &[UTN57_H_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // target:Hx:medi
     ZvvnmodToUtn57Mapping {
+        id: "target:Hx:medi",
         sources: &[M_MEDI, M_MEDI],
         targets: &[UTN57_HX_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // target:K2:init
     ZvvnmodToUtn57Mapping {
+        id: "target:K2:init",
         sources: &[K_INIT],
         targets: &[UTN57_K2_INIT],
+        intrinsic_position: Some(Utn57Position::Init),
     },
     // target:K2:medi
     ZvvnmodToUtn57Mapping {
+        id: "target:K2:medi",
         sources: &[K_MEDI],
         targets: &[UTN57_K2_MEDI],
+        intrinsic_position: Some(Utn57Position::Medi),
     },
     // target:K2:fina
     ZvvnmodToUtn57Mapping {
+        id: "target:K2:fina",
         sources: &[K_FINA],
         targets: &[UTN57_K2_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
+    },
+    // context:A_MEDI_AA_FINA
+    ZvvnmodToUtn57Mapping {
+        id: "context:A_MEDI_AA_FINA",
+        sources: &[A_MEDI, AA_FINA],
+        targets: &[UTN57_AA_FINA],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:M_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
+        id: "chachlag:M_FINA_AA_FINA",
         sources: &[M_FINA, AA_FINA],
         targets: &[UTN57_M_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:L_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
+        id: "chachlag:L_FINA_AA_FINA",
         sources: &[L_FINA, AA_FINA],
         targets: &[UTN57_L_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:S_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
+        id: "chachlag:S_FINA_AA_FINA",
         sources: &[S_FINA, AA_FINA],
         targets: &[UTN57_S_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:R_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
+        id: "chachlag:R_FINA_AA_FINA",
         sources: &[R_FINA, AA_FINA],
         targets: &[UTN57_R_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:I_ISOL_AA_FINA
     ZvvnmodToUtn57Mapping {
+        id: "chachlag:I_ISOL_AA_FINA",
         sources: &[I_ISOL, AA_FINA],
         targets: &[UTN57_I_ISOL, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // chachlag:I_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
+        id: "chachlag:I_FINA_AA_FINA",
         sources: &[I_FINA, AA_FINA],
         targets: &[UTN57_I_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:U_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
+        id: "chachlag:U_FINA_AA_FINA",
         sources: &[U_FINA, AA_FINA],
         targets: &[UTN57_U_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:H_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
+        id: "chachlag:H_FINA_AA_FINA",
         sources: &[H_FINA, AA_FINA],
         targets: &[UTN57_H_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        intrinsic_position: Some(Utn57Position::Fina),
     },
     // particle:01
     ZvvnmodToUtn57Mapping {
+        id: "particle:01",
         sources: &[O_INIT, U_FINA],
         targets: &[UTN57_O_INIT, UTN57_U_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:02
     ZvvnmodToUtn57Mapping {
+        id: "particle:02",
         sources: &[O_INIT, U_FINA],
         targets: &[UTN57_O_INIT, UTN57_U_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:03
     ZvvnmodToUtn57Mapping {
+        id: "particle:03",
         sources: &[B_INIT, O_MEDI, U_FINA],
         targets: &[UTN57_B_INIT, UTN57_O_MEDI, UTN57_U_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:04
     ZvvnmodToUtn57Mapping {
+        id: "particle:04",
         sources: &[A_INIT, CH_MEDI, A_FINA],
         targets: &[UTN57_A_INIT, UTN57_CH_MEDI, UTN57_A_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:05
     ZvvnmodToUtn57Mapping {
+        id: "particle:05",
         sources: &[A_INIT, CH_MEDI, A_MEDI, N_MEDI, N_MEDI, A_MEDI, A_FINA],
         targets: &[
             UTN57_A_INIT,
@@ -836,94 +1059,130 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
             UTN57_A_MEDI,
             UTN57_A_FINA,
         ],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:06
     ZvvnmodToUtn57Mapping {
+        id: "particle:06",
         sources: &[I_ISOL],
         targets: &[UTN57_I_ISOL],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:07
     ZvvnmodToUtn57Mapping {
+        id: "particle:07",
         sources: &[I_INIT, I_MEDI, A_MEDI, R_FINA],
         targets: &[UTN57_I_INIT, UTN57_I_MEDI, UTN57_A_MEDI, UTN57_R_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:08
     ZvvnmodToUtn57Mapping {
+        id: "particle:08",
         sources: &[I_INIT, I_MEDI, A_MEDI, R_FINA],
         targets: &[UTN57_I_INIT, UTN57_I_MEDI, UTN57_A_MEDI, UTN57_R_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:09
     ZvvnmodToUtn57Mapping {
+        id: "particle:09",
         sources: &[I_INIT, I_MEDI, A_MEDI, A_FINA],
         targets: &[UTN57_I_INIT, UTN57_I_MEDI, UTN57_A_MEDI, UTN57_A_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:10
     ZvvnmodToUtn57Mapping {
+        id: "particle:10",
         sources: &[I_INIT, I_MEDI, A_MEDI, A_FINA],
         targets: &[UTN57_I_INIT, UTN57_I_MEDI, UTN57_A_MEDI, UTN57_A_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:11
     ZvvnmodToUtn57Mapping {
+        id: "particle:11",
         sources: &[U_ISOL],
         targets: &[UTN57_U_ISOL],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:12
     ZvvnmodToUtn57Mapping {
+        id: "particle:12",
         sources: &[U_ISOL],
         targets: &[UTN57_U_ISOL],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:13
     ZvvnmodToUtn57Mapping {
+        id: "particle:13",
         sources: &[O_INIT, A_FINA],
         targets: &[UTN57_O_INIT, UTN57_A_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:14
     ZvvnmodToUtn57Mapping {
+        id: "particle:14",
         sources: &[O_INIT, A_FINA],
         targets: &[UTN57_O_INIT, UTN57_A_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:15
     ZvvnmodToUtn57Mapping {
+        id: "particle:15",
         sources: &[O_INIT, O_MEDI, A_FINA],
         targets: &[UTN57_O_INIT, UTN57_DD_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:16
     ZvvnmodToUtn57Mapping {
+        id: "particle:16",
         sources: &[O_INIT, O_MEDI, A_FINA],
         targets: &[UTN57_O_INIT, UTN57_DD_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:17
     ZvvnmodToUtn57Mapping {
+        id: "particle:17",
         sources: &[CH_INIT, U_FINA],
         targets: &[UTN57_CH_INIT, UTN57_U_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:18
     ZvvnmodToUtn57Mapping {
+        id: "particle:18",
         sources: &[CH_INIT, U_FINA],
         targets: &[UTN57_CH_INIT, UTN57_U_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:19
     ZvvnmodToUtn57Mapping {
+        id: "particle:19",
         sources: &[T_INIT, U_FINA],
         targets: &[UTN57_T_INIT, UTN57_U_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:20
     ZvvnmodToUtn57Mapping {
+        id: "particle:20",
         sources: &[T_INIT, U_FINA],
         targets: &[UTN57_T_INIT, UTN57_U_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:21
     ZvvnmodToUtn57Mapping {
+        id: "particle:21",
         sources: &[T_INIT, O_MEDI, R_FINA],
         targets: &[UTN57_T_INIT, UTN57_O_MEDI, UTN57_R_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:22
     ZvvnmodToUtn57Mapping {
+        id: "particle:22",
         sources: &[T_INIT, O_MEDI, N_MEDI, I_FINA],
         targets: &[UTN57_T_INIT, UTN57_O_MEDI, UTN57_N_MEDI, UTN57_I_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:23
     ZvvnmodToUtn57Mapping {
+        id: "particle:23",
         sources: &[Y_INIT, O_MEDI, G_MEDI, A_MEDI, A_FINA],
         targets: &[
             UTN57_Y_INIT,
@@ -932,14 +1191,18 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
             UTN57_A_MEDI,
             UTN57_A_FINA,
         ],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:24
     ZvvnmodToUtn57Mapping {
+        id: "particle:24",
         sources: &[L_INIT, O_MEDI, G_MEDI, AA_FINA],
         targets: &[UTN57_L_INIT, UTN57_O_MEDI, UTN57_G_MEDI, UTN57_AA_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:25
     ZvvnmodToUtn57Mapping {
+        id: "particle:25",
         sources: &[N_INIT, O_MEDI, G_MEDI, O_MEDI, A_FINA],
         targets: &[
             UTN57_N_INIT,
@@ -948,9 +1211,11 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
             UTN57_O_MEDI,
             UTN57_DD_FINA,
         ],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:26
     ZvvnmodToUtn57Mapping {
+        id: "particle:26",
         sources: &[N_INIT, O_MEDI, G_MEDI, A_MEDI, A_FINA],
         targets: &[
             UTN57_N_INIT,
@@ -959,14 +1224,18 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
             UTN57_A_MEDI,
             UTN57_A_FINA,
         ],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:27
     ZvvnmodToUtn57Mapping {
+        id: "particle:27",
         sources: &[Y_INIT, O_MEDI, M_FINA],
         targets: &[UTN57_Y_INIT, UTN57_O_MEDI, UTN57_M_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:28
     ZvvnmodToUtn57Mapping {
+        id: "particle:28",
         sources: &[Y_INIT, O_MEDI, M_MEDI, S_MEDI, A_MEDI, A_FINA],
         targets: &[
             UTN57_Y_INIT,
@@ -976,24 +1245,32 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
             UTN57_A_MEDI,
             UTN57_A_FINA,
         ],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:29
     ZvvnmodToUtn57Mapping {
+        id: "particle:29",
         sources: &[G_INIT, O_FINA],
         targets: &[UTN57_G_INIT, UTN57_O_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:30
     ZvvnmodToUtn57Mapping {
+        id: "particle:30",
         sources: &[I_INIT, I_FINA],
         targets: &[UTN57_I_INIT, UTN57_I_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:31
     ZvvnmodToUtn57Mapping {
+        id: "particle:31",
         sources: &[I_INIT, I_MEDI, A_FINA],
         targets: &[UTN57_I_INIT, UTN57_I_MEDI, UTN57_A_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:32
     ZvvnmodToUtn57Mapping {
+        id: "particle:32",
         sources: &[D_INIT, A_MEDI, N_MEDI, N_MEDI, A_MEDI, A_FINA],
         targets: &[
             UTN57_D_INIT,
@@ -1002,9 +1279,11 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
             UTN57_A_MEDI,
             UTN57_A_FINA,
         ],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:33
     ZvvnmodToUtn57Mapping {
+        id: "particle:33",
         sources: &[D_INIT, A_MEDI, G_MEDI, A_MEDI, A_FINA],
         targets: &[
             UTN57_D_INIT,
@@ -1013,59 +1292,81 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
             UTN57_A_MEDI,
             UTN57_A_FINA,
         ],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:34
     ZvvnmodToUtn57Mapping {
+        id: "particle:34",
         sources: &[D_INIT, U_FINA],
         targets: &[UTN57_D_INIT, UTN57_U_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:35
     ZvvnmodToUtn57Mapping {
+        id: "particle:35",
         sources: &[D_INIT, U_FINA],
         targets: &[UTN57_D_INIT, UTN57_U_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:36
     ZvvnmodToUtn57Mapping {
+        id: "particle:36",
         sources: &[D_INIT, A_MEDI, H_FINA],
         targets: &[UTN57_D_INIT, UTN57_A_MEDI, UTN57_H_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:37
     ZvvnmodToUtn57Mapping {
+        id: "particle:37",
         sources: &[D_INIT, A_MEDI, I_MEDI, AA_FINA],
         targets: &[UTN57_D_INIT, UTN57_A_MEDI, UTN57_G_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:38
     ZvvnmodToUtn57Mapping {
+        id: "particle:38",
         sources: &[D_INIT, A_MEDI, G_MEDI, I_FINA],
         targets: &[UTN57_D_INIT, UTN57_A_MEDI, UTN57_G_MEDI, UTN57_I_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:39
     ZvvnmodToUtn57Mapping {
+        id: "particle:39",
         sources: &[D_INIT, A_MEDI, G_MEDI, I_FINA],
         targets: &[UTN57_D_INIT, UTN57_A_MEDI, UTN57_G_MEDI, UTN57_I_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:40
     ZvvnmodToUtn57Mapping {
+        id: "particle:40",
         sources: &[D_INIT, O_MEDI, R_FINA],
         targets: &[UTN57_D_INIT, UTN57_O_MEDI, UTN57_R_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:41
     ZvvnmodToUtn57Mapping {
+        id: "particle:41",
         sources: &[D_INIT, O_MEDI, R_FINA],
         targets: &[UTN57_D_INIT, UTN57_O_MEDI, UTN57_R_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:42
     ZvvnmodToUtn57Mapping {
+        id: "particle:42",
         sources: &[D_INIT, O_MEDI, N_MEDI, I_FINA],
         targets: &[UTN57_D_INIT, UTN57_O_MEDI, UTN57_N_MEDI, UTN57_I_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:43
     ZvvnmodToUtn57Mapping {
+        id: "particle:43",
         sources: &[D_INIT, O_MEDI, N_MEDI, I_FINA],
         targets: &[UTN57_D_INIT, UTN57_O_MEDI, UTN57_N_MEDI, UTN57_I_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:44
     ZvvnmodToUtn57Mapping {
+        id: "particle:44",
         sources: &[D_INIT, O_MEDI, N_MEDI, N_MEDI, A_MEDI, R_FINA],
         targets: &[
             UTN57_D_INIT,
@@ -1074,9 +1375,11 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
             UTN57_A_MEDI,
             UTN57_R_FINA,
         ],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:45
     ZvvnmodToUtn57Mapping {
+        id: "particle:45",
         sources: &[D_INIT, O_MEDI, G_MEDI, A_MEDI, R_FINA],
         targets: &[
             UTN57_D_INIT,
@@ -1085,15 +1388,20 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
             UTN57_A_MEDI,
             UTN57_R_FINA,
         ],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:46
     ZvvnmodToUtn57Mapping {
+        id: "particle:46",
         sources: &[D_INIT, A_FINA],
         targets: &[UTN57_D_INIT, UTN57_A_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
     // particle:47
     ZvvnmodToUtn57Mapping {
+        id: "particle:47",
         sources: &[D_INIT, A_FINA],
         targets: &[UTN57_D_INIT, UTN57_A_FINA],
+        intrinsic_position: Some(Utn57Position::Isol),
     },
 ];

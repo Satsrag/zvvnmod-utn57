@@ -1,4 +1,4 @@
-# metadata={"schema":"zvvnmod-utn57-runtime-map-v1","baseline":"sha256:e0ebea2d2696bc41b7e62d72993b76f0e19bea7bc90aec0ad566ad47b31e6624"}
+# metadata={"schema":"zvvnmod-utn57-runtime-map-v1","baseline":"sha256:83a60c3e1ac9df98a14c1a6d979f7c5c8733f1e70d52b81f41de1dd321ea5016"}
 id,sources,targets,note
 source:A_INIT,A_INIT,A:init,
 source:A_MEDI,A_MEDI,A:medi,
@@ -80,6 +80,7 @@ source:Z_FINA,Z_FINA,Z:fina,
 source:ZR_INIT,ZR_INIT,Zr:init,
 source:NIRUGU,NIRUGU,Nirugu,
 target:A:isol,A_INIT AA_FINA,A:isol,
+target:Aa:fina,AA_FINA,Aa:fina,Position-resolved connected Aa final candidate.
 target:B2:fina,O_MEDI AA_FINA,B2:fina,
 target:Cr:init,O_INIT O_MEDI,Cr:init,
 target:Dd:medi,O_MEDI A_MEDI,Dd:medi,
@@ -90,6 +91,7 @@ target:Hx:medi,M_MEDI M_MEDI,Hx:medi,
 target:K2:init,K_INIT,K2:init,
 target:K2:medi,K_MEDI,K2:medi,
 target:K2:fina,K_FINA,K2:fina,
+context:A_MEDI_AA_FINA,A_MEDI AA_FINA,Aa:fina,A_MEDI and AA_FINA jointly represent a connected Aa final.
 chachlag:M_FINA_AA_FINA,M_FINA AA_FINA,M:fina MVS Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
 chachlag:L_FINA_AA_FINA,L_FINA AA_FINA,L:fina MVS Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
 chachlag:S_FINA_AA_FINA,S_FINA AA_FINA,S:fina MVS Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
