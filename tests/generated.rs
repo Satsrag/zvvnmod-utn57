@@ -3,11 +3,27 @@ use zvvnmod_utn57::{
     IrFinaReplacementError, Utn57Position, Utn57Unit, Utn57WrittenUnit, ZvvnmodCode, AA_FINA,
     A_FINA, A_INIT, A_MEDI, B_INIT, B_I_INIT, HX_AA_FINA, HX_INIT, H_FINA, IR_FINA,
     IR_FINA_REPLACEMENTS, I_FINA, I_ISOL, I_MEDI, L_FINA, M_FINA, N_AA_FINA, O_MEDI, R_FINA,
-    S_FINA, T_FINA, T_MEDI, UE_FINA, U_FINA, ZVVNMOD_CODE_DECOMPOSITIONS,
+    S_FINA, T_FINA, T_MEDI, UE_FINA, UTN57_WRITTEN_UNITS, U_FINA, ZVVNMOD_CODE_DECOMPOSITIONS,
 };
 
 fn unit(unit: Utn57Unit, position: Utn57Position) -> Utn57WrittenUnit {
     Utn57WrittenUnit::new(unit, position)
+}
+
+#[test]
+fn reviewed_targets_expose_stable_python_contract_names() {
+    for target in UTN57_WRITTEN_UNITS {
+        assert!(!target.unit.contract_name().is_empty());
+        assert!(!target.position.contract_name().is_empty());
+    }
+
+    assert_eq!(Utn57Unit::MVS.contract_name(), "Mvs");
+    assert_eq!(Utn57Unit::Nirugu.contract_name(), "Nirugu");
+    assert_eq!(Utn57Position::Isol.contract_name(), "isol");
+    assert_eq!(Utn57Position::Init.contract_name(), "init");
+    assert_eq!(Utn57Position::Medi.contract_name(), "medi");
+    assert_eq!(Utn57Position::Fina.contract_name(), "fina");
+    assert_eq!(Utn57Position::Control.contract_name(), "control");
 }
 
 #[test]

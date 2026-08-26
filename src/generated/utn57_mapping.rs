@@ -48,6 +48,54 @@ pub enum Utn57Unit {
     MVS,
 }
 
+impl Utn57Unit {
+    /// Stable unit spelling used by the public positioned-record contract.
+    pub const fn contract_name(self) -> &'static str {
+        match self {
+            Self::A => "A",
+            Self::Aa => "Aa",
+            Self::B => "B",
+            Self::B2 => "B2",
+            Self::C => "C",
+            Self::Ch => "Ch",
+            Self::Cr => "Cr",
+            Self::D => "D",
+            Self::Dd => "Dd",
+            Self::F => "F",
+            Self::G => "G",
+            Self::Gx => "Gx",
+            Self::H => "H",
+            Self::Hr => "Hr",
+            Self::Hx => "Hx",
+            Self::I => "I",
+            Self::Ix => "Ix",
+            Self::J => "J",
+            Self::K => "K",
+            Self::K2 => "K2",
+            Self::L => "L",
+            Self::M => "M",
+            Self::N => "N",
+            Self::O => "O",
+            Self::P => "P",
+            Self::R => "R",
+            Self::Rh => "Rh",
+            Self::S => "S",
+            Self::Sh => "Sh",
+            Self::Sz => "Sz",
+            Self::T => "T",
+            Self::U => "U",
+            Self::Ue => "Ue",
+            Self::Ux => "Ux",
+            Self::W => "W",
+            Self::Y => "Y",
+            Self::Z => "Z",
+            Self::Zr => "Zr",
+            Self::Nirugu => "Nirugu",
+            Self::MVS => "Mvs",
+        }
+    }
+}
+
 /// A UTN #57 joining position or non-positional control kind.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Utn57Position {
@@ -56,6 +104,19 @@ pub enum Utn57Position {
     Medi,
     Fina,
     Control,
+}
+
+impl Utn57Position {
+    /// Stable position spelling used by the public positioned-record contract.
+    pub const fn contract_name(self) -> &'static str {
+        match self {
+            Self::Isol => "isol",
+            Self::Init => "init",
+            Self::Medi => "medi",
+            Self::Fina => "fina",
+            Self::Control => "control",
+        }
+    }
 }
 
 /// One typed UTN #57 written unit target.
@@ -300,6 +361,107 @@ pub const UTN57_NIRUGU_CONTROL: Utn57WrittenUnit =
 /// Reviewed target `MVS`.
 pub const UTN57_MVS_CONTROL: Utn57WrittenUnit =
     Utn57WrittenUnit::new(Utn57Unit::MVS, Utn57Position::Control);
+
+/// Complete reviewed UTN #57 positioned written-unit inventory.
+pub static UTN57_WRITTEN_UNITS: &[Utn57WrittenUnit] = &[
+    UTN57_A_ISOL,
+    UTN57_A_INIT,
+    UTN57_A_MEDI,
+    UTN57_A_FINA,
+    UTN57_AA_ISOL,
+    UTN57_AA_FINA,
+    UTN57_B_INIT,
+    UTN57_B_MEDI,
+    UTN57_B_FINA,
+    UTN57_B2_FINA,
+    UTN57_C_INIT,
+    UTN57_C_MEDI,
+    UTN57_C_FINA,
+    UTN57_CH_INIT,
+    UTN57_CH_MEDI,
+    UTN57_CH_FINA,
+    UTN57_CR_INIT,
+    UTN57_D_INIT,
+    UTN57_D_MEDI,
+    UTN57_D_FINA,
+    UTN57_DD_MEDI,
+    UTN57_DD_FINA,
+    UTN57_F_INIT,
+    UTN57_F_MEDI,
+    UTN57_F_FINA,
+    UTN57_G_INIT,
+    UTN57_G_MEDI,
+    UTN57_G_FINA,
+    UTN57_GX_INIT,
+    UTN57_GX_MEDI,
+    UTN57_H_INIT,
+    UTN57_H_MEDI,
+    UTN57_H_FINA,
+    UTN57_HR_MEDI,
+    UTN57_HR_FINA,
+    UTN57_HX_INIT,
+    UTN57_HX_MEDI,
+    UTN57_HX_FINA,
+    UTN57_I_ISOL,
+    UTN57_I_INIT,
+    UTN57_I_MEDI,
+    UTN57_I_FINA,
+    UTN57_IX_ISOL,
+    UTN57_J_MEDI,
+    UTN57_J_FINA,
+    UTN57_K_INIT,
+    UTN57_K_MEDI,
+    UTN57_K_FINA,
+    UTN57_K2_INIT,
+    UTN57_K2_MEDI,
+    UTN57_K2_FINA,
+    UTN57_L_INIT,
+    UTN57_L_MEDI,
+    UTN57_L_FINA,
+    UTN57_M_INIT,
+    UTN57_M_MEDI,
+    UTN57_M_FINA,
+    UTN57_N_INIT,
+    UTN57_N_MEDI,
+    UTN57_N_FINA,
+    UTN57_O_INIT,
+    UTN57_O_MEDI,
+    UTN57_O_FINA,
+    UTN57_P_INIT,
+    UTN57_P_MEDI,
+    UTN57_P_FINA,
+    UTN57_R_INIT,
+    UTN57_R_MEDI,
+    UTN57_R_FINA,
+    UTN57_RH_INIT,
+    UTN57_RH_MEDI,
+    UTN57_RH_FINA,
+    UTN57_S_INIT,
+    UTN57_S_MEDI,
+    UTN57_S_FINA,
+    UTN57_SH_INIT,
+    UTN57_SH_MEDI,
+    UTN57_SH_FINA,
+    UTN57_SZ_FINA,
+    UTN57_T_INIT,
+    UTN57_T_MEDI,
+    UTN57_T_FINA,
+    UTN57_U_ISOL,
+    UTN57_U_FINA,
+    UTN57_UE_FINA,
+    UTN57_UX_ISOL,
+    UTN57_W_INIT,
+    UTN57_W_MEDI,
+    UTN57_W_FINA,
+    UTN57_Y_INIT,
+    UTN57_Y_MEDI,
+    UTN57_Z_INIT,
+    UTN57_Z_MEDI,
+    UTN57_Z_FINA,
+    UTN57_ZR_INIT,
+    UTN57_NIRUGU_CONTROL,
+    UTN57_MVS_CONTROL,
+];
 
 /// One reviewed ZVVNMOD sequence → UTN #57 sequence relation row.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

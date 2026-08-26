@@ -12,9 +12,10 @@ The current first milestone includes:
 - legacy FVS1/FVS2/FVS3/MVS removal from input streams;
 - 30 user-confirmed `Ir_fina` replacement rules;
 - a typed, generated relation containing 97 UTN #57 targets and 147 non-empty reviewed mapping rows (100 main + 47 particle);
-- executable longest-match replacement from one ZVVNMOD written-form run to UTN #57 written units.
+- executable longest-match replacement from one ZVVNMOD written-form run to UTN #57 written units;
+- a command bridge that invokes the published `mongol-norm==0.0.4` Python package for Unicode serialization.
 
-Forward mapping replacement is implemented through the reviewed written-unit stage, including reviewed particle sequence corrections and reviewed MVS targets. General ZWJ reconstruction, particle-boundary inference, target serialization, and reverse conversion are not implemented in this change; the library does not guess structural rules that are absent from the relation.
+Forward mapping replacement is implemented through the reviewed written-unit stage, including reviewed particle sequence corrections and reviewed MVS targets. The Rust mapping core does not reimplement Unicode serialization. The `zvvnmod-to-unicode` command starts Python once per conversion and delegates positioned-unit serialization to `mongol-norm`; reverse conversion and unreviewed structural inference remain out of scope.
 
 ## Layout
 
@@ -24,6 +25,7 @@ Forward mapping replacement is implemented through the reviewed written-unit sta
 ├── LICENSE
 ├── README.md
 ├── README.zh-CN.md
+├── requirements-mongol-norm.txt
 ├── data/
 │   ├── ir-fina-replacements.csv
 │   ├── utn57-written-units.csv
@@ -31,6 +33,8 @@ Forward mapping replacement is implemented through the reviewed written-unit sta
 │   └── zvvnmod-utn57-map.csv
 ├── scripts/
 │   ├── check_website_contract.py
+│   ├── install_mongol_norm.sh
+│   ├── mongol_norm_positioned.py
 │   ├── generate_ir_fina.py
 │   ├── generate_utn57_mapping.py
 │   ├── generate_zvvnmod.py
@@ -39,6 +43,7 @@ Forward mapping replacement is implemented through the reviewed written-unit sta
 │   └── strict_csv.py
 ├── src/
 │   ├── lib.rs
+│   ├── command_bridge.rs
 │   ├── conversion.rs
 │   ├── preprocess.rs
 │   └── generated/
@@ -214,12 +219,53 @@ let options = Utn57ConversionOptions { k_variant: Utn57KVariant::K2 };
 assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit, Utn57Unit::K2);
 ```
 
+## External `mongol-norm` command
+
+The current Unicode endpoint uses an external Python command; it does not embed CPython or link
+`libpython`. Install the exact reviewed package into the repository-local import directory:
+
+```bash
+scripts/install_mongol_norm.sh
+```
+
+Then invoke the command with one ZVVNMOD PUA string:
+
+```bash
+cargo run --bin zvvnmod-to-unicode -- '<zvvnmod-text>'
+```
+
+The Rust command maps ZVVNMOD to typed positioned units, sends protocol-versioned JSON to the
+bundled Python bridge over stdin, and reads canonical Unicode from stdout. The bridge calls only
+the public API:
+
+```python
+MongolianShaper("MNG").normalize_positioned_written_units(records)
+```
+
+The installer uses `pip --target`, needs neither root nor `python3-venv`, pins the 0.0.4 wheel by
+SHA-256, stages and validates the installation before replacing the destination, and verifies the
+singleton `O:init` result. The command starts Python in isolated mode, ignores the current directory
+and inherited `PYTHONPATH`, and requires both package metadata and runtime `__version__` to equal
+0.0.4. Set `ZVVNMOD_MONGOL_NORM_PATH` when using a non-default install directory or a binary built
+outside this checkout. The installer and runtime both select a custom Python executable with
+`ZVVNMOD_MONGOL_NORM_PYTHON`; the installer also retains `PYTHON` as a lower-priority fallback.
+
+This subprocess bridge is deliberately simple and starts Python once per conversion command. A
+conversion, including stdin/stdout/stderr collection, has a 30-second deadline, with stdout and
+stderr capture limited to 1 MiB each. On Unix, the standard-library command integration places the
+bridge in a dedicated process group; a small documented POSIX `kill` FFI call terminates the whole
+group on timeout or pipeline error, including descendants whose direct parent already exited. No
+Rust runtime dependency is added. The bridge is suitable for the current CLI integration; a
+persistent worker can be added later if profiling shows process startup is a bottleneck.
+
 ## Validation
 
 ```bash
 python3 -m unittest discover -s tests -v
 cargo fmt --all -- --check
 cargo test
+scripts/install_mongol_norm.sh
+cargo test --test command_bridge --test command_cli -- --ignored
 ```
 
 ## License

@@ -10,4 +10,8 @@ publish = false
 name = "zvvnmod_utn57"
 path = "src/lib.rs"
 
+[[bin]]
+name = "zvvnmod-to-unicode"
+path = "src/bin/zvvnmod-to-unicode.rs"
+
 [dependencies]

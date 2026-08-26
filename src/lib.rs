@@ -16,9 +16,11 @@ pub mod generated {
     pub mod utn57_mapping;
     pub mod zvvnmod_codes;
 }
+pub mod command_bridge;
 pub mod conversion;
 pub mod preprocess;
 
+pub use command_bridge::*;
 pub use conversion::*;
 pub use generated::code_decomposition_map::*;
 pub use generated::ir_fina::*;
