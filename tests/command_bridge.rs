@@ -40,9 +40,16 @@ fn command_bridge_preserves_explicit_mvs() {
 
 #[test]
 fn missing_python_command_returns_a_typed_error() {
+    let previous_path = std::env::var_os("ZVVNMOD_MONGOL_NORM_PATH");
+    std::env::set_var("ZVVNMOD_MONGOL_NORM_PATH", env!("CARGO_MANIFEST_DIR"));
     let error =
         normalize_positioned_with_mongol_norm_python(&[], "/definitely/missing/zvvnmod-python")
             .unwrap_err();
+    if let Some(path) = previous_path {
+        std::env::set_var("ZVVNMOD_MONGOL_NORM_PATH", path);
+    } else {
+        std::env::remove_var("ZVVNMOD_MONGOL_NORM_PATH");
+    }
 
     assert!(matches!(error, MongolNormCommandError::Spawn { .. }));
 }
