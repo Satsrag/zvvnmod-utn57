@@ -1,0 +1,192 @@
+name: Publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  crates-io:
+    name: Publish crate
+    if: github.repository == 'Satsrag/zvvnmod-utn57'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: crates-io
+    outputs:
+      release-commit: ${{ steps.guard.outputs.release_commit }}
+      version: ${{ steps.guard.outputs.version }}
+      crate-checksum: ${{ steps.package.outputs.crate_checksum }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+
+      - name: Verify tag, version, and main ancestry
+        id: guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "zvvnmod-utn57") | .version')"
+          test -n "$version"
+          test "$GITHUB_REF_NAME" = "v$version"
+
+          release_commit="$(git rev-parse 'HEAD^{commit}')"
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "$release_commit" refs/remotes/origin/main
+
+          refs="$(git ls-remote --tags origin "refs/tags/$GITHUB_REF_NAME" "refs/tags/$GITHUB_REF_NAME^{}")"
+          direct=''
+          peeled=''
+          while read -r sha ref; do
+            case "$ref" in
+              *'^{}') peeled="$sha" ;;
+              *) direct="$sha" ;;
+            esac
+          done <<< "$refs"
+          remote_commit="${peeled:-$direct}"
+          test -n "$remote_commit"
+          test "$remote_commit" = "$release_commit"
+
+          echo "release_commit=$release_commit" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build and inspect publishable package
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo publish --locked --registry crates-io --dry-run
+
+          version="${{ steps.guard.outputs.version }}"
+          crate_path="target/package/zvvnmod-utn57-$version.crate"
+          test -f "$crate_path"
+          crate_checksum="$(sha256sum "$crate_path" | cut -d ' ' -f 1)"
+
+          response="$(mktemp)"
+          status="$(curl --retry 3 --retry-all-errors --silent --show-error \
+            --user-agent "zvvnmod-utn57-release/$version (https://github.com/$GITHUB_REPOSITORY)" \
+            --output "$response" --write-out '%{http_code}' \
+            "https://crates.io/api/v1/crates/zvvnmod-utn57/$version")"
+          case "$status" in
+            200)
+              published_checksum="$(jq -r '.version.checksum // empty' "$response")"
+              test -n "$published_checksum"
+              test "$published_checksum" = "$crate_checksum"
+              already_published=true
+              ;;
+            404)
+              already_published=false
+              ;;
+            *)
+              echo "Unexpected crates.io API status: $status" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "crate_checksum=$crate_checksum" >> "$GITHUB_OUTPUT"
+          echo "already_published=$already_published" >> "$GITHUB_OUTPUT"
+
+      - name: Revalidate remote tag before publication
+        if: steps.package.outputs.already_published != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          refs="$(git ls-remote --tags origin "refs/tags/$GITHUB_REF_NAME" "refs/tags/$GITHUB_REF_NAME^{}")"
+          direct=''
+          peeled=''
+          while read -r sha ref; do
+            case "$ref" in
+              *'^{}') peeled="$sha" ;;
+              *) direct="$sha" ;;
+            esac
+          done <<< "$refs"
+          remote_commit="${peeled:-$direct}"
+          test "$remote_commit" = "${{ steps.guard.outputs.release_commit }}"
+
+      - name: Publish to crates.io
+        if: steps.package.outputs.already_published != 'true'
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --locked --registry crates-io --no-verify
+
+      - name: Verify crates.io checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ steps.guard.outputs.version }}"
+          expected="${{ steps.package.outputs.crate_checksum }}"
+          response="$(mktemp)"
+          for attempt in {1..12}; do
+            status="$(curl --silent --show-error \
+              --user-agent "zvvnmod-utn57-release/$version (https://github.com/$GITHUB_REPOSITORY)" \
+              --output "$response" --write-out '%{http_code}' \
+              "https://crates.io/api/v1/crates/zvvnmod-utn57/$version")"
+            if [[ "$status" == 200 ]]; then
+              actual="$(jq -r '.version.checksum // empty' "$response")"
+              test "$actual" = "$expected"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Published version was not visible from crates.io in time" >&2
+          exit 1
+
+  github-release:
+    name: Create GitHub release
+    needs: crates-io
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Revalidate tag and create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_COMMIT: ${{ needs.crates-io.outputs.release-commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote="https://github.com/$GITHUB_REPOSITORY.git"
+          refs="$(git ls-remote --tags "$remote" "refs/tags/$GITHUB_REF_NAME" "refs/tags/$GITHUB_REF_NAME^{}")"
+          direct=''
+          peeled=''
+          while read -r sha ref; do
+            case "$ref" in
+              *'^{}') peeled="$sha" ;;
+              *) direct="$sha" ;;
+            esac
+          done <<< "$refs"
+          remote_commit="${peeled:-$direct}"
+          test -n "$remote_commit"
+          test "$remote_commit" = "$EXPECTED_COMMIT"
+
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "GitHub release already exists for $GITHUB_REF_NAME"
+            exit 0
+          fi
+
+          args=(--repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --verify-tag --generate-notes)
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            args+=(--prerelease)
+          fi
+          if ! create_output="$(gh release create "$GITHUB_REF_NAME" "${args[@]}" 2>&1)"; then
+            if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "GitHub release was created concurrently for $GITHUB_REF_NAME"
+              exit 0
+            fi
+            printf '%s\n' "$create_output" >&2
+            exit 1
+          fi
+          printf '%s\n' "$create_output"
