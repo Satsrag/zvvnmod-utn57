@@ -68,6 +68,9 @@ jobs:
         run: |
           set -euo pipefail
           cargo publish --locked --registry crates-io --dry-run
+          # `cargo publish --dry-run` removes the archive on a clean runner.
+          # Build it explicitly so the checksum below covers the exact package.
+          cargo package --locked --registry crates-io
 
           version="${{ steps.guard.outputs.version }}"
           crate_path="target/package/zvvnmod-utn57-$version.crate"

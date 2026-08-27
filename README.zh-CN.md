@@ -227,7 +227,7 @@ let output = convert_zvvnmod_to_utn57(zvvnmod_text)?;
 从 Cargo registry 安装本 crate 后，为当前用户或部署环境安装一次经过验证的固定版本：
 
 ```bash
-cargo install zvvnmod-utn57 --version 0.1.0-alpha.1
+cargo install zvvnmod-utn57 --version 0.1.0-alpha.2
 zvvnmod-install-mongol-norm
 ```
 
