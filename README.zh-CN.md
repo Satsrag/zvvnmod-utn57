@@ -209,6 +209,18 @@ let options = Utn57ConversionOptions { k_variant: Utn57KVariant::K2 };
 assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit, Utn57Unit::K2);
 ```
 
+完整文本转换由 Rust 调用方和 CLI 共用同一个后端无关 API：
+
+```rust
+use zvvnmod_utn57::convert_zvvnmod_to_utn57;
+
+let output = convert_zvvnmod_to_utn57(zvvnmod_text)?;
+```
+
+`convert_zvvnmod_to_utn57` 是稳定的公共边界。当前 normalization backend 是下面说明的外部
+`mongol-norm` bridge；以后可以替换成 crate 自己实现的 normalizer，而不改变 Rust 调用方和
+`zvvnmod-to-utn57` CLI。
+
 ## 外部 `mongol-norm` 命令
 
 当前 UTN #57 输出命令只调用外部 Python 命令，不嵌入 CPython，也不链接 `libpython`。

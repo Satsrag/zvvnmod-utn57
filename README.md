@@ -218,6 +218,18 @@ let options = Utn57ConversionOptions { k_variant: Utn57KVariant::K2 };
 assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit, Utn57Unit::K2);
 ```
 
+For complete text conversion, Rust callers and the CLI share the same backend-neutral API:
+
+```rust
+use zvvnmod_utn57::convert_zvvnmod_to_utn57;
+
+let output = convert_zvvnmod_to_utn57(zvvnmod_text)?;
+```
+
+`convert_zvvnmod_to_utn57` is the stable public boundary. Its current normalization backend is the
+external `mongol-norm` bridge described below; that backend can later be replaced without changing
+Rust callers or the `zvvnmod-to-utn57` CLI.
+
 ## External `mongol-norm` command
 
 The current UTN #57 output command uses an external Python command; it does not embed CPython or link

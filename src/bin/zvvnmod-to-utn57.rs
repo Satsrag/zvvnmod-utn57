@@ -1,5 +1,5 @@
 use std::process::ExitCode;
-use zvvnmod_utn57::convert_zvvnmod_text_with_mongol_norm;
+use zvvnmod_utn57::convert_zvvnmod_to_utn57;
 
 fn main() -> ExitCode {
     let mut arguments = std::env::args();
@@ -15,7 +15,7 @@ fn main() -> ExitCode {
         return ExitCode::from(2);
     }
 
-    match convert_zvvnmod_text_with_mongol_norm(&input) {
+    match convert_zvvnmod_to_utn57(&input) {
         Ok(output) => {
             println!("{output}");
             ExitCode::SUCCESS
