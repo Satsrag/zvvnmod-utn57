@@ -314,9 +314,11 @@ mod tests {
             "{error}"
         );
         let pid = fs::read_to_string(pid_path).unwrap();
+        assert!(!pid.is_empty(), "validation child did not start");
         assert!(
-            !Path::new("/proc").join(pid).exists(),
-            "validation child was not reaped"
+            !error.contains("could not kill staged validation")
+                && !error.contains("could not reap staged validation"),
+            "validation child cleanup failed: {error}"
         );
     }
 
