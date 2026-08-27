@@ -5,7 +5,7 @@ fn main() -> ExitCode {
     let mut arguments = std::env::args();
     let program = arguments
         .next()
-        .unwrap_or_else(|| "zvvnmod-to-unicode".to_owned());
+        .unwrap_or_else(|| "zvvnmod-to-utn57".to_owned());
     let Some(input) = arguments.next() else {
         eprintln!("usage: {program} <zvvnmod-text>");
         return ExitCode::from(2);

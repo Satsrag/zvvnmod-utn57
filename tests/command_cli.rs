@@ -3,7 +3,7 @@ use zvvnmod_utn57::O_INIT;
 
 #[test]
 fn cli_rejects_zero_arguments() {
-    let output = Command::new(env!("CARGO_BIN_EXE_zvvnmod-to-unicode"))
+    let output = Command::new(env!("CARGO_BIN_EXE_zvvnmod-to-utn57"))
         .output()
         .unwrap();
 
@@ -13,7 +13,7 @@ fn cli_rejects_zero_arguments() {
 
 #[test]
 fn cli_rejects_extra_arguments() {
-    let output = Command::new(env!("CARGO_BIN_EXE_zvvnmod-to-unicode"))
+    let output = Command::new(env!("CARGO_BIN_EXE_zvvnmod-to-utn57"))
         .args(["one", "two"])
         .output()
         .unwrap();
@@ -26,7 +26,7 @@ fn cli_rejects_extra_arguments() {
 #[ignore = "requires mongol-norm 0.0.4 installed by zvvnmod-install-mongol-norm"]
 fn cli_converts_zvvnmod_argument_through_mongol_norm_command() {
     let input = char::from_u32(O_INIT.codepoint()).unwrap().to_string();
-    let output = Command::new(env!("CARGO_BIN_EXE_zvvnmod-to-unicode"))
+    let output = Command::new(env!("CARGO_BIN_EXE_zvvnmod-to-utn57"))
         .arg(input)
         .output()
         .unwrap();

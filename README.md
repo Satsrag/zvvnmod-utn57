@@ -13,9 +13,9 @@ The current first milestone includes:
 - 30 user-confirmed `Ir_fina` replacement rules;
 - a typed, generated relation containing 97 UTN #57 targets and 147 non-empty reviewed mapping rows (100 main + 47 particle);
 - executable longest-match replacement from one ZVVNMOD written-form run to UTN #57 written units;
-- a command bridge that invokes the published `mongol-norm==0.0.4` Python package for Unicode serialization.
+- a command bridge that invokes the published `mongol-norm==0.0.4` Python package to serialize positioned UTN #57 written units as canonical Mongolian Unicode.
 
-Forward mapping replacement is implemented through the reviewed written-unit stage, including reviewed particle sequence corrections and reviewed MVS targets. The Rust mapping core does not reimplement Unicode serialization. The `zvvnmod-to-unicode` command starts Python once per conversion and delegates positioned-unit serialization to `mongol-norm`; reverse conversion and unreviewed structural inference remain out of scope.
+Forward mapping replacement is implemented through the reviewed written-unit stage, including reviewed particle sequence corrections and reviewed MVS targets. The Rust mapping core does not reimplement the final serialization. The `zvvnmod-to-utn57` command starts Python once per conversion and delegates positioned-unit serialization to `mongol-norm`; reverse conversion and unreviewed structural inference remain out of scope.
 
 ## Layout
 
@@ -220,7 +220,7 @@ assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit
 
 ## External `mongol-norm` command
 
-The current Unicode endpoint uses an external Python command; it does not embed CPython or link
+The current UTN #57 output command uses an external Python command; it does not embed CPython or link
 `libpython`. After installing this crate from a Cargo registry, install the exact reviewed Python
 package once for the current user or deployment:
 
@@ -232,11 +232,12 @@ zvvnmod-install-mongol-norm
 Then invoke the command with one ZVVNMOD PUA string:
 
 ```bash
-zvvnmod-to-unicode '<zvvnmod-text>'
+zvvnmod-to-utn57 '<zvvnmod-text>'
 ```
 
 The Rust command maps ZVVNMOD to typed positioned units, sends protocol-versioned JSON to the
-bundled Python bridge over stdin, and reads canonical Unicode from stdout. The bridge calls only
+bundled Python bridge over stdin, and reads the canonical Mongolian Unicode serialization of the
+UTN #57 result from stdout. The bridge calls only
 the public API:
 
 ```python

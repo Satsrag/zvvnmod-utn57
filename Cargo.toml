@@ -16,8 +16,8 @@ name = "zvvnmod_utn57"
 path = "src/lib.rs"
 
 [[bin]]
-name = "zvvnmod-to-unicode"
-path = "src/bin/zvvnmod-to-unicode.rs"
+name = "zvvnmod-to-utn57"
+path = "src/bin/zvvnmod-to-utn57.rs"
 
 [[bin]]
 name = "zvvnmod-install-mongol-norm"
