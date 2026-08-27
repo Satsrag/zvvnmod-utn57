@@ -237,7 +237,7 @@ The current UTN #57 output command uses an external Python command; it does not 
 package once for the current user or deployment:
 
 ```bash
-cargo install zvvnmod-utn57 --version 0.1.0-alpha.1
+cargo install zvvnmod-utn57 --version 0.1.0-alpha.2
 zvvnmod-install-mongol-norm
 ```
 
