@@ -33,7 +33,6 @@
 │   └── zvvnmod-utn57-map.csv
 ├── scripts/
 │   ├── check_website_contract.py
-│   ├── install_mongol_norm.sh
 │   ├── mongol_norm_positioned.py
 │   ├── generate_ir_fina.py
 │   ├── generate_utn57_mapping.py
@@ -213,16 +212,17 @@ assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit
 ## 外部 `mongol-norm` 命令
 
 当前 Unicode endpoint 只调用外部 Python 命令，不嵌入 CPython，也不链接 `libpython`。
-先把经过验证的固定版本安装到仓库本地目录：
+从 Cargo registry 安装本 crate 后，为当前用户或部署环境安装一次经过验证的固定版本：
 
 ```bash
-scripts/install_mongol_norm.sh
+cargo install zvvnmod-utn57 --version 0.1.0
+zvvnmod-install-mongol-norm
 ```
 
 然后传入一个 ZVVNMOD PUA 字符串：
 
 ```bash
-cargo run --bin zvvnmod-to-unicode -- '<zvvnmod-text>'
+zvvnmod-to-unicode '<zvvnmod-text>'
 ```
 
 Rust 命令先把 ZVVNMOD 转成 typed positioned units，再通过 stdin 发送带协议版本的 JSON；
@@ -232,12 +232,17 @@ Rust 命令先把 ZVVNMOD 转成 typed positioned units，再通过 stdin 发送
 MongolianShaper("MNG").normalize_positioned_written_units(records)
 ```
 
-安装脚本使用 `pip --target`，不需要 root，也不要求 `python3-venv`。它使用 SHA-256
-锁定 0.0.4 wheel，先在 staging directory 安装并验证，再替换目标目录。命令以 isolated
-mode 启动 Python，忽略当前目录和继承的 `PYTHONPATH`，并同时要求 distribution metadata
-和 runtime `__version__` 等于 0.0.4。使用非默认安装目录或在本 checkout 外构建的 binary
-时，设置 `ZVVNMOD_MONGOL_NORM_PATH`。installer 和 runtime 都优先使用
+installer binary 把 hash-locked requirements 和 validation bridge 内嵌在 Cargo artifact 中，
+不依赖源码 checkout。它使用 `pip --target`，不需要 root，也不要求 `python3-venv`；只从
+PyPI 下载经过审核的 0.0.4 wheel，先在 staging directory 安装并验证，再替换目标目录。
+默认目录为 `$XDG_DATA_HOME/zvvnmod-utn57/mongol-norm/0.0.4/site`，没有
+`XDG_DATA_HOME` 时使用 `$HOME/.local/share/zvvnmod-utn57/mongol-norm/0.0.4/site`。
+installer 和 runtime 都支持用绝对路径 `ZVVNMOD_MONGOL_NORM_PATH` 覆盖目录，并优先使用
 `ZVVNMOD_MONGOL_NORM_PYTHON` 指定 Python；installer 仍把 `PYTHON` 作为低优先级 fallback。
+
+其他 Rust 项目把 `zvvnmod-utn57` 加为 dependency 时，`cargo build` 不会自动运行 pip。
+纯 Rust mapping 不需要 Python；调用 Unicode normalization API 的部署环境显式运行一次
+`zvvnmod-install-mongol-norm`。
 
 当前方案有意保持简单：每次 conversion command 启动一次 Python；30秒 deadline 覆盖
 进程与 stdin/stdout/stderr 收集，stdout 和 stderr 各自最多捕获 1 MiB。在 Unix 上，bridge
@@ -251,8 +256,9 @@ runtime dependency。以后实际性能测试证明 process startup 是瓶颈时
 python3 -m unittest discover -s tests -v
 cargo fmt --all -- --check
 cargo test
-scripts/install_mongol_norm.sh
+cargo run --bin zvvnmod-install-mongol-norm
 cargo test --test command_bridge --test command_cli -- --ignored
+cargo package
 ```
 
 ## 许可证

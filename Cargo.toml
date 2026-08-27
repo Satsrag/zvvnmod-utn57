@@ -2,9 +2,14 @@
 name = "zvvnmod-utn57"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.82"
 description = "ZVVNMOD and UTN #57 written-form conversion primitives"
 license = "Apache-2.0"
-publish = false
+repository = "https://github.com/Satsrag/zvvnmod-utn57"
+readme = "README.md"
+keywords = ["mongolian", "unicode", "utn57", "zvvnmod"]
+categories = ["text-processing", "internationalization"]
+exclude = [".mongol-norm-site/**"]
 
 [lib]
 name = "zvvnmod_utn57"
@@ -13,5 +18,9 @@ path = "src/lib.rs"
 [[bin]]
 name = "zvvnmod-to-unicode"
 path = "src/bin/zvvnmod-to-unicode.rs"
+
+[[bin]]
+name = "zvvnmod-install-mongol-norm"
+path = "src/bin/zvvnmod-install-mongol-norm.rs"
 
 [dependencies]

@@ -1,9 +1,12 @@
-use crate::{convert_zvvnmod_run, Utn57ConversionError, Utn57WrittenUnit, ZvvnmodCode};
+use crate::{
+    convert_zvvnmod_run, mongol_norm_install_path, Utn57ConversionError, Utn57WrittenUnit,
+    ZvvnmodCode,
+};
 use std::error::Error;
 use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Child, Command, ExitStatus, Stdio};
 use std::sync::mpsc;
 use std::thread;
@@ -14,7 +17,7 @@ use std::os::unix::process::CommandExt;
 
 const BRIDGE_SCRIPT: &str = include_str!("../scripts/mongol_norm_positioned.py");
 const PYTHON_ENV: &str = "ZVVNMOD_MONGOL_NORM_PYTHON";
-const PYTHON_PATH_ENV: &str = "ZVVNMOD_MONGOL_NORM_PATH";
+
 const COMMAND_TIMEOUT: Duration = Duration::from_secs(30);
 const OUTPUT_LIMIT: usize = 1024 * 1024;
 const CLEANUP_TIMEOUT: Duration = Duration::from_millis(500);
@@ -93,15 +96,6 @@ impl From<Utn57ConversionError> for MongolNormCommandError {
 
 fn default_python() -> OsString {
     std::env::var_os(PYTHON_ENV).unwrap_or_else(|| OsString::from("python3"))
-}
-
-fn mongol_norm_path() -> Option<PathBuf> {
-    std::env::var_os(PYTHON_PATH_ENV)
-        .map(PathBuf::from)
-        .or_else(|| {
-            let local = Path::new(env!("CARGO_MANIFEST_DIR")).join(".mongol-norm-site");
-            local.is_dir().then_some(local)
-        })
 }
 
 fn positioned_payload(units: &[Utn57WrittenUnit]) -> String {
@@ -409,11 +403,10 @@ pub fn normalize_positioned_with_mongol_norm_python(
     units: &[Utn57WrittenUnit],
     python: impl AsRef<OsStr>,
 ) -> Result<String, MongolNormCommandError> {
-    let module_path = mongol_norm_path().ok_or_else(|| MongolNormCommandError::PythonPath {
-        message: format!(
-            "set {PYTHON_PATH_ENV} to the directory created by scripts/install_mongol_norm.sh"
-        ),
-    })?;
+    let module_path =
+        mongol_norm_install_path().map_err(|error| MongolNormCommandError::PythonPath {
+            message: error.to_string(),
+        })?;
     normalize_positioned_with_mongol_norm_python_at(units, python, module_path, COMMAND_TIMEOUT)
 }
 
@@ -442,6 +435,7 @@ mod tests {
     use super::*;
     use std::fs;
     use std::os::unix::fs::PermissionsExt;
+    use std::path::PathBuf;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     struct TempDir(PathBuf);

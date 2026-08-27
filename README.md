@@ -33,7 +33,6 @@ Forward mapping replacement is implemented through the reviewed written-unit sta
 │   └── zvvnmod-utn57-map.csv
 ├── scripts/
 │   ├── check_website_contract.py
-│   ├── install_mongol_norm.sh
 │   ├── mongol_norm_positioned.py
 │   ├── generate_ir_fina.py
 │   ├── generate_utn57_mapping.py
@@ -222,16 +221,18 @@ assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit
 ## External `mongol-norm` command
 
 The current Unicode endpoint uses an external Python command; it does not embed CPython or link
-`libpython`. Install the exact reviewed package into the repository-local import directory:
+`libpython`. After installing this crate from a Cargo registry, install the exact reviewed Python
+package once for the current user or deployment:
 
 ```bash
-scripts/install_mongol_norm.sh
+cargo install zvvnmod-utn57 --version 0.1.0
+zvvnmod-install-mongol-norm
 ```
 
 Then invoke the command with one ZVVNMOD PUA string:
 
 ```bash
-cargo run --bin zvvnmod-to-unicode -- '<zvvnmod-text>'
+zvvnmod-to-unicode '<zvvnmod-text>'
 ```
 
 The Rust command maps ZVVNMOD to typed positioned units, sends protocol-versioned JSON to the
@@ -242,13 +243,18 @@ the public API:
 MongolianShaper("MNG").normalize_positioned_written_units(records)
 ```
 
-The installer uses `pip --target`, needs neither root nor `python3-venv`, pins the 0.0.4 wheel by
-SHA-256, stages and validates the installation before replacing the destination, and verifies the
-singleton `O:init` result. The command starts Python in isolated mode, ignores the current directory
-and inherited `PYTHONPATH`, and requires both package metadata and runtime `__version__` to equal
-0.0.4. Set `ZVVNMOD_MONGOL_NORM_PATH` when using a non-default install directory or a binary built
-outside this checkout. The installer and runtime both select a custom Python executable with
+The installer binary embeds the hash-locked requirements and validation bridge in the Cargo
+artifact, so it does not depend on a source checkout. It uses `pip --target`, needs neither root nor
+`python3-venv`, downloads only the reviewed 0.0.4 wheel from PyPI, stages and validates it before
+replacing the destination, and verifies the singleton `O:init` result. The default destination is
+`$XDG_DATA_HOME/zvvnmod-utn57/mongol-norm/0.0.4/site`, falling back to
+`$HOME/.local/share/zvvnmod-utn57/mongol-norm/0.0.4/site`. Both installer and runtime honor
+`ZVVNMOD_MONGOL_NORM_PATH` as an explicit absolute-path override and select a custom Python executable with
 `ZVVNMOD_MONGOL_NORM_PYTHON`; the installer also retains `PYTHON` as a lower-priority fallback.
+
+Adding `zvvnmod-utn57` as a Rust dependency does not run pip during `cargo build`. Pure Rust mapping
+needs no Python installation. Deployments that call the Unicode normalization APIs run
+`zvvnmod-install-mongol-norm` once as an explicit setup step.
 
 This subprocess bridge is deliberately simple and starts Python once per conversion command. A
 conversion, including stdin/stdout/stderr collection, has a 30-second deadline, with stdout and
@@ -264,8 +270,9 @@ persistent worker can be added later if profiling shows process startup is a bot
 python3 -m unittest discover -s tests -v
 cargo fmt --all -- --check
 cargo test
-scripts/install_mongol_norm.sh
+cargo run --bin zvvnmod-install-mongol-norm
 cargo test --test command_bridge --test command_cli -- --ignored
+cargo package
 ```
 
 ## License

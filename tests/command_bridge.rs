@@ -5,7 +5,7 @@ use zvvnmod_utn57::{
 };
 
 #[test]
-#[ignore = "requires mongol-norm 0.0.4 installed by scripts/install_mongol_norm.sh"]
+#[ignore = "requires mongol-norm 0.0.4 installed by zvvnmod-install-mongol-norm"]
 fn command_bridge_converts_singleton_o_init() {
     let input = char::from_u32(O_INIT.codepoint()).unwrap().to_string();
 
@@ -15,7 +15,7 @@ fn command_bridge_converts_singleton_o_init() {
 }
 
 #[test]
-#[ignore = "requires mongol-norm 0.0.4 installed by scripts/install_mongol_norm.sh"]
+#[ignore = "requires mongol-norm 0.0.4 installed by zvvnmod-install-mongol-norm"]
 fn command_bridge_normalizes_all_reviewed_target_sequences() {
     for mapping in ZVVNMOD_TO_UTN57_MAPPINGS {
         normalize_positioned_with_mongol_norm(mapping.targets)
@@ -24,7 +24,7 @@ fn command_bridge_normalizes_all_reviewed_target_sequences() {
 }
 
 #[test]
-#[ignore = "requires mongol-norm 0.0.4 installed by scripts/install_mongol_norm.sh"]
+#[ignore = "requires mongol-norm 0.0.4 installed by zvvnmod-install-mongol-norm"]
 fn command_bridge_preserves_explicit_mvs() {
     let units = [
         Utn57WrittenUnit::new(Utn57Unit::S, Utn57Position::Fina),
@@ -41,7 +41,7 @@ fn command_bridge_preserves_explicit_mvs() {
 #[test]
 fn missing_python_command_returns_a_typed_error() {
     let previous_path = std::env::var_os("ZVVNMOD_MONGOL_NORM_PATH");
-    std::env::set_var("ZVVNMOD_MONGOL_NORM_PATH", env!("CARGO_MANIFEST_DIR"));
+    std::env::set_var("ZVVNMOD_MONGOL_NORM_PATH", std::env::temp_dir());
     let error =
         normalize_positioned_with_mongol_norm_python(&[], "/definitely/missing/zvvnmod-python")
             .unwrap_err();

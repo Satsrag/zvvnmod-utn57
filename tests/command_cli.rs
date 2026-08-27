@@ -23,7 +23,7 @@ fn cli_rejects_extra_arguments() {
 }
 
 #[test]
-#[ignore = "requires mongol-norm 0.0.4 installed by scripts/install_mongol_norm.sh"]
+#[ignore = "requires mongol-norm 0.0.4 installed by zvvnmod-install-mongol-norm"]
 fn cli_converts_zvvnmod_argument_through_mongol_norm_command() {
     let input = char::from_u32(O_INIT.codepoint()).unwrap().to_string();
     let output = Command::new(env!("CARGO_BIN_EXE_zvvnmod-to-unicode"))
