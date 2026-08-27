@@ -1,0 +1,4 @@
+--index-url https://pypi.org/simple
+--only-binary=:all:
+mongol-norm==0.0.4 \
+    --hash=sha256:1edfec8232f33b8569036f245ec3fd447a268bb3da5094da605f45dd66a31b68

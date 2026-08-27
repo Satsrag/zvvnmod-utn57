@@ -12,9 +12,10 @@
 - 从输入 stream 删除旧 FVS1/FVS2/FVS3/MVS；
 - 生成 30 条用户确认的 `Ir_fina` 替换规则；
 - 生成包含97个 UTN #57 targets与147条非空 reviewed rows（100条main + 47条particle）的 typed relation；
-- 对一个 ZVVNMOD written-form run 执行 longest-match replacement。
+- 对一个 ZVVNMOD written-form run 执行 longest-match replacement；
+- 通过命令调用已发布的 Python `mongol-norm==0.0.4`，把 positioned UTN #57 written units 序列化为 canonical Mongolian Unicode。
 
-已实现正向 reviewed written-unit mapping replacement，包括 reviewed particle sequence corrections与reviewed MVS targets。本次不猜测relation中未编码的通用ZWJ reconstruction、particle boundary、target serialization或反向转换结构规则。
+已实现正向 reviewed written-unit mapping replacement，包括 reviewed particle sequence corrections与reviewed MVS targets。Rust mapping core 不重复实现最终 serialization；`zvvnmod-to-utn57` 每次转换启动一次 Python，把 positioned units 交给 `mongol-norm`。反向转换和未 reviewed 的结构推断仍不在当前范围内。
 
 ## 目录
 
@@ -24,6 +25,7 @@
 ├── LICENSE
 ├── README.md
 ├── README.zh-CN.md
+├── requirements-mongol-norm.txt
 ├── data/
 │   ├── ir-fina-replacements.csv
 │   ├── utn57-written-units.csv
@@ -31,6 +33,7 @@
 │   └── zvvnmod-utn57-map.csv
 ├── scripts/
 │   ├── check_website_contract.py
+│   ├── mongol_norm_positioned.py
 │   ├── generate_ir_fina.py
 │   ├── generate_utn57_mapping.py
 │   ├── generate_zvvnmod.py
@@ -39,6 +42,7 @@
 │   └── strict_csv.py
 ├── src/
 │   ├── lib.rs
+│   ├── command_bridge.rs
 │   ├── conversion.rs
 │   ├── preprocess.rs
 │   └── generated/
@@ -205,12 +209,68 @@ let options = Utn57ConversionOptions { k_variant: Utn57KVariant::K2 };
 assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit, Utn57Unit::K2);
 ```
 
+完整文本转换由 Rust 调用方和 CLI 共用同一个后端无关 API：
+
+```rust
+use zvvnmod_utn57::convert_zvvnmod_to_utn57;
+
+let output = convert_zvvnmod_to_utn57(zvvnmod_text)?;
+```
+
+`convert_zvvnmod_to_utn57` 是稳定的公共边界。当前 normalization backend 是下面说明的外部
+`mongol-norm` bridge；以后可以替换成 crate 自己实现的 normalizer，而不改变 Rust 调用方和
+`zvvnmod-to-utn57` CLI。
+
+## 外部 `mongol-norm` 命令
+
+当前 UTN #57 输出命令只调用外部 Python 命令，不嵌入 CPython，也不链接 `libpython`。
+从 Cargo registry 安装本 crate 后，为当前用户或部署环境安装一次经过验证的固定版本：
+
+```bash
+cargo install zvvnmod-utn57 --version 0.1.0
+zvvnmod-install-mongol-norm
+```
+
+然后传入一个 ZVVNMOD PUA 字符串：
+
+```bash
+zvvnmod-to-utn57 '<zvvnmod-text>'
+```
+
+Rust 命令先把 ZVVNMOD 转成 typed positioned units，再通过 stdin 发送带协议版本的 JSON；
+内置 Python bridge 调用以下公开 API，并从 stdout 返回 UTN #57 结果的 canonical Mongolian Unicode serialization：
+
+```python
+MongolianShaper("MNG").normalize_positioned_written_units(records)
+```
+
+installer binary 把 hash-locked requirements 和 validation bridge 内嵌在 Cargo artifact 中，
+不依赖源码 checkout。它使用 `pip --target`，不需要 root，也不要求 `python3-venv`；只从
+PyPI 下载经过审核的 0.0.4 wheel，先在 staging directory 安装并验证，再替换目标目录。
+默认目录为 `$XDG_DATA_HOME/zvvnmod-utn57/mongol-norm/0.0.4/site`，没有
+`XDG_DATA_HOME` 时使用 `$HOME/.local/share/zvvnmod-utn57/mongol-norm/0.0.4/site`。
+installer 和 runtime 都支持用绝对路径 `ZVVNMOD_MONGOL_NORM_PATH` 覆盖目录，并优先使用
+`ZVVNMOD_MONGOL_NORM_PYTHON` 指定 Python；installer 仍把 `PYTHON` 作为低优先级 fallback。
+
+其他 Rust 项目把 `zvvnmod-utn57` 加为 dependency 时，`cargo build` 不会自动运行 pip。
+纯 Rust mapping 不需要 Python；调用 Python-backed UTN #57 normalization API 的部署环境显式运行一次
+`zvvnmod-install-mongol-norm`。
+
+当前方案有意保持简单：每次 conversion command 启动一次 Python；30秒 deadline 覆盖
+进程与 stdin/stdout/stderr 收集，stdout 和 stderr 各自最多捕获 1 MiB。在 Unix 上，bridge
+通过 Rust 标准库进入独立 process group，并用一处有安全说明的 POSIX `kill` FFI 在 timeout
+或 pipeline error 时终止整个 group，包括 direct parent 已退出的 descendants；不增加 Rust
+runtime dependency。以后实际性能测试证明 process startup 是瓶颈时，再增加长生命周期 worker。
+
 ## 验证
 
 ```bash
 python3 -m unittest discover -s tests -v
 cargo fmt --all -- --check
 cargo test
+cargo run --bin zvvnmod-install-mongol-norm
+cargo test --test command_bridge --test command_cli -- --ignored
+cargo package
 ```
 
 ## 许可证

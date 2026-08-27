@@ -1,3 +1,4 @@
 /target/
+.mongol-norm-site/
 __pycache__/
 *.pyc

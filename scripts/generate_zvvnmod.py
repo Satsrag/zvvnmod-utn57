@@ -459,6 +459,22 @@ def render_utn57_mapping_rust(
         [
             "}",
             "",
+            "impl Utn57Unit {",
+            "    /// Stable unit spelling used by the public positioned-record contract.",
+            "    pub const fn contract_name(self) -> &'static str {",
+            "        match self {",
+        ]
+    )
+    lines.extend(
+        f'            Self::{unit} => "{"Mvs" if unit == "MVS" else unit}",'
+        for unit in units
+    )
+    lines.extend(
+        [
+            "        }",
+            "    }",
+            "}",
+            "",
             "/// A UTN #57 joining position or non-positional control kind.",
             "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]",
             "pub enum Utn57Position {",
@@ -467,6 +483,19 @@ def render_utn57_mapping_rust(
             "    Medi,",
             "    Fina,",
             "    Control,",
+            "}",
+            "",
+            "impl Utn57Position {",
+            "    /// Stable position spelling used by the public positioned-record contract.",
+            "    pub const fn contract_name(self) -> &'static str {",
+            "        match self {",
+            '            Self::Isol => "isol",',
+            '            Self::Init => "init",',
+            '            Self::Medi => "medi",',
+            '            Self::Fina => "fina",',
+            '            Self::Control => "control",',
+            "        }",
+            "    }",
             "}",
             "",
             "/// One typed UTN #57 written unit target.",
@@ -503,6 +532,15 @@ def render_utn57_mapping_rust(
             )
     lines.extend(
         [
+            "",
+            "/// Complete reviewed UTN #57 positioned written-unit inventory.",
+            "pub static UTN57_WRITTEN_UNITS: &[Utn57WrittenUnit] = &[",
+        ]
+    )
+    lines.extend(f"    {target.const_name}," for target in mapping.targets)
+    lines.extend(
+        [
+            "];",
             "",
             "/// One reviewed ZVVNMOD sequence → UTN #57 sequence relation row.",
             "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
