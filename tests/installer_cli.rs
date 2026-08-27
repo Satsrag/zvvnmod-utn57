@@ -1,5 +1,6 @@
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
+use std::io::Write;
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -34,10 +35,15 @@ impl Drop for TempDir {
 }
 
 fn write_executable(path: &Path, body: &str) {
-    fs::write(path, body).unwrap();
-    let mut permissions = fs::metadata(path).unwrap().permissions();
-    permissions.set_mode(0o755);
-    fs::set_permissions(path, permissions).unwrap();
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o755)
+        .open(path)
+        .unwrap();
+    file.write_all(body.as_bytes()).unwrap();
+    file.sync_all().unwrap();
+    drop(file);
 }
 
 #[test]

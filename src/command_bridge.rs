@@ -434,9 +434,18 @@ pub fn convert_zvvnmod_text_with_mongol_norm(
 mod tests {
     use super::*;
     use std::fs;
-    use std::os::unix::fs::PermissionsExt;
+    use std::os::unix::fs::OpenOptionsExt;
     use std::path::PathBuf;
+    use std::sync::{Mutex, MutexGuard};
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    static EXECUTABLE_FIXTURE_LOCK: Mutex<()> = Mutex::new(());
+
+    fn lock_executable_fixture() -> MutexGuard<'static, ()> {
+        EXECUTABLE_FIXTURE_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
 
     struct TempDir(PathBuf);
 
@@ -492,14 +501,20 @@ mod tests {
     }
 
     fn write_executable(path: &Path, body: &str) {
-        fs::write(path, body).unwrap();
-        let mut permissions = fs::metadata(path).unwrap().permissions();
-        permissions.set_mode(0o755);
-        fs::set_permissions(path, permissions).unwrap();
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o755)
+            .open(path)
+            .unwrap();
+        file.write_all(body.as_bytes()).unwrap();
+        file.sync_all().unwrap();
+        drop(file);
     }
 
     #[test]
     fn selected_install_cannot_be_shadowed_by_cwd_or_pythonpath() {
+        let _fixture_guard = lock_executable_fixture();
         let temp = TempDir::new("isolated");
         let selected = temp.0.join("selected");
         let shadow = temp.0.join("shadow");
@@ -551,6 +566,7 @@ mod tests {
 
     #[test]
     fn timeout_kills_and_reaps_python_process() {
+        let _fixture_guard = lock_executable_fixture();
         let temp = TempDir::new("timeout");
         let selected = temp.0.join("selected");
         fs::create_dir_all(&selected).unwrap();
@@ -584,6 +600,7 @@ mod tests {
 
     #[test]
     fn timeout_kills_descendant_after_direct_child_exits() {
+        let _fixture_guard = lock_executable_fixture();
         let temp = TempDir::new("descendant-timeout");
         let selected = temp.0.join("selected");
         fs::create_dir_all(&selected).unwrap();
@@ -622,6 +639,7 @@ mod tests {
 
     #[test]
     fn stdout_capture_is_bounded() {
+        let _fixture_guard = lock_executable_fixture();
         let temp = TempDir::new("stdout-limit");
         let selected = temp.0.join("selected");
         fs::create_dir_all(&selected).unwrap();
@@ -665,6 +683,7 @@ mod tests {
 
     #[test]
     fn stderr_capture_is_bounded() {
+        let _fixture_guard = lock_executable_fixture();
         let temp = TempDir::new("stderr-limit");
         let selected = temp.0.join("selected");
         fs::create_dir_all(&selected).unwrap();

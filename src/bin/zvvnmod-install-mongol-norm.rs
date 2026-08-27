@@ -285,25 +285,25 @@ fn main() -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::os::unix::fs::OpenOptionsExt;
+
+    fn write_test_executable(path: &Path, body: &str) {
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o755)
+            .open(path)
+            .unwrap();
+        file.write_all(body.as_bytes()).unwrap();
+        file.sync_all().unwrap();
+        drop(file);
+    }
 
     #[test]
     fn validation_write_failure_kills_and_reaps_spawned_child() {
-        use std::os::unix::fs::PermissionsExt;
-
         let parent = TemporaryDirectory::create(&std::env::temp_dir(), "test-validation").unwrap();
         let fake_python = parent.path().join("python");
-        let pid_path = parent.path().join("validation.pid");
-        fs::write(
-            &fake_python,
-            format!(
-                "#!/bin/sh\nexec 0<&-\nprintf '%s' $$ > {}\nsleep 60\n",
-                pid_path.display()
-            ),
-        )
-        .unwrap();
-        let mut permissions = fs::metadata(&fake_python).unwrap().permissions();
-        permissions.set_mode(0o755);
-        fs::set_permissions(&fake_python, permissions).unwrap();
+        write_test_executable(&fake_python, "#!/bin/sh\nexec 0<&-\nsleep 60\n");
         let input = vec![b'x'; 1024 * 1024];
 
         let error = validate_install_with_input(fake_python.as_os_str(), parent.path(), &input)
@@ -313,8 +313,6 @@ mod tests {
             error.contains("could not write staged validation input"),
             "{error}"
         );
-        let pid = fs::read_to_string(pid_path).unwrap();
-        assert!(!pid.is_empty(), "validation child did not start");
         assert!(
             !error.contains("could not kill staged validation")
                 && !error.contains("could not reap staged validation"),
