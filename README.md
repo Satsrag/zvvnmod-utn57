@@ -178,7 +178,7 @@ no additional chachlag relation is inferred. ZVVNMOD uses the same shapes for UT
 K and K2: default conversion emits K, while callers with nominal or other context
 can explicitly select K2 with `Utn57ConversionOptions`.
 
-Nirugu is emitted as `Utn57Unit::Nirugu` with `Utn57Position::Control`; no
+Nirugu is emitted as `Utn57WrittenUnit::Nirugu` with `Utn57Position::Control`; no
 positional Nirugu form is invented.
 
 ## Generation
@@ -203,19 +203,19 @@ python3 scripts/generate_zvvnmod.py
 ```rust
 use zvvnmod_utn57::{
     convert_zvvnmod_run, convert_zvvnmod_run_with_options, Utn57ConversionOptions,
-    Utn57KVariant, Utn57Position, Utn57Unit, Utn57WrittenUnit, B_I_INIT, K_INIT,
+    Utn57KVariant, Utn57Position, Utn57WrittenUnit, Utn57PositionedWrittenUnit, B_I_INIT, K_INIT,
 };
 
 assert_eq!(
     convert_zvvnmod_run(&[B_I_INIT]).unwrap(),
     vec![
-        Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init),
-        Utn57WrittenUnit::new(Utn57Unit::I, Utn57Position::Medi),
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Init),
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::I, Utn57Position::Medi),
     ],
 );
 
 let options = Utn57ConversionOptions { k_variant: Utn57KVariant::K2 };
-assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit, Utn57Unit::K2);
+assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].written_unit, Utn57WrittenUnit::K2);
 ```
 
 For complete text conversion, Rust callers and the CLI share the same backend-neutral API:

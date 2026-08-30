@@ -1,6 +1,6 @@
 use crate::{
-    convert_zvvnmod_run, mongol_norm_install_path, Utn57ConversionError, Utn57WrittenUnit,
-    ZvvnmodCode,
+    convert_zvvnmod_run, mongol_norm_install_path, Utn57ConversionError,
+    Utn57PositionedWrittenUnit, ZvvnmodCode,
 };
 use std::error::Error;
 use std::ffi::{OsStr, OsString};
@@ -98,14 +98,14 @@ fn default_python() -> OsString {
     std::env::var_os(PYTHON_ENV).unwrap_or_else(|| OsString::from("python3"))
 }
 
-fn positioned_payload(units: &[Utn57WrittenUnit]) -> String {
+fn positioned_payload(units: &[Utn57PositionedWrittenUnit]) -> String {
     let mut payload = String::from("{\"protocol\":1,\"records\":[");
     for (index, unit) in units.iter().enumerate() {
         if index != 0 {
             payload.push(',');
         }
         payload.push_str("{\"unit\":\"");
-        payload.push_str(unit.unit.contract_name());
+        payload.push_str(unit.written_unit.contract_name());
         payload.push_str("\",\"position\":\"");
         payload.push_str(unit.position.contract_name());
         payload.push_str("\"}");
@@ -205,7 +205,7 @@ fn terminate_process_tree(child: &mut Child) {
 
 /// Normalize positioned units with an explicit Python executable, install path, and timeout.
 fn normalize_positioned_with_mongol_norm_python_at(
-    units: &[Utn57WrittenUnit],
+    units: &[Utn57PositionedWrittenUnit],
     python: impl AsRef<OsStr>,
     module_path: impl AsRef<Path>,
     timeout: Duration,
@@ -400,7 +400,7 @@ fn normalize_positioned_with_mongol_norm_python_at(
 
 /// Normalize positioned written units by invoking an explicit Python executable.
 pub fn normalize_positioned_with_mongol_norm_python(
-    units: &[Utn57WrittenUnit],
+    units: &[Utn57PositionedWrittenUnit],
     python: impl AsRef<OsStr>,
 ) -> Result<String, MongolNormCommandError> {
     let module_path =
@@ -412,7 +412,7 @@ pub fn normalize_positioned_with_mongol_norm_python(
 
 /// Normalize positioned written units using the configured Python command.
 pub fn normalize_positioned_with_mongol_norm(
-    units: &[Utn57WrittenUnit],
+    units: &[Utn57PositionedWrittenUnit],
 ) -> Result<String, MongolNormCommandError> {
     normalize_positioned_with_mongol_norm_python(units, default_python())
 }

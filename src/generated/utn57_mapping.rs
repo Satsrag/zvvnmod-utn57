@@ -3,9 +3,9 @@
 
 use super::zvvnmod_codes::*;
 
-/// A semantic UTN #57 written unit.
+/// A semantic UTN #57 written-unit identity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum Utn57Unit {
+pub enum Utn57WrittenUnit {
     A,
     Aa,
     B,
@@ -48,7 +48,7 @@ pub enum Utn57Unit {
     MVS,
 }
 
-impl Utn57Unit {
+impl Utn57WrittenUnit {
     /// Stable unit spelling used by the public positioned-record contract.
     pub const fn contract_name(self) -> &'static str {
         match self {
@@ -119,251 +119,319 @@ impl Utn57Position {
     }
 }
 
-/// One typed UTN #57 written unit target.
+/// One positioned UTN #57 written unit.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Utn57WrittenUnit {
+pub struct Utn57PositionedWrittenUnit {
     /// Semantic unit identity.
-    pub unit: Utn57Unit,
+    pub written_unit: Utn57WrittenUnit,
     /// Joining position, or `Control` for a non-positional control.
     pub position: Utn57Position,
 }
 
-impl Utn57WrittenUnit {
-    /// Construct a typed UTN #57 written unit.
-    pub const fn new(unit: Utn57Unit, position: Utn57Position) -> Self {
-        Self { unit, position }
+impl Utn57PositionedWrittenUnit {
+    /// Construct a positioned UTN #57 written unit.
+    pub const fn new(written_unit: Utn57WrittenUnit, position: Utn57Position) -> Self {
+        Self {
+            written_unit,
+            position,
+        }
     }
 }
 
 /// Reviewed target `A:isol`.
-pub const UTN57_A_ISOL: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::A, Utn57Position::Isol);
+pub const UTN57_A_ISOL: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Isol);
 /// Reviewed target `A:init`.
-pub const UTN57_A_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::A, Utn57Position::Init);
+pub const UTN57_A_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Init);
 /// Reviewed target `A:medi`.
-pub const UTN57_A_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::A, Utn57Position::Medi);
+pub const UTN57_A_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Medi);
 /// Reviewed target `A:fina`.
-pub const UTN57_A_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::A, Utn57Position::Fina);
+pub const UTN57_A_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Fina);
 /// Reviewed target `Aa:isol`.
-pub const UTN57_AA_ISOL: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol);
+pub const UTN57_AA_ISOL: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol);
 /// Reviewed target `Aa:fina`.
-pub const UTN57_AA_FINA: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Fina);
+pub const UTN57_AA_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Fina);
 /// Reviewed target `B:init`.
-pub const UTN57_B_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init);
+pub const UTN57_B_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Init);
 /// Reviewed target `B:medi`.
-pub const UTN57_B_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Medi);
+pub const UTN57_B_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Medi);
 /// Reviewed target `B:fina`.
-pub const UTN57_B_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Fina);
+pub const UTN57_B_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Fina);
 /// Reviewed target `B2:fina`.
-pub const UTN57_B2_FINA: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::B2, Utn57Position::Fina);
+pub const UTN57_B2_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B2, Utn57Position::Fina);
 /// Reviewed target `C:init`.
-pub const UTN57_C_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::C, Utn57Position::Init);
+pub const UTN57_C_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::C, Utn57Position::Init);
 /// Reviewed target `C:medi`.
-pub const UTN57_C_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::C, Utn57Position::Medi);
+pub const UTN57_C_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::C, Utn57Position::Medi);
 /// Reviewed target `C:fina`.
-pub const UTN57_C_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::C, Utn57Position::Fina);
+pub const UTN57_C_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::C, Utn57Position::Fina);
 /// Reviewed target `Ch:init`.
-pub const UTN57_CH_INIT: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Ch, Utn57Position::Init);
+pub const UTN57_CH_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Ch, Utn57Position::Init);
 /// Reviewed target `Ch:medi`.
-pub const UTN57_CH_MEDI: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Ch, Utn57Position::Medi);
+pub const UTN57_CH_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Ch, Utn57Position::Medi);
 /// Reviewed target `Ch:fina`.
-pub const UTN57_CH_FINA: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Ch, Utn57Position::Fina);
+pub const UTN57_CH_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Ch, Utn57Position::Fina);
 /// Reviewed target `Cr:init`.
-pub const UTN57_CR_INIT: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Cr, Utn57Position::Init);
+pub const UTN57_CR_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Cr, Utn57Position::Init);
 /// Reviewed target `D:init`.
-pub const UTN57_D_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::D, Utn57Position::Init);
+pub const UTN57_D_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::D, Utn57Position::Init);
 /// Reviewed target `D:medi`.
-pub const UTN57_D_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::D, Utn57Position::Medi);
+pub const UTN57_D_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::D, Utn57Position::Medi);
 /// Reviewed target `D:fina`.
-pub const UTN57_D_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::D, Utn57Position::Fina);
+pub const UTN57_D_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::D, Utn57Position::Fina);
 /// Reviewed target `Dd:medi`.
-pub const UTN57_DD_MEDI: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Dd, Utn57Position::Medi);
+pub const UTN57_DD_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Dd, Utn57Position::Medi);
 /// Reviewed target `Dd:fina`.
-pub const UTN57_DD_FINA: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Dd, Utn57Position::Fina);
+pub const UTN57_DD_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Dd, Utn57Position::Fina);
 /// Reviewed target `F:init`.
-pub const UTN57_F_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::F, Utn57Position::Init);
+pub const UTN57_F_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::F, Utn57Position::Init);
 /// Reviewed target `F:medi`.
-pub const UTN57_F_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::F, Utn57Position::Medi);
+pub const UTN57_F_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::F, Utn57Position::Medi);
 /// Reviewed target `F:fina`.
-pub const UTN57_F_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::F, Utn57Position::Fina);
+pub const UTN57_F_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::F, Utn57Position::Fina);
 /// Reviewed target `G:init`.
-pub const UTN57_G_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::G, Utn57Position::Init);
+pub const UTN57_G_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::G, Utn57Position::Init);
 /// Reviewed target `G:medi`.
-pub const UTN57_G_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::G, Utn57Position::Medi);
+pub const UTN57_G_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::G, Utn57Position::Medi);
 /// Reviewed target `G:fina`.
-pub const UTN57_G_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::G, Utn57Position::Fina);
+pub const UTN57_G_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::G, Utn57Position::Fina);
 /// Reviewed target `Gx:init`.
-pub const UTN57_GX_INIT: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Gx, Utn57Position::Init);
+pub const UTN57_GX_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Gx, Utn57Position::Init);
 /// Reviewed target `Gx:medi`.
-pub const UTN57_GX_MEDI: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Gx, Utn57Position::Medi);
+pub const UTN57_GX_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Gx, Utn57Position::Medi);
 /// Reviewed target `H:init`.
-pub const UTN57_H_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::H, Utn57Position::Init);
+pub const UTN57_H_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::H, Utn57Position::Init);
 /// Reviewed target `H:medi`.
-pub const UTN57_H_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::H, Utn57Position::Medi);
+pub const UTN57_H_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::H, Utn57Position::Medi);
 /// Reviewed target `H:fina`.
-pub const UTN57_H_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::H, Utn57Position::Fina);
+pub const UTN57_H_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::H, Utn57Position::Fina);
 /// Reviewed target `Hr:medi`.
-pub const UTN57_HR_MEDI: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Hr, Utn57Position::Medi);
+pub const UTN57_HR_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Hr, Utn57Position::Medi);
 /// Reviewed target `Hr:fina`.
-pub const UTN57_HR_FINA: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Hr, Utn57Position::Fina);
+pub const UTN57_HR_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Hr, Utn57Position::Fina);
 /// Reviewed target `Hx:init`.
-pub const UTN57_HX_INIT: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Hx, Utn57Position::Init);
+pub const UTN57_HX_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Hx, Utn57Position::Init);
 /// Reviewed target `Hx:medi`.
-pub const UTN57_HX_MEDI: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Hx, Utn57Position::Medi);
+pub const UTN57_HX_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Hx, Utn57Position::Medi);
 /// Reviewed target `Hx:fina`.
-pub const UTN57_HX_FINA: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Hx, Utn57Position::Fina);
+pub const UTN57_HX_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Hx, Utn57Position::Fina);
 /// Reviewed target `I:isol`.
-pub const UTN57_I_ISOL: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::I, Utn57Position::Isol);
+pub const UTN57_I_ISOL: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::I, Utn57Position::Isol);
 /// Reviewed target `I:init`.
-pub const UTN57_I_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::I, Utn57Position::Init);
+pub const UTN57_I_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::I, Utn57Position::Init);
 /// Reviewed target `I:medi`.
-pub const UTN57_I_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::I, Utn57Position::Medi);
+pub const UTN57_I_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::I, Utn57Position::Medi);
 /// Reviewed target `I:fina`.
-pub const UTN57_I_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::I, Utn57Position::Fina);
+pub const UTN57_I_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::I, Utn57Position::Fina);
 /// Reviewed target `Ix:isol`.
-pub const UTN57_IX_ISOL: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Ix, Utn57Position::Isol);
+pub const UTN57_IX_ISOL: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Ix, Utn57Position::Isol);
 /// Reviewed target `J:medi`.
-pub const UTN57_J_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::J, Utn57Position::Medi);
+pub const UTN57_J_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::J, Utn57Position::Medi);
 /// Reviewed target `J:fina`.
-pub const UTN57_J_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::J, Utn57Position::Fina);
+pub const UTN57_J_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::J, Utn57Position::Fina);
 /// Reviewed target `K:init`.
-pub const UTN57_K_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::K, Utn57Position::Init);
+pub const UTN57_K_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::K, Utn57Position::Init);
 /// Reviewed target `K:medi`.
-pub const UTN57_K_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::K, Utn57Position::Medi);
+pub const UTN57_K_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::K, Utn57Position::Medi);
 /// Reviewed target `K:fina`.
-pub const UTN57_K_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::K, Utn57Position::Fina);
+pub const UTN57_K_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::K, Utn57Position::Fina);
 /// Reviewed target `K2:init`.
-pub const UTN57_K2_INIT: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::K2, Utn57Position::Init);
+pub const UTN57_K2_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::K2, Utn57Position::Init);
 /// Reviewed target `K2:medi`.
-pub const UTN57_K2_MEDI: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::K2, Utn57Position::Medi);
+pub const UTN57_K2_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::K2, Utn57Position::Medi);
 /// Reviewed target `K2:fina`.
-pub const UTN57_K2_FINA: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::K2, Utn57Position::Fina);
+pub const UTN57_K2_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::K2, Utn57Position::Fina);
 /// Reviewed target `L:init`.
-pub const UTN57_L_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::L, Utn57Position::Init);
+pub const UTN57_L_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::L, Utn57Position::Init);
 /// Reviewed target `L:medi`.
-pub const UTN57_L_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::L, Utn57Position::Medi);
+pub const UTN57_L_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::L, Utn57Position::Medi);
 /// Reviewed target `L:fina`.
-pub const UTN57_L_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::L, Utn57Position::Fina);
+pub const UTN57_L_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::L, Utn57Position::Fina);
 /// Reviewed target `M:init`.
-pub const UTN57_M_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::M, Utn57Position::Init);
+pub const UTN57_M_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::M, Utn57Position::Init);
 /// Reviewed target `M:medi`.
-pub const UTN57_M_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::M, Utn57Position::Medi);
+pub const UTN57_M_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::M, Utn57Position::Medi);
 /// Reviewed target `M:fina`.
-pub const UTN57_M_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::M, Utn57Position::Fina);
+pub const UTN57_M_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::M, Utn57Position::Fina);
 /// Reviewed target `N:init`.
-pub const UTN57_N_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::N, Utn57Position::Init);
+pub const UTN57_N_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::N, Utn57Position::Init);
 /// Reviewed target `N:medi`.
-pub const UTN57_N_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::N, Utn57Position::Medi);
+pub const UTN57_N_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::N, Utn57Position::Medi);
 /// Reviewed target `N:fina`.
-pub const UTN57_N_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::N, Utn57Position::Fina);
+pub const UTN57_N_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::N, Utn57Position::Fina);
 /// Reviewed target `O:init`.
-pub const UTN57_O_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::O, Utn57Position::Init);
+pub const UTN57_O_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::O, Utn57Position::Init);
 /// Reviewed target `O:medi`.
-pub const UTN57_O_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::O, Utn57Position::Medi);
+pub const UTN57_O_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::O, Utn57Position::Medi);
 /// Reviewed target `O:fina`.
-pub const UTN57_O_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::O, Utn57Position::Fina);
+pub const UTN57_O_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::O, Utn57Position::Fina);
 /// Reviewed target `P:init`.
-pub const UTN57_P_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::P, Utn57Position::Init);
+pub const UTN57_P_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::P, Utn57Position::Init);
 /// Reviewed target `P:medi`.
-pub const UTN57_P_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::P, Utn57Position::Medi);
+pub const UTN57_P_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::P, Utn57Position::Medi);
 /// Reviewed target `P:fina`.
-pub const UTN57_P_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::P, Utn57Position::Fina);
+pub const UTN57_P_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::P, Utn57Position::Fina);
 /// Reviewed target `R:init`.
-pub const UTN57_R_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::R, Utn57Position::Init);
+pub const UTN57_R_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::R, Utn57Position::Init);
 /// Reviewed target `R:medi`.
-pub const UTN57_R_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::R, Utn57Position::Medi);
+pub const UTN57_R_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::R, Utn57Position::Medi);
 /// Reviewed target `R:fina`.
-pub const UTN57_R_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::R, Utn57Position::Fina);
+pub const UTN57_R_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::R, Utn57Position::Fina);
 /// Reviewed target `Rh:init`.
-pub const UTN57_RH_INIT: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Rh, Utn57Position::Init);
+pub const UTN57_RH_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Rh, Utn57Position::Init);
 /// Reviewed target `Rh:medi`.
-pub const UTN57_RH_MEDI: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Rh, Utn57Position::Medi);
+pub const UTN57_RH_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Rh, Utn57Position::Medi);
 /// Reviewed target `Rh:fina`.
-pub const UTN57_RH_FINA: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Rh, Utn57Position::Fina);
+pub const UTN57_RH_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Rh, Utn57Position::Fina);
 /// Reviewed target `S:init`.
-pub const UTN57_S_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::S, Utn57Position::Init);
+pub const UTN57_S_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::S, Utn57Position::Init);
 /// Reviewed target `S:medi`.
-pub const UTN57_S_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::S, Utn57Position::Medi);
+pub const UTN57_S_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::S, Utn57Position::Medi);
 /// Reviewed target `S:fina`.
-pub const UTN57_S_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::S, Utn57Position::Fina);
+pub const UTN57_S_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::S, Utn57Position::Fina);
 /// Reviewed target `Sh:init`.
-pub const UTN57_SH_INIT: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Sh, Utn57Position::Init);
+pub const UTN57_SH_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Sh, Utn57Position::Init);
 /// Reviewed target `Sh:medi`.
-pub const UTN57_SH_MEDI: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Sh, Utn57Position::Medi);
+pub const UTN57_SH_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Sh, Utn57Position::Medi);
 /// Reviewed target `Sh:fina`.
-pub const UTN57_SH_FINA: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Sh, Utn57Position::Fina);
+pub const UTN57_SH_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Sh, Utn57Position::Fina);
 /// Reviewed target `Sz:fina`.
-pub const UTN57_SZ_FINA: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Sz, Utn57Position::Fina);
+pub const UTN57_SZ_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Sz, Utn57Position::Fina);
 /// Reviewed target `T:init`.
-pub const UTN57_T_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::T, Utn57Position::Init);
+pub const UTN57_T_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::T, Utn57Position::Init);
 /// Reviewed target `T:medi`.
-pub const UTN57_T_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::T, Utn57Position::Medi);
+pub const UTN57_T_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::T, Utn57Position::Medi);
 /// Reviewed target `T:fina`.
-pub const UTN57_T_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::T, Utn57Position::Fina);
+pub const UTN57_T_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::T, Utn57Position::Fina);
 /// Reviewed target `U:isol`.
-pub const UTN57_U_ISOL: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::U, Utn57Position::Isol);
+pub const UTN57_U_ISOL: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::U, Utn57Position::Isol);
 /// Reviewed target `U:fina`.
-pub const UTN57_U_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::U, Utn57Position::Fina);
+pub const UTN57_U_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::U, Utn57Position::Fina);
 /// Reviewed target `Ue:fina`.
-pub const UTN57_UE_FINA: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Ue, Utn57Position::Fina);
+pub const UTN57_UE_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Ue, Utn57Position::Fina);
 /// Reviewed target `Ux:isol`.
-pub const UTN57_UX_ISOL: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Ux, Utn57Position::Isol);
+pub const UTN57_UX_ISOL: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Ux, Utn57Position::Isol);
 /// Reviewed target `W:init`.
-pub const UTN57_W_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::W, Utn57Position::Init);
+pub const UTN57_W_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::W, Utn57Position::Init);
 /// Reviewed target `W:medi`.
-pub const UTN57_W_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::W, Utn57Position::Medi);
+pub const UTN57_W_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::W, Utn57Position::Medi);
 /// Reviewed target `W:fina`.
-pub const UTN57_W_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::W, Utn57Position::Fina);
+pub const UTN57_W_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::W, Utn57Position::Fina);
 /// Reviewed target `Y:init`.
-pub const UTN57_Y_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::Y, Utn57Position::Init);
+pub const UTN57_Y_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Y, Utn57Position::Init);
 /// Reviewed target `Y:medi`.
-pub const UTN57_Y_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::Y, Utn57Position::Medi);
+pub const UTN57_Y_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Y, Utn57Position::Medi);
 /// Reviewed target `Z:init`.
-pub const UTN57_Z_INIT: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::Z, Utn57Position::Init);
+pub const UTN57_Z_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Z, Utn57Position::Init);
 /// Reviewed target `Z:medi`.
-pub const UTN57_Z_MEDI: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::Z, Utn57Position::Medi);
+pub const UTN57_Z_MEDI: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Z, Utn57Position::Medi);
 /// Reviewed target `Z:fina`.
-pub const UTN57_Z_FINA: Utn57WrittenUnit = Utn57WrittenUnit::new(Utn57Unit::Z, Utn57Position::Fina);
+pub const UTN57_Z_FINA: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Z, Utn57Position::Fina);
 /// Reviewed target `Zr:init`.
-pub const UTN57_ZR_INIT: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Zr, Utn57Position::Init);
+pub const UTN57_ZR_INIT: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Zr, Utn57Position::Init);
 /// Reviewed target `Nirugu`.
-pub const UTN57_NIRUGU_CONTROL: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::Nirugu, Utn57Position::Control);
+pub const UTN57_NIRUGU_CONTROL: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Nirugu, Utn57Position::Control);
 /// Reviewed target `MVS`.
-pub const UTN57_MVS_CONTROL: Utn57WrittenUnit =
-    Utn57WrittenUnit::new(Utn57Unit::MVS, Utn57Position::Control);
+pub const UTN57_MVS_CONTROL: Utn57PositionedWrittenUnit =
+    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control);
 
-/// Complete reviewed UTN #57 positioned written-unit inventory.
-pub static UTN57_WRITTEN_UNITS: &[Utn57WrittenUnit] = &[
+/// Complete reviewed UTN #57 positioned-written-unit inventory.
+pub static UTN57_POSITIONED_WRITTEN_UNITS: &[Utn57PositionedWrittenUnit] = &[
     UTN57_A_ISOL,
     UTN57_A_INIT,
     UTN57_A_MEDI,
@@ -471,7 +539,7 @@ pub struct ZvvnmodToUtn57Mapping {
     /// Ordered ZVVNMOD source sequence.
     pub sources: &'static [ZvvnmodCode],
     /// Ordered UTN #57 target sequence.
-    pub targets: &'static [Utn57WrittenUnit],
+    pub targets: &'static [Utn57PositionedWrittenUnit],
     /// Overall joining position implied by the source sequence.
     pub intrinsic_position: Option<Utn57Position>,
 }

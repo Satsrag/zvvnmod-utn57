@@ -170,7 +170,7 @@ reviewed relation同时包含`AA_FINA → Aa:isol`和`AA_FINA → Aa:fina`。因
 随后输出`MVS + Aa:isol`；不推断额外的chachlag relation。ZVVNMOD的K/K2共用shape：
 默认输出K；调用方拥有nominal/context信息时，可通过`Utn57ConversionOptions`显式选择K2。
 
-Nirugu 输出为 `Utn57Unit::Nirugu` + `Utn57Position::Control`，不会虚构 positional Nirugu。
+Nirugu 输出为 `Utn57WrittenUnit::Nirugu` + `Utn57Position::Control`，不会虚构 positional Nirugu。
 
 ## 生成
 
@@ -194,19 +194,19 @@ python3 scripts/generate_zvvnmod.py
 ```rust
 use zvvnmod_utn57::{
     convert_zvvnmod_run, convert_zvvnmod_run_with_options, Utn57ConversionOptions,
-    Utn57KVariant, Utn57Position, Utn57Unit, Utn57WrittenUnit, B_I_INIT, K_INIT,
+    Utn57KVariant, Utn57Position, Utn57WrittenUnit, Utn57PositionedWrittenUnit, B_I_INIT, K_INIT,
 };
 
 assert_eq!(
     convert_zvvnmod_run(&[B_I_INIT]).unwrap(),
     vec![
-        Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init),
-        Utn57WrittenUnit::new(Utn57Unit::I, Utn57Position::Medi),
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Init),
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::I, Utn57Position::Medi),
     ],
 );
 
 let options = Utn57ConversionOptions { k_variant: Utn57KVariant::K2 };
-assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].unit, Utn57Unit::K2);
+assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].written_unit, Utn57WrittenUnit::K2);
 ```
 
 完整文本转换由 Rust 调用方和 CLI 共用同一个后端无关 API：
