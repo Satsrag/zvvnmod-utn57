@@ -1,24 +1,25 @@
 use zvvnmod_utn57::{
     convert_zvvnmod_run, discard_legacy_controls, replace_ir_fina, zvvnmod_code_decomposition_map,
-    IrFinaReplacementError, Utn57Position, Utn57Unit, Utn57WrittenUnit, ZvvnmodCode, AA_FINA,
-    A_FINA, A_INIT, A_MEDI, B_INIT, B_I_INIT, HX_AA_FINA, HX_INIT, H_FINA, IR_FINA,
-    IR_FINA_REPLACEMENTS, I_FINA, I_ISOL, I_MEDI, L_FINA, M_FINA, N_AA_FINA, O_MEDI, R_FINA,
-    S_FINA, T_FINA, T_MEDI, UE_FINA, UTN57_WRITTEN_UNITS, U_FINA, ZVVNMOD_CODE_DECOMPOSITIONS,
+    IrFinaReplacementError, Utn57Position, Utn57PositionedWrittenUnit, Utn57WrittenUnit,
+    ZvvnmodCode, AA_FINA, A_FINA, A_INIT, A_MEDI, B_INIT, B_I_INIT, HX_AA_FINA, HX_INIT, H_FINA,
+    IR_FINA, IR_FINA_REPLACEMENTS, I_FINA, I_ISOL, I_MEDI, L_FINA, M_FINA, N_AA_FINA, O_MEDI,
+    R_FINA, S_FINA, T_FINA, T_MEDI, UE_FINA, UTN57_POSITIONED_WRITTEN_UNITS, U_FINA,
+    ZVVNMOD_CODE_DECOMPOSITIONS,
 };
 
-fn unit(unit: Utn57Unit, position: Utn57Position) -> Utn57WrittenUnit {
-    Utn57WrittenUnit::new(unit, position)
+fn unit(written_unit: Utn57WrittenUnit, position: Utn57Position) -> Utn57PositionedWrittenUnit {
+    Utn57PositionedWrittenUnit::new(written_unit, position)
 }
 
 #[test]
-fn reviewed_targets_expose_stable_python_contract_names() {
-    for target in UTN57_WRITTEN_UNITS {
-        assert!(!target.unit.contract_name().is_empty());
+fn positioned_written_units_expose_stable_python_contract_names() {
+    for target in UTN57_POSITIONED_WRITTEN_UNITS {
+        assert!(!target.written_unit.contract_name().is_empty());
         assert!(!target.position.contract_name().is_empty());
     }
 
-    assert_eq!(Utn57Unit::MVS.contract_name(), "Mvs");
-    assert_eq!(Utn57Unit::Nirugu.contract_name(), "Nirugu");
+    assert_eq!(Utn57WrittenUnit::MVS.contract_name(), "Mvs");
+    assert_eq!(Utn57WrittenUnit::Nirugu.contract_name(), "Nirugu");
     assert_eq!(Utn57Position::Isol.contract_name(), "isol");
     assert_eq!(Utn57Position::Init.contract_name(), "init");
     assert_eq!(Utn57Position::Medi.contract_name(), "medi");
@@ -28,17 +29,17 @@ fn reviewed_targets_expose_stable_python_contract_names() {
 
 #[test]
 fn reviewed_chachlag_rules_emit_mvs_by_longest_match() {
-    let cases: &[(&[ZvvnmodCode], Utn57Unit)] = &[
-        (&[N_AA_FINA], Utn57Unit::N),
-        (&[HX_AA_FINA], Utn57Unit::Hx),
-        (&[M_FINA, AA_FINA], Utn57Unit::M),
-        (&[L_FINA, AA_FINA], Utn57Unit::L),
-        (&[S_FINA, AA_FINA], Utn57Unit::S),
-        (&[R_FINA, AA_FINA], Utn57Unit::R),
-        (&[I_ISOL, AA_FINA], Utn57Unit::I),
-        (&[I_FINA, AA_FINA], Utn57Unit::I),
-        (&[U_FINA, AA_FINA], Utn57Unit::U),
-        (&[H_FINA, AA_FINA], Utn57Unit::H),
+    let cases: &[(&[ZvvnmodCode], Utn57WrittenUnit)] = &[
+        (&[N_AA_FINA], Utn57WrittenUnit::N),
+        (&[HX_AA_FINA], Utn57WrittenUnit::Hx),
+        (&[M_FINA, AA_FINA], Utn57WrittenUnit::M),
+        (&[L_FINA, AA_FINA], Utn57WrittenUnit::L),
+        (&[S_FINA, AA_FINA], Utn57WrittenUnit::S),
+        (&[R_FINA, AA_FINA], Utn57WrittenUnit::R),
+        (&[I_ISOL, AA_FINA], Utn57WrittenUnit::I),
+        (&[I_FINA, AA_FINA], Utn57WrittenUnit::I),
+        (&[U_FINA, AA_FINA], Utn57WrittenUnit::U),
+        (&[H_FINA, AA_FINA], Utn57WrittenUnit::H),
     ];
     for &(input, onset) in cases {
         let onset_position = if input == [I_ISOL, AA_FINA] {
@@ -50,8 +51,8 @@ fn reviewed_chachlag_rules_emit_mvs_by_longest_match() {
             convert_zvvnmod_run(input).unwrap(),
             vec![
                 unit(onset, onset_position),
-                unit(Utn57Unit::MVS, Utn57Position::Control),
-                unit(Utn57Unit::Aa, Utn57Position::Isol),
+                unit(Utn57WrittenUnit::MVS, Utn57Position::Control),
+                unit(Utn57WrittenUnit::Aa, Utn57Position::Isol),
             ],
             "failed source sequence: {input:?}",
         );
@@ -62,7 +63,7 @@ fn reviewed_chachlag_rules_emit_mvs_by_longest_match() {
 fn standalone_aa_is_isolated_without_mvs() {
     assert_eq!(
         convert_zvvnmod_run(&[AA_FINA]).unwrap(),
-        vec![unit(Utn57Unit::Aa, Utn57Position::Isol)],
+        vec![unit(Utn57WrittenUnit::Aa, Utn57Position::Isol)],
     );
 }
 
@@ -75,7 +76,9 @@ fn rejected_inferred_chachlag_sequences_do_not_emit_mvs() {
     ] {
         let output = convert_zvvnmod_run(input).unwrap();
         assert!(
-            output.iter().all(|target| target.unit != Utn57Unit::MVS),
+            output
+                .iter()
+                .all(|target| target.written_unit != Utn57WrittenUnit::MVS),
             "unexpected MVS for {input:?}",
         );
     }

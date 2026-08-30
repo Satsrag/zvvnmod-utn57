@@ -1,7 +1,7 @@
 use crate::{
-    discard_legacy_controls, replace_ir_fina, IrFinaReplacementError, Utn57Position, Utn57Unit,
-    Utn57WrittenUnit, ZvvnmodCode, ZvvnmodToUtn57Mapping, ZVVNMOD_CODE_DECOMPOSITIONS,
-    ZVVNMOD_TO_UTN57_MAPPINGS,
+    discard_legacy_controls, replace_ir_fina, IrFinaReplacementError, Utn57Position,
+    Utn57PositionedWrittenUnit, Utn57WrittenUnit, ZvvnmodCode, ZvvnmodToUtn57Mapping,
+    ZVVNMOD_CODE_DECOMPOSITIONS, ZVVNMOD_TO_UTN57_MAPPINGS,
 };
 
 /// A ZVVNMOD code that has no reviewed UTN #57 mapping at an input index.
@@ -136,7 +136,7 @@ fn position_from_connections(left: bool, right: bool) -> Utn57Position {
     }
 }
 
-fn target_sequence_position(targets: &[Utn57WrittenUnit]) -> Option<Utn57Position> {
+fn target_sequence_position(targets: &[Utn57PositionedWrittenUnit]) -> Option<Utn57Position> {
     let mut positions = targets
         .iter()
         .filter_map(|target| position_connections(target.position));
@@ -197,9 +197,9 @@ fn resolve_k_variant<'a>(
         let [target] = rule.targets else {
             return None;
         };
-        let slot = match target.unit {
-            Utn57Unit::K => &mut k,
-            Utn57Unit::K2 => &mut k2,
+        let slot = match target.written_unit {
+            Utn57WrittenUnit::K => &mut k,
+            Utn57WrittenUnit::K2 => &mut k2,
             _ => return None,
         };
         if slot.replace(rule).is_some() {
@@ -251,7 +251,7 @@ fn resolve_candidates<'a>(
 /// ZWJ or particle boundaries.
 pub fn convert_zvvnmod_run(
     input: &[ZvvnmodCode],
-) -> Result<Vec<Utn57WrittenUnit>, Utn57ConversionError> {
+) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57ConversionError> {
     convert_zvvnmod_run_with_options(input, Utn57ConversionOptions::default())
 }
 
@@ -259,7 +259,7 @@ pub fn convert_zvvnmod_run(
 pub fn convert_zvvnmod_run_with_options(
     input: &[ZvvnmodCode],
     options: Utn57ConversionOptions,
-) -> Result<Vec<Utn57WrittenUnit>, Utn57ConversionError> {
+) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57ConversionError> {
     let cleaned = discard_legacy_controls(input);
     let replaced = replace_ir_fina(&cleaned)?;
     let mut decomposed = Vec::with_capacity(replaced.len());
@@ -313,8 +313,8 @@ mod tests {
     };
 
     static C_SOURCES: &[ZvvnmodCode] = &[O_MEDI, A_FINA];
-    static ISOL_TARGETS: &[Utn57WrittenUnit] = &[UTN57_O_INIT, UTN57_A_FINA];
-    static FINA_TARGETS: &[Utn57WrittenUnit] = &[UTN57_O_MEDI, UTN57_A_FINA];
+    static ISOL_TARGETS: &[Utn57PositionedWrittenUnit] = &[UTN57_O_INIT, UTN57_A_FINA];
+    static FINA_TARGETS: &[Utn57PositionedWrittenUnit] = &[UTN57_O_MEDI, UTN57_A_FINA];
     static C_ISOL: ZvvnmodToUtn57Mapping = ZvvnmodToUtn57Mapping {
         id: "test:c-isol",
         sources: C_SOURCES,
@@ -331,8 +331,8 @@ mod tests {
     #[test]
     fn k_variant_semantics_are_resolved_before_position() {
         static SOURCES: &[ZvvnmodCode] = &[K_INIT];
-        static K_TARGETS: &[Utn57WrittenUnit] = &[UTN57_K_INIT];
-        static K2_TARGETS: &[Utn57WrittenUnit] = &[UTN57_K2_FINA];
+        static K_TARGETS: &[Utn57PositionedWrittenUnit] = &[UTN57_K_INIT];
+        static K2_TARGETS: &[Utn57PositionedWrittenUnit] = &[UTN57_K2_FINA];
         static K: ZvvnmodToUtn57Mapping = ZvvnmodToUtn57Mapping {
             id: "test:k-init",
             sources: SOURCES,
@@ -412,8 +412,8 @@ mod tests {
     #[test]
     fn unregistered_same_position_candidates_fail_closed() {
         static SOURCES: &[ZvvnmodCode] = &[B_INIT];
-        static B_TARGETS: &[Utn57WrittenUnit] = &[UTN57_B_INIT];
-        static C_TARGETS: &[Utn57WrittenUnit] = &[UTN57_C_INIT];
+        static B_TARGETS: &[Utn57PositionedWrittenUnit] = &[UTN57_B_INIT];
+        static C_TARGETS: &[Utn57PositionedWrittenUnit] = &[UTN57_C_INIT];
         static B: ZvvnmodToUtn57Mapping = ZvvnmodToUtn57Mapping {
             id: "test:unknown-b",
             sources: SOURCES,

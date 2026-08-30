@@ -1,7 +1,7 @@
 use zvvnmod_utn57::{
     convert_zvvnmod_text_with_mongol_norm, normalize_positioned_with_mongol_norm,
-    normalize_positioned_with_mongol_norm_python, MongolNormCommandError, Utn57Position, Utn57Unit,
-    Utn57WrittenUnit, O_INIT, ZVVNMOD_TO_UTN57_MAPPINGS,
+    normalize_positioned_with_mongol_norm_python, MongolNormCommandError, Utn57Position,
+    Utn57PositionedWrittenUnit, Utn57WrittenUnit, O_INIT, ZVVNMOD_TO_UTN57_MAPPINGS,
 };
 
 #[test]
@@ -27,9 +27,9 @@ fn command_bridge_normalizes_all_reviewed_target_sequences() {
 #[ignore = "requires mongol-norm 0.0.4 installed by zvvnmod-install-mongol-norm"]
 fn command_bridge_preserves_explicit_mvs() {
     let units = [
-        Utn57WrittenUnit::new(Utn57Unit::S, Utn57Position::Fina),
-        Utn57WrittenUnit::new(Utn57Unit::MVS, Utn57Position::Control),
-        Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol),
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::S, Utn57Position::Fina),
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control),
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
     ];
 
     assert_eq!(

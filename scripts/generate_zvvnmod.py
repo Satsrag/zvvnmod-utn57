@@ -450,16 +450,16 @@ def render_utn57_mapping_rust(
         "",
         "use super::zvvnmod_codes::*;",
         "",
-        "/// A semantic UTN #57 written unit.",
+        "/// A semantic UTN #57 written-unit identity.",
         "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]",
-        "pub enum Utn57Unit {",
+        "pub enum Utn57WrittenUnit {",
     ]
     lines.extend(f"    {unit}," for unit in units)
     lines.extend(
         [
             "}",
             "",
-            "impl Utn57Unit {",
+            "impl Utn57WrittenUnit {",
             "    /// Stable unit spelling used by the public positioned-record contract.",
             "    pub const fn contract_name(self) -> &'static str {",
             "        match self {",
@@ -498,19 +498,22 @@ def render_utn57_mapping_rust(
             "    }",
             "}",
             "",
-            "/// One typed UTN #57 written unit target.",
+            "/// One positioned UTN #57 written unit.",
             "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]",
-            "pub struct Utn57WrittenUnit {",
+            "pub struct Utn57PositionedWrittenUnit {",
             "    /// Semantic unit identity.",
-            "    pub unit: Utn57Unit,",
+            "    pub written_unit: Utn57WrittenUnit,",
             "    /// Joining position, or `Control` for a non-positional control.",
             "    pub position: Utn57Position,",
             "}",
             "",
-            "impl Utn57WrittenUnit {",
-            "    /// Construct a typed UTN #57 written unit.",
-            "    pub const fn new(unit: Utn57Unit, position: Utn57Position) -> Self {",
-            "        Self { unit, position }",
+            "impl Utn57PositionedWrittenUnit {",
+            "    /// Construct a positioned UTN #57 written unit.",
+            "    pub const fn new(written_unit: Utn57WrittenUnit, position: Utn57Position) -> Self {",
+            "        Self {",
+            "            written_unit,",
+            "            position,",
+            "        }",
             "    }",
             "}",
             "",
@@ -520,21 +523,21 @@ def render_utn57_mapping_rust(
         position = "Control" if target.position == "control" else target.position.title()
         lines.append(f"/// Reviewed target `{target.id}`.")
         declaration = (
-            f"pub const {target.const_name}: Utn57WrittenUnit = "
-            f"Utn57WrittenUnit::new(Utn57Unit::{target.unit}, Utn57Position::{position});"
+            f"pub const {target.const_name}: Utn57PositionedWrittenUnit = "
+            f"Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::{target.unit}, Utn57Position::{position});"
         )
         if len(declaration) <= 100:
             lines.append(declaration)
         else:
-            lines.append(f"pub const {target.const_name}: Utn57WrittenUnit =")
+            lines.append(f"pub const {target.const_name}: Utn57PositionedWrittenUnit =")
             lines.append(
-                f"    Utn57WrittenUnit::new(Utn57Unit::{target.unit}, Utn57Position::{position});"
+                f"    Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::{target.unit}, Utn57Position::{position});"
             )
     lines.extend(
         [
             "",
-            "/// Complete reviewed UTN #57 positioned written-unit inventory.",
-            "pub static UTN57_WRITTEN_UNITS: &[Utn57WrittenUnit] = &[",
+            "/// Complete reviewed UTN #57 positioned-written-unit inventory.",
+            "pub static UTN57_POSITIONED_WRITTEN_UNITS: &[Utn57PositionedWrittenUnit] = &[",
         ]
     )
     lines.extend(f"    {target.const_name}," for target in mapping.targets)
@@ -550,7 +553,7 @@ def render_utn57_mapping_rust(
             "    /// Ordered ZVVNMOD source sequence.",
             "    pub sources: &'static [ZvvnmodCode],",
             "    /// Ordered UTN #57 target sequence.",
-            "    pub targets: &'static [Utn57WrittenUnit],",
+            "    pub targets: &'static [Utn57PositionedWrittenUnit],",
             "    /// Overall joining position implied by the source sequence.",
             "    pub intrinsic_position: Option<Utn57Position>,",
             "}",

@@ -1,16 +1,20 @@
 use zvvnmod_utn57::{
     convert_zvvnmod_run, convert_zvvnmod_run_with_options, IrFinaReplacementError,
     Utn57ConversionError, Utn57ConversionOptions, Utn57KVariant, Utn57MappingError, Utn57Position,
-    Utn57Unit, Utn57WrittenUnit, ZvvnmodCode, AA_FINA, A_FINA, A_INIT, A_MEDI, B_A_INIT, B_INIT,
-    B_I_INIT, CH_MEDI, D_INIT, G_MEDI, HX_AA_FINA, IR_FINA, I_MEDI, K_FINA, K_INIT, K_MEDI, NIRUGU,
-    N_AA_FINA, N_INIT, N_MEDI, O_INIT, O_MEDI, R_FINA, S_FINA, S_INIT, UE_FINA,
+    Utn57PositionedWrittenUnit, Utn57WrittenUnit, ZvvnmodCode, AA_FINA, A_FINA, A_INIT, A_MEDI,
+    B_A_INIT, B_INIT, B_I_INIT, CH_MEDI, D_INIT, G_MEDI, HX_AA_FINA, IR_FINA, I_MEDI, K_FINA,
+    K_INIT, K_MEDI, NIRUGU, N_AA_FINA, N_INIT, N_MEDI, O_INIT, O_MEDI, R_FINA, S_FINA, S_INIT,
+    UE_FINA,
 };
 
 #[test]
-fn direct_zvvnmod_code_maps_to_typed_utn57_written_unit() {
+fn direct_zvvnmod_code_maps_to_positioned_utn57_written_unit() {
     assert_eq!(
         convert_zvvnmod_run(&[B_INIT]).unwrap(),
-        vec![Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init)],
+        vec![Utn57PositionedWrittenUnit::new(
+            Utn57WrittenUnit::B,
+            Utn57Position::Init
+        )],
     );
 }
 
@@ -23,7 +27,10 @@ fn k_is_the_default_for_the_shared_k_and_k2_shape() {
     ] {
         assert_eq!(
             convert_zvvnmod_run(&[source]).unwrap(),
-            vec![Utn57WrittenUnit::new(Utn57Unit::K, position)],
+            vec![Utn57PositionedWrittenUnit::new(
+                Utn57WrittenUnit::K,
+                position
+            )],
         );
     }
 }
@@ -40,7 +47,10 @@ fn caller_can_explicitly_select_k2_for_the_shared_shape() {
     ] {
         assert_eq!(
             convert_zvvnmod_run_with_options(&[source], options).unwrap(),
-            vec![Utn57WrittenUnit::new(Utn57Unit::K2, position)],
+            vec![Utn57PositionedWrittenUnit::new(
+                Utn57WrittenUnit::K2,
+                position
+            )],
         );
     }
 }
@@ -54,8 +64,12 @@ fn k_variant_option_is_independent_of_actual_match_position() {
     ];
     for input in cases {
         let default = convert_zvvnmod_run(&input).unwrap();
-        assert!(default.iter().any(|target| target.unit == Utn57Unit::K));
-        assert!(!default.iter().any(|target| target.unit == Utn57Unit::K2));
+        assert!(default
+            .iter()
+            .any(|target| target.written_unit == Utn57WrittenUnit::K));
+        assert!(!default
+            .iter()
+            .any(|target| target.written_unit == Utn57WrittenUnit::K2));
 
         let k2 = convert_zvvnmod_run_with_options(
             &input,
@@ -64,8 +78,12 @@ fn k_variant_option_is_independent_of_actual_match_position() {
             },
         )
         .unwrap();
-        assert!(k2.iter().any(|target| target.unit == Utn57Unit::K2));
-        assert!(!k2.iter().any(|target| target.unit == Utn57Unit::K));
+        assert!(k2
+            .iter()
+            .any(|target| target.written_unit == Utn57WrittenUnit::K2));
+        assert!(!k2
+            .iter()
+            .any(|target| target.written_unit == Utn57WrittenUnit::K));
     }
 }
 
@@ -73,7 +91,10 @@ fn k_variant_option_is_independent_of_actual_match_position() {
 fn aa_fina_uses_the_isolated_candidate_for_a_whole_run() {
     assert_eq!(
         convert_zvvnmod_run(&[AA_FINA]).unwrap(),
-        vec![Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol,)],
+        vec![Utn57PositionedWrittenUnit::new(
+            Utn57WrittenUnit::Aa,
+            Utn57Position::Isol,
+        )],
     );
 }
 
@@ -82,8 +103,8 @@ fn connected_aa_fina_uses_the_actual_final_position_candidate() {
     assert_eq!(
         convert_zvvnmod_run(&[S_INIT, AA_FINA]).unwrap(),
         vec![
-            Utn57WrittenUnit::new(Utn57Unit::S, Utn57Position::Init),
-            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Fina),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::S, Utn57Position::Init),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Fina),
         ],
     );
 }
@@ -91,8 +112,8 @@ fn connected_aa_fina_uses_the_actual_final_position_candidate() {
 #[test]
 fn medial_aa_collapse_wins_by_longest_match_after_merged_decomposition() {
     let expected = vec![
-        Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init),
-        Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Fina),
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Init),
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Fina),
     ];
     assert_eq!(convert_zvvnmod_run(&[B_A_INIT, AA_FINA]).unwrap(), expected);
     assert_eq!(
@@ -106,9 +127,9 @@ fn reviewed_chachlag_long_rule_still_wins_over_aa_candidates() {
     assert_eq!(
         convert_zvvnmod_run(&[S_FINA, AA_FINA]).unwrap(),
         vec![
-            Utn57WrittenUnit::new(Utn57Unit::S, Utn57Position::Fina),
-            Utn57WrittenUnit::new(Utn57Unit::MVS, Utn57Position::Control),
-            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::S, Utn57Position::Fina),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
         ],
     );
 }
@@ -141,7 +162,10 @@ fn legacy_controls_are_discarded_before_all_conversion_stages() {
 fn reviewed_multi_code_rule_wins_over_single_code_prefixes() {
     assert_eq!(
         convert_zvvnmod_run(&[A_INIT, AA_FINA]).unwrap(),
-        vec![Utn57WrittenUnit::new(Utn57Unit::A, Utn57Position::Isol)],
+        vec![Utn57PositionedWrittenUnit::new(
+            Utn57WrittenUnit::A,
+            Utn57Position::Isol
+        )],
     );
 }
 
@@ -150,8 +174,8 @@ fn connected_aa_without_a_longer_rule_uses_the_final_candidate() {
     assert_eq!(
         convert_zvvnmod_run(&[B_INIT, AA_FINA]).unwrap(),
         vec![
-            Utn57WrittenUnit::new(Utn57Unit::B, Utn57Position::Init),
-            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Fina),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Init),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Fina),
         ],
     );
 }
@@ -161,79 +185,79 @@ fn retained_chachlag_codes_emit_reviewed_mvs_without_decomposition() {
     assert_eq!(
         convert_zvvnmod_run(&[N_AA_FINA]).unwrap(),
         vec![
-            Utn57WrittenUnit::new(Utn57Unit::N, Utn57Position::Fina),
-            Utn57WrittenUnit::new(Utn57Unit::MVS, Utn57Position::Control),
-            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::N, Utn57Position::Fina),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
         ],
     );
     assert_eq!(
         convert_zvvnmod_run(&[HX_AA_FINA]).unwrap(),
         vec![
-            Utn57WrittenUnit::new(Utn57Unit::Hx, Utn57Position::Fina),
-            Utn57WrittenUnit::new(Utn57Unit::MVS, Utn57Position::Control),
-            Utn57WrittenUnit::new(Utn57Unit::Aa, Utn57Position::Isol),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Hx, Utn57Position::Fina),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
         ],
     );
 }
 
 #[test]
 fn reviewed_particle_corrections_win_over_direct_code_mappings() {
-    let u = Utn57WrittenUnit::new;
+    let u = Utn57PositionedWrittenUnit::new;
     let cases = [
         (
             vec![A_INIT, CH_MEDI, A_MEDI, N_MEDI, N_MEDI, A_MEDI, A_FINA],
             vec![
-                u(Utn57Unit::A, Utn57Position::Init),
-                u(Utn57Unit::Ch, Utn57Position::Medi),
-                u(Utn57Unit::A, Utn57Position::Medi),
-                u(Utn57Unit::Hx, Utn57Position::Medi),
-                u(Utn57Unit::A, Utn57Position::Medi),
-                u(Utn57Unit::A, Utn57Position::Fina),
+                u(Utn57WrittenUnit::A, Utn57Position::Init),
+                u(Utn57WrittenUnit::Ch, Utn57Position::Medi),
+                u(Utn57WrittenUnit::A, Utn57Position::Medi),
+                u(Utn57WrittenUnit::Hx, Utn57Position::Medi),
+                u(Utn57WrittenUnit::A, Utn57Position::Medi),
+                u(Utn57WrittenUnit::A, Utn57Position::Fina),
             ],
         ),
         (
             vec![O_INIT, O_MEDI, A_FINA],
             vec![
-                u(Utn57Unit::O, Utn57Position::Init),
-                u(Utn57Unit::Dd, Utn57Position::Fina),
+                u(Utn57WrittenUnit::O, Utn57Position::Init),
+                u(Utn57WrittenUnit::Dd, Utn57Position::Fina),
             ],
         ),
         (
             vec![N_INIT, O_MEDI, G_MEDI, O_MEDI, A_FINA],
             vec![
-                u(Utn57Unit::N, Utn57Position::Init),
-                u(Utn57Unit::O, Utn57Position::Medi),
-                u(Utn57Unit::G, Utn57Position::Medi),
-                u(Utn57Unit::O, Utn57Position::Medi),
-                u(Utn57Unit::Dd, Utn57Position::Fina),
+                u(Utn57WrittenUnit::N, Utn57Position::Init),
+                u(Utn57WrittenUnit::O, Utn57Position::Medi),
+                u(Utn57WrittenUnit::G, Utn57Position::Medi),
+                u(Utn57WrittenUnit::O, Utn57Position::Medi),
+                u(Utn57WrittenUnit::Dd, Utn57Position::Fina),
             ],
         ),
         (
             vec![D_INIT, A_MEDI, N_MEDI, N_MEDI, A_MEDI, A_FINA],
             vec![
-                u(Utn57Unit::D, Utn57Position::Init),
-                u(Utn57Unit::A, Utn57Position::Medi),
-                u(Utn57Unit::Hx, Utn57Position::Medi),
-                u(Utn57Unit::A, Utn57Position::Medi),
-                u(Utn57Unit::A, Utn57Position::Fina),
+                u(Utn57WrittenUnit::D, Utn57Position::Init),
+                u(Utn57WrittenUnit::A, Utn57Position::Medi),
+                u(Utn57WrittenUnit::Hx, Utn57Position::Medi),
+                u(Utn57WrittenUnit::A, Utn57Position::Medi),
+                u(Utn57WrittenUnit::A, Utn57Position::Fina),
             ],
         ),
         (
             vec![D_INIT, A_MEDI, I_MEDI, AA_FINA],
             vec![
-                u(Utn57Unit::D, Utn57Position::Init),
-                u(Utn57Unit::A, Utn57Position::Medi),
-                u(Utn57Unit::G, Utn57Position::Fina),
+                u(Utn57WrittenUnit::D, Utn57Position::Init),
+                u(Utn57WrittenUnit::A, Utn57Position::Medi),
+                u(Utn57WrittenUnit::G, Utn57Position::Fina),
             ],
         ),
         (
             vec![D_INIT, O_MEDI, N_MEDI, N_MEDI, A_MEDI, R_FINA],
             vec![
-                u(Utn57Unit::D, Utn57Position::Init),
-                u(Utn57Unit::O, Utn57Position::Medi),
-                u(Utn57Unit::Hx, Utn57Position::Medi),
-                u(Utn57Unit::A, Utn57Position::Medi),
-                u(Utn57Unit::R, Utn57Position::Fina),
+                u(Utn57WrittenUnit::D, Utn57Position::Init),
+                u(Utn57WrittenUnit::O, Utn57Position::Medi),
+                u(Utn57WrittenUnit::Hx, Utn57Position::Medi),
+                u(Utn57WrittenUnit::A, Utn57Position::Medi),
+                u(Utn57WrittenUnit::R, Utn57Position::Fina),
             ],
         ),
     ];
@@ -246,8 +270,8 @@ fn reviewed_particle_corrections_win_over_direct_code_mappings() {
 fn nirugu_maps_to_a_non_positional_utn57_control() {
     assert_eq!(
         convert_zvvnmod_run(&[NIRUGU]).unwrap(),
-        vec![Utn57WrittenUnit::new(
-            Utn57Unit::Nirugu,
+        vec![Utn57PositionedWrittenUnit::new(
+            Utn57WrittenUnit::Nirugu,
             Utn57Position::Control,
         )],
     );
