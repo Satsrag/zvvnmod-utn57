@@ -112,4 +112,4 @@ jobs:
       - name: Run external command bridge tests
         env:
           ZVVNMOD_MONGOL_NORM_PATH: ${{ runner.temp }}/zvvnmod-mongol-norm/site
-        run: cargo test --test command_bridge --test command_cli -- --ignored
+        run: cargo test --test command_bridge --test command_cli --test api --test public_api -- --ignored

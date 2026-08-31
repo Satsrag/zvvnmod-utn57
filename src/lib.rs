@@ -21,6 +21,7 @@ pub mod command_bridge;
 pub mod conversion;
 mod install_path;
 pub mod preprocess;
+pub mod text;
 
 pub use api::*;
 pub use command_bridge::*;
@@ -31,3 +32,4 @@ pub use generated::utn57_mapping::*;
 pub use generated::zvvnmod_codes::*;
 pub use install_path::{mongol_norm_install_path, MongolNormPathError};
 pub use preprocess::*;
+pub use text::*;

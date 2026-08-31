@@ -116,7 +116,7 @@ class ShapeNamingTests(unittest.TestCase):
         rows = gen.read_csv(NAMES)
         self.assertTrue(all(row.source == "font" for row in rows))
         self.assertTrue(
-            {row.codepoint for row in rows}.isdisjoint(range(0xE140, 0xE144))
+            {row.codepoint for row in rows}.isdisjoint(range(0xE140, 0xE145))
         )
 
     def test_control_table_rows_are_rejected(self):
@@ -126,10 +126,13 @@ class ShapeNamingTests(unittest.TestCase):
 
     def test_reserved_legacy_control_codepoints_are_rejected_as_font_rows(self):
         gen = load_generator()
-        with self.assertRaisesRegex(
-            ValueError, "legacy control codepoint U\\+E140 is not a ZVVNMOD shape"
-        ):
-            gen.build_model([gen.InputRow(0xE140, "A i", "font")])
+        for codepoint in range(0xE140, 0xE145):
+            with self.subTest(codepoint=f"U+{codepoint:04X}"):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    rf"legacy control codepoint U\+{codepoint:04X} is not a ZVVNMOD shape",
+                ):
+                    gen.build_model([gen.InputRow(codepoint, "A i", "font")])
 
     def test_merged_zvvnmod_code_maps_to_component_sequence(self):
         gen = load_generator()
@@ -178,6 +181,19 @@ class ShapeNamingTests(unittest.TestCase):
         self.assertNotIn("自动生成", output)
         self.assertNotIn("编码值", output)
         self.assertNotIn("CODE_TO_SHAPE", output)
+
+    def test_code_inventory_is_sorted_for_binary_search(self):
+        gen = load_generator()
+        model = gen.build_model(
+            [
+                gen.InputRow(0xE029, "B i", "font"),
+                gen.InputRow(0xE000, "A i", "font"),
+            ]
+        )
+
+        output = gen.render_codes_rust(model, source_name="fixture.csv")
+
+        self.assertLess(output.index("    A_INIT,"), output.index("    B_INIT,"))
 
     def test_map_generator_maps_merged_codes_to_component_sequences(self):
         gen = load_generator()

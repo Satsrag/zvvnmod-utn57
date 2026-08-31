@@ -153,7 +153,13 @@ fn ir_fina_is_replaced_before_decomposition_and_mapping() {
 #[test]
 fn legacy_controls_are_discarded_before_all_conversion_stages() {
     assert_eq!(
-        convert_zvvnmod_run(&[ZvvnmodCode(0xE140), B_INIT, ZvvnmodCode(0xE143),]).unwrap(),
+        convert_zvvnmod_run(&[
+            ZvvnmodCode(0xE140),
+            B_INIT,
+            ZvvnmodCode(0xE143),
+            ZvvnmodCode(0xE144),
+        ])
+        .unwrap(),
         convert_zvvnmod_run(&[B_INIT]).unwrap(),
     );
 }

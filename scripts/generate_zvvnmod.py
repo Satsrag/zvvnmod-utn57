@@ -127,7 +127,7 @@ def parse_code_name(
     name = name.strip()
     # 即使 CSV 误标为 font，旧 control 范围也不能重新进入正式 shape inventory。
     # Keep the legacy control range out of the formal shape inventory even if mislabeled as font.
-    if codepoint is not None and 0xE140 <= codepoint <= 0xE143:
+    if codepoint is not None and 0xE140 <= codepoint <= 0xE144:
         raise ValueError(
             f"legacy control codepoint U+{codepoint:04X} is not a ZVVNMOD shape"
         )
@@ -617,7 +617,33 @@ def render_codes_rust(model: Model, source_name: str) -> str:
         comment = entry.source_name or entry.const_name
         lines.append(f"/// Code U+{entry.codepoint:04X}: {comment} ({entry.source}).")
         lines.append(f"pub const {entry.const_name}: ZvvnmodCode = ZvvnmodCode(0x{entry.codepoint:04X});")
-    lines.append("")
+    lines.extend(
+        [
+            "",
+            "/// Complete reviewed formal ZVVNMOD shape inventory.",
+            "pub static ZVVNMOD_CODES: &[ZvvnmodCode] = &[",
+        ]
+    )
+    inventory_entries = sorted(model.codes, key=lambda entry: entry.codepoint)
+    inventory_width = max(len(entry.const_name) + 1 for entry in inventory_entries) + 1
+    for entry in inventory_entries:
+        token = f"{entry.const_name},"
+        lines.append(f"    {token:<{inventory_width}}// U+{entry.codepoint:04X}")
+    lines.extend(
+        [
+            "];",
+            "",
+            "/// Look up a character in the formal ZVVNMOD shape inventory.",
+            "pub fn zvvnmod_code(character: char) -> Option<ZvvnmodCode> {",
+            "    let codepoint = character as u32;",
+            "    ZVVNMOD_CODES",
+            "        .binary_search_by_key(&codepoint, |code| code.codepoint())",
+            "        .ok()",
+            "        .map(|index| ZVVNMOD_CODES[index])",
+            "}",
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 
