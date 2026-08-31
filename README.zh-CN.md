@@ -9,13 +9,25 @@
 - 根据用户名称表进行可重复的代码生成；
 - 生成 ZVVNMOD code 的语义化 Rust 常量；
 - 生成 `merged ZVVNMOD code → component ZVVNMOD code sequence` 分解 Map；
-- 从输入 stream 删除旧 FVS1/FVS2/FVS3/MVS；
+- 从输入 stream 删除旧 FVS1/FVS2/FVS3/MVS/FVS4；
 - 生成 30 条用户确认的 `Ir_fina` 替换规则；
-- 生成包含97个 UTN #57 targets与147条非空 reviewed rows（100条main + 47条particle）的 typed relation；
-- 对一个 ZVVNMOD written-form run 执行 longest-match replacement；
-- 通过命令调用已发布的 Python `mongol-norm==0.0.4`，把 positioned UTN #57 written units 序列化为 canonical Mongolian Unicode。
+- 生成包含97个 positioned UTN #57 written units与147条非空 reviewed rows（100条main + 47条particle）的 typed relation；
+- 对一个 ZVVNMOD shape run 执行 longest-match replacement，得到 positioned UTN #57 written units；
+- 编排完整文本：只转换正式 ZVVNMOD shape codes，把 Nirugu/MVS 作为结构输入处理，输入 ZWJ 与其余字符全部原样保留；
+- 把 positioned UTN #57 written units 序列化为 JSON，再调用已发布的 Python `mongol-norm==0.0.4`。
 
-已实现正向 reviewed written-unit mapping replacement，包括 reviewed particle sequence corrections与reviewed MVS targets。Rust mapping core 不重复实现最终 serialization；`zvvnmod-to-utn57` 每次转换启动一次 Python，把 positioned units 交给 `mongol-norm`。反向转换和未 reviewed 的结构推断仍不在当前范围内。
+数据流为：
+
+```text
+包含 ZVVNMOD shape 的完整文本
+→ 分类正式 ZVVNMOD runs 与 passthrough spans
+→ 每个 ZVVNMOD run 直接转成 `Utn57PositionedWrittenUnit`
+→ 只把 positioned runs 序列化为 JSON `positioned_written_unit_runs`
+→ mongol-norm 分别规范化每个 run
+→ Rust 按原边界交错补回 passthrough spans
+```
+
+passthrough 文本不进入 JSON request 或 Python process；Rust 保存其原 code point 与 source boundary，并在 normalization 后补回。`zvvnmod-to-utn57` 每个完整输入只启动一次 Python，并在一个 JSON request 中发送全部 positioned-written-unit runs。反向转换和未 reviewed 的结构推断仍不在当前范围内。
 
 ## 目录
 
@@ -45,6 +57,7 @@
 │   ├── command_bridge.rs
 │   ├── conversion.rs
 │   ├── preprocess.rs
+│   ├── text.rs
 │   └── generated/
 │       ├── code_decomposition_map.rs
 │       ├── ir_fina.rs
@@ -103,17 +116,17 @@ G_O_I_INIT → [G_INIT, O_MEDI, I_MEDI]
 
 该 Map 在转换到 UTN #57 written units 之前展开 merged ZVVNMOD code；component-oriented 输出更接近 UTN #57 表示。`Ir_fina` helper replacement 必须先执行，因为它会消耗 helper 并修改前一个 merged code。CSV 缺少必要 component code 时，不补造 decomposition。
 
-正式 inventory 只包含来自字体的显式 ZVVNMOD shapes。旧 FVS1/FVS2/FVS3/MVS
+正式 inventory 只包含来自字体的显式 ZVVNMOD shapes。旧 FVS1/FVS2/FVS3/MVS/FVS4
 值不是 ZVVNMOD codes，因此不生成对应 Rust 常量。`discard_legacy_controls()`
-在 `Ir_fina` replacement 前从输入 stream 删除 U+E140 至 U+E143；后续 mapping
-阶段再根据 ZVVNMOD writing-unit patterns 重建所需的 UTN #57 MVS units。
+在 `Ir_fina` replacement 前从输入 stream 删除 U+E140 至 U+E144；后续 mapping
+阶段再根据 ZVVNMOD written-unit patterns 重建所需的 UTN #57 MVS units。
 
 ## 删除旧 controls
 
 旧 control 值在转换第一阶段被删除：
 
 ```text
-[A_INIT, U+E140, A_MEDI, U+E143]
+[A_INIT, U+E140, A_MEDI, U+E144]
 → [A_INIT, A_MEDI]
 ```
 
@@ -140,7 +153,7 @@ B_O_MEDI + IR_FINA → B_UE_FINA
 
 直接消费合并网站合同 `Satsrag/satsrag.github.io@0b50ba5b9f5c0ee66040ce6e8f343230b8832513` 中的CSV：
 
-- `data/utn57-written-units.csv` 与网站target catalogue逐字节相同，定义97个typed UTN #57 targets，其中包括control `MVS`（`U+180E`）；锁定SHA-256为`2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6`。
+- `data/utn57-written-units.csv` 与网站同名 catalogue 逐字节相同，定义97个 positioned UTN #57 written units，其中包括control `MVS`（`U+180E`）；锁定SHA-256为`2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6`。
 - `data/zvvnmod-utn57-map.csv` 与网站下载artifact逐字节相同。文件先包含canonical metadata comment，随后是`id,sources,targets,note` CSV header与147条双边非空reviewed sequence relations：100条main mappings和全部47条particle mappings。锁定SHA-256为`cc58b012ea2e3a1709d723d115ad9eed00de13d32bba166991a1447c889a358c`；独立锁定的reviewed baseline为`sha256:83a60c3e1ac9df98a14c1a6d979f7c5c8733f1e70d52b81f41de1dd321ea5016`。
 
 生成器验证canonical metadata、exact CSV schemas、row widths、quote transitions、单空格ordered sequences、稳定row ID语法与reviewed ambiguity set。`python3 scripts/check_website_contract.py --website-root ../satsrag-site-mapping-editor`读取网站已合并的Git blobs，证明byte identity，并把原样复制的bytes交给实际generator。
@@ -149,7 +162,7 @@ relation中的 ZVVNMOD source identifiers通过 `data/zvvnmod-unicode-names.csv`
 
 `convert_zvvnmod_run()` 依次执行：
 
-1. 删除旧 U+E140–U+E143；
+1. 删除旧 U+E140–U+E144；
 2. 执行 `Ir_fina` replacement；
 3. 分解普通 merged codes，同时保留 reviewed chachlag forms；
 4. 执行longest-match并保留全部equal-longest candidates；
@@ -221,24 +234,37 @@ let output = convert_zvvnmod_to_utn57(zvvnmod_text)?;
 `mongol-norm` bridge；以后可以替换成 crate 自己实现的 normalizer，而不改变 Rust 调用方和
 `zvvnmod-to-utn57` CLI。
 
+完整文本分类器只转换139个正式 ZVVNMOD shape codes，其中包含 ZVVNMOD 自己的 Nirugu 编码。
+标准 Unicode `U+180A` Nirugu、`U+180E` MVS、`U+202F` NNBSP 和输入 `U+200D` ZWJ
+都没有 ZVVNMOD shaping 语义：本库原样保留它们，并以它们分隔相邻 shape runs。
+`U+202F` 的 suffix 专用语义明确暂缓；本次不新增 `U+202F` mapping，也不把它加入正式 inventory。
+normalization 后端在序列化 positioned written units 时可能自行输出 ZWJ；
+该后端输出同样原样保留，不会拿输入 ZWJ 去替换或去重。正式 shape inventory 之外
+的所有字符——包括 Unicode 标点、数字、空白、普通混合文本、emoji 和非 ZVVNMOD PUA——
+都按原 code point 和原顺序保留。MenkShape `U+E23F..=U+E242` 等 source-specific aliases
+由上游 source converter 处理，本库不解释其语义。旧 ZVVNMOD `U+E140..=U+E144`
+FVS1-FVS4/MVS 控制码明确排除。
+
 ## 外部 `mongol-norm` 命令
 
 当前 UTN #57 输出命令只调用外部 Python 命令，不嵌入 CPython，也不链接 `libpython`。
 从 Cargo registry 安装本 crate 后，为当前用户或部署环境安装一次经过验证的固定版本：
 
 ```bash
-cargo install zvvnmod-utn57 --version 0.1.0-alpha.2
+cargo install zvvnmod-utn57 --version 0.1.0-alpha.3
 zvvnmod-install-mongol-norm
 ```
 
-然后传入一个 ZVVNMOD PUA 字符串：
+然后传入一个完整 mixed-text 字符串：
 
 ```bash
 zvvnmod-to-utn57 '<zvvnmod-text>'
 ```
 
-Rust 命令先把 ZVVNMOD 转成 typed positioned units，再通过 stdin 发送带协议版本的 JSON；
-内置 Python bridge 调用以下公开 API，并从 stdout 返回 UTN #57 结果的 canonical Mongolian Unicode serialization：
+Rust 命令先分类 ZVVNMOD runs 与 passthrough spans，再把每个 ZVVNMOD run 直接转换为
+`Utn57PositionedWrittenUnit`，只把这些 runs 序列化到 JSON 的
+`positioned_written_unit_runs` 字段并通过 stdin 发送给内置 Python bridge。bridge 对每个 run
+调用以下公开 API并分别返回结果；最后由 Rust 按原边界补回 passthrough：
 
 ```python
 MongolianShaper("MNG").normalize_positioned_written_units(records)
@@ -269,7 +295,7 @@ python3 -m unittest discover -s tests -v
 cargo fmt --all -- --check
 cargo test
 cargo run --bin zvvnmod-install-mongol-norm
-cargo test --test command_bridge --test command_cli -- --ignored
+cargo test --test command_bridge --test command_cli --test api --test public_api -- --ignored
 cargo package
 ```
 

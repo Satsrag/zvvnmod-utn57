@@ -9,8 +9,8 @@ use zvvnmod_utn57::mongol_norm_install_path;
 const REQUIREMENTS: &str = include_str!("../../requirements-mongol-norm.txt");
 const BRIDGE_SCRIPT: &str = include_str!("../../scripts/mongol_norm_positioned.py");
 const VALIDATION_INPUT: &[u8] =
-    b"{\"protocol\":1,\"records\":[{\"unit\":\"O\",\"position\":\"init\"}]}\n";
-const VALIDATION_OUTPUT: &[u8] = "\u{1824}\u{180b}\u{200d}".as_bytes();
+    b"{\"positioned_written_unit_runs\":[[{\"unit\":\"O\",\"position\":\"init\"}]]}\n";
+const VALIDATION_OUTPUT: &[u8] = "9\n\u{1824}\u{180b}\u{200d}".as_bytes();
 
 struct TemporaryDirectory(Option<PathBuf>);
 
@@ -286,6 +286,18 @@ fn main() -> ExitCode {
 mod tests {
     use super::*;
     use std::os::unix::fs::OpenOptionsExt;
+
+    #[test]
+    fn staged_validation_uses_the_single_batched_bridge_contract() {
+        assert_eq!(
+            VALIDATION_INPUT,
+            b"{\"positioned_written_unit_runs\":[[{\"unit\":\"O\",\"position\":\"init\"}]]}\n"
+        );
+        let normalized = "\u{1824}\u{180b}\u{200d}".as_bytes();
+        let mut framed = format!("{}\n", normalized.len()).into_bytes();
+        framed.extend_from_slice(normalized);
+        assert_eq!(VALIDATION_OUTPUT, framed);
+    }
 
     fn write_test_executable(path: &Path, body: &str) {
         let mut file = fs::OpenOptions::new()

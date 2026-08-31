@@ -77,7 +77,7 @@ fn installer_uses_hash_locked_pip_target_and_replaces_from_staging() {
     write_executable(
         &fake_python,
         &format!(
-            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> {log}\ncase \" $* \" in\n  *' -m pip '*)\n    target=\n    previous=\n    for argument in \"$@\"; do\n      if [ \"$previous\" = target ]; then target=$argument; break; fi\n      if [ \"$argument\" = --target ]; then previous=target; fi\n    done\n    mkdir -p \"$target/mongol_norm\" \"$target/mongol_norm-0.0.4.dist-info\"\n    printf '%s\\n' installed > \"$target/marker\"\n    exit 0\n    ;;\nesac\ncat >/dev/null\nprintf '\\341\\240\\244\\341\\240\\213\\342\\200\\215'\n",
+            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> {log}\ncase \" $* \" in\n  *' -m pip '*)\n    target=\n    previous=\n    for argument in \"$@\"; do\n      if [ \"$previous\" = target ]; then target=$argument; break; fi\n      if [ \"$argument\" = --target ]; then previous=target; fi\n    done\n    mkdir -p \"$target/mongol_norm\" \"$target/mongol_norm-0.0.4.dist-info\"\n    printf '%s\\n' installed > \"$target/marker\"\n    exit 0\n    ;;\nesac\ncat >/dev/null\nprintf '9\\n\\341\\240\\244\\341\\240\\213\\342\\200\\215'\n",
             log = log_path.display()
         ),
     );

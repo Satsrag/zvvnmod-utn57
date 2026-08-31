@@ -294,3 +294,155 @@ pub const NIRUGU: ZvvnmodCode = ZvvnmodCode(0xE0E5);
 pub const IR_FINA: ZvvnmodCode = ZvvnmodCode(0xE0E6);
 /// Code U+E0E7: Zr i (font).
 pub const ZR_INIT: ZvvnmodCode = ZvvnmodCode(0xE0E7);
+
+/// Complete reviewed formal ZVVNMOD shape inventory.
+pub static ZVVNMOD_CODES: &[ZvvnmodCode] = &[
+    A_INIT,     // U+E000
+    O_INIT,     // U+E001
+    A_MEDI,     // U+E005
+    I_MEDI,     // U+E006
+    O_MEDI,     // U+E008
+    A_FINA,     // U+E00C
+    AA_FINA,    // U+E00D
+    I_FINA,     // U+E00E
+    O_FINA,     // U+E00F
+    UE_FINA,    // U+E010
+    U_FINA,     // U+E011
+    I_ISOL,     // U+E01A
+    U_ISOL,     // U+E01B
+    N_INIT,     // U+E027
+    N_MEDI,     // U+E028
+    B_INIT,     // U+E029
+    B_MEDI,     // U+E02A
+    B_FINA,     // U+E02B
+    P_INIT,     // U+E02C
+    P_MEDI,     // U+E02D
+    P_FINA,     // U+E02E
+    H_INIT,     // U+E02F
+    G_INIT,     // U+E030
+    G_MEDI,     // U+E031
+    H_FINA,     // U+E032
+    HX_INIT,    // U+E034
+    M_INIT,     // U+E036
+    M_MEDI,     // U+E037
+    M_FINA,     // U+E038
+    L_INIT,     // U+E039
+    L_MEDI,     // U+E03A
+    L_FINA,     // U+E03B
+    S_INIT,     // U+E03C
+    S_MEDI,     // U+E03D
+    S_FINA,     // U+E03E
+    SH_INIT,    // U+E03F
+    SH_MEDI,    // U+E040
+    SH_FINA,    // U+E041
+    T_INIT,     // U+E042
+    T_MEDI,     // U+E043
+    T_FINA,     // U+E044
+    D_INIT,     // U+E045
+    D_MEDI,     // U+E046
+    D_FINA,     // U+E049
+    CH_INIT,    // U+E04A
+    CH_MEDI,    // U+E04B
+    CH_FINA,    // U+E04C
+    I_INIT,     // U+E04D
+    J_MEDI,     // U+E04E
+    J_FINA,     // U+E04F
+    Y_INIT,     // U+E050
+    Y_MEDI,     // U+E051
+    R_INIT,     // U+E053
+    R_MEDI,     // U+E054
+    R_FINA,     // U+E055
+    W_INIT,     // U+E056
+    W_MEDI,     // U+E057
+    W_FINA,     // U+E058
+    F_INIT,     // U+E059
+    F_MEDI,     // U+E05A
+    F_FINA,     // U+E05B
+    K_INIT,     // U+E05C
+    K_MEDI,     // U+E05D
+    K_FINA,     // U+E05E
+    C_INIT,     // U+E05F
+    C_MEDI,     // U+E060
+    C_FINA,     // U+E061
+    Z_INIT,     // U+E062
+    Z_MEDI,     // U+E063
+    Z_FINA,     // U+E064
+    HR_MEDI,    // U+E066
+    HR_FINA,    // U+E067
+    RH_INIT,    // U+E068
+    RH_MEDI,    // U+E069
+    RH_FINA,    // U+E06A
+    N_AA_FINA,  // U+E077
+    B_I_ISOL,   // U+E079
+    B_O_ISOL,   // U+E07A
+    B_UE_ISOL,  // U+E07B
+    B_A_INIT,   // U+E07C
+    B_A_MEDI,   // U+E07D
+    B_I_INIT,   // U+E07F
+    B_I_MEDI,   // U+E080
+    B_I_FINA,   // U+E081
+    B_O_INIT,   // U+E082
+    B_O_MEDI,   // U+E083
+    B_O_FINA,   // U+E084
+    P_I_ISOL,   // U+E086
+    P_O_ISOL,   // U+E087
+    P_UE_ISOL,  // U+E088
+    P_A_INIT,   // U+E089
+    P_A_MEDI,   // U+E08A
+    P_I_INIT,   // U+E08C
+    P_I_MEDI,   // U+E08D
+    P_I_FINA,   // U+E08E
+    P_O_INIT,   // U+E08F
+    P_O_MEDI,   // U+E090
+    P_O_FINA,   // U+E091
+    G_I_ISOL,   // U+E092
+    G_UE_ISOL,  // U+E093
+    G_A_INIT,   // U+E094
+    G_A_MEDI,   // U+E095
+    G_I_INIT,   // U+E097
+    G_I_MEDI,   // U+E098
+    G_I_FINA,   // U+E099
+    G_O_I_INIT, // U+E09A
+    G_O_MEDI,   // U+E09B
+    G_O_FINA,   // U+E09C
+    HX_AA_FINA, // U+E09D
+    F_I_ISOL,   // U+E09F
+    F_O_ISOL,   // U+E0A0
+    F_UE_ISOL,  // U+E0A1
+    F_A_INIT,   // U+E0A2
+    F_A_MEDI,   // U+E0A3
+    F_I_INIT,   // U+E0A5
+    F_I_MEDI,   // U+E0A6
+    F_I_FINA,   // U+E0A7
+    F_O_INIT,   // U+E0A8
+    F_O_MEDI,   // U+E0A9
+    F_O_FINA,   // U+E0AA
+    K_I_ISOL,   // U+E0AD
+    K_O_ISOL,   // U+E0AE
+    K_UE_ISOL,  // U+E0AF
+    K_A_INIT,   // U+E0B0
+    K_A_MEDI,   // U+E0B1
+    K_I_INIT,   // U+E0B6
+    K_I_MEDI,   // U+E0B7
+    K_I_FINA,   // U+E0B8
+    K_O_INIT,   // U+E0B9
+    K_O_MEDI,   // U+E0BA
+    K_O_FINA,   // U+E0BB
+    K_UE_FINA,  // U+E0BC
+    B_UE_FINA,  // U+E0CD
+    P_UE_FINA,  // U+E0CE
+    G_UE_FINA,  // U+E0CF
+    F_UE_FINA,  // U+E0D0
+    NIRUGU,     // U+E0E5
+    IR_FINA,    // U+E0E6
+    ZR_INIT,    // U+E0E7
+];
+
+/// Look up a character in the formal ZVVNMOD shape inventory.
+pub fn zvvnmod_code(character: char) -> Option<ZvvnmodCode> {
+    let codepoint = character as u32;
+    ZVVNMOD_CODES
+        .binary_search_by_key(&codepoint, |code| code.codepoint())
+        .ok()
+        .map(|index| ZVVNMOD_CODES[index])
+}

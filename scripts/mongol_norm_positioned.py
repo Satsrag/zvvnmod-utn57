@@ -7,7 +7,19 @@ from pathlib import Path
 import sys
 
 EXPECTED_VERSION = "0.0.4"
-PROTOCOL_VERSION = 1
+
+
+def write_normalized_runs(shaper, runs):
+    if not isinstance(runs, list):
+        raise ValueError("positioned_written_unit_runs must be a list")
+    output = sys.stdout.buffer
+    for records in runs:
+        if not isinstance(records, list):
+            raise ValueError("each positioned written unit run must be a list")
+        normalized = shaper.normalize_positioned_written_units(records).encode("utf-8")
+        output.write(str(len(normalized)).encode("ascii"))
+        output.write(b"\n")
+        output.write(normalized)
 
 
 def main():
@@ -54,14 +66,10 @@ def main():
             )
 
     payload = json.load(sys.stdin)
-    if not isinstance(payload, dict) or payload.get("protocol") != PROTOCOL_VERSION:
-        raise ValueError("unsupported positioned-unit bridge protocol")
-    records = payload.get("records")
-    if not isinstance(records, list):
-        raise ValueError("records must be a list")
-
-    output = mongol_norm.MongolianShaper("MNG").normalize_positioned_written_units(records)
-    sys.stdout.write(output)
+    if not isinstance(payload, dict) or set(payload) != {"positioned_written_unit_runs"}:
+        raise ValueError("payload requires exactly positioned_written_unit_runs")
+    shaper = mongol_norm.MongolianShaper("MNG")
+    write_normalized_runs(shaper, payload.get("positioned_written_unit_runs"))
 
 
 if __name__ == "__main__":

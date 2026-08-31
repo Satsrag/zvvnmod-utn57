@@ -109,13 +109,7 @@ fn legacy_controls_are_discarded_before_replacements() {
             IR_FINA,
             ZvvnmodCode(0xE144),
         ]),
-        vec![
-            ZvvnmodCode(0xE13F),
-            A_INIT,
-            A_MEDI,
-            IR_FINA,
-            ZvvnmodCode(0xE144),
-        ],
+        vec![ZvvnmodCode(0xE13F), A_INIT, A_MEDI, IR_FINA,],
     );
 }
 

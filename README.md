@@ -9,13 +9,25 @@ The current first milestone includes:
 - reproducible code generation from the user-supplied name table;
 - semantic Rust constants for ZVVNMOD codes;
 - a `merged ZVVNMOD code → component ZVVNMOD code sequence` decomposition map;
-- legacy FVS1/FVS2/FVS3/MVS removal from input streams;
+- legacy FVS1/FVS2/FVS3/MVS/FVS4 removal from input streams;
 - 30 user-confirmed `Ir_fina` replacement rules;
-- a typed, generated relation containing 97 UTN #57 targets and 147 non-empty reviewed mapping rows (100 main + 47 particle);
-- executable longest-match replacement from one ZVVNMOD written-form run to UTN #57 written units;
-- a command bridge that invokes the published `mongol-norm==0.0.4` Python package to serialize positioned UTN #57 written units as canonical Mongolian Unicode.
+- a typed, generated relation containing 97 positioned UTN #57 written units and 147 non-empty reviewed mapping rows (100 main + 47 particle);
+- executable longest-match replacement from one ZVVNMOD shape run to positioned UTN #57 written units;
+- complete-text orchestration that converts only formal ZVVNMOD shape codes, retains Nirugu/MVS as structural input, and passes input ZWJ and all other characters through unchanged;
+- a command bridge that serializes positioned UTN #57 written units as JSON and invokes the published `mongol-norm==0.0.4` Python package.
 
-Forward mapping replacement is implemented through the reviewed written-unit stage, including reviewed particle sequence corrections and reviewed MVS targets. The Rust mapping core does not reimplement the final serialization. The `zvvnmod-to-utn57` command starts Python once per conversion and delegates positioned-unit serialization to `mongol-norm`; reverse conversion and unreviewed structural inference remain out of scope.
+The data flow is:
+
+```text
+complete text containing ZVVNMOD shapes
+→ classify formal ZVVNMOD runs and passthrough spans
+→ convert each ZVVNMOD run to `Utn57PositionedWrittenUnit` values
+→ serialize only the positioned runs as JSON `positioned_written_unit_runs`
+→ normalize each run with mongol-norm
+→ interleave the unchanged passthrough spans in Rust
+```
+
+Passthrough text never enters the JSON request or Python process; Rust keeps its original code points and source boundaries and restores it after normalization. The `zvvnmod-to-utn57` command starts Python once per complete input and sends all positioned-written-unit runs in one JSON request; reverse conversion and unreviewed structural inference remain out of scope.
 
 ## Layout
 
@@ -45,6 +57,7 @@ Forward mapping replacement is implemented through the reviewed written-unit sta
 │   ├── command_bridge.rs
 │   ├── conversion.rs
 │   ├── preprocess.rs
+│   ├── text.rs
 │   └── generated/
 │       ├── code_decomposition_map.rs
 │       ├── ir_fina.rs
@@ -104,17 +117,17 @@ G_O_I_INIT → [G_INIT, O_MEDI, I_MEDI]
 This Map expands a merged ZVVNMOD code before conversion to UTN #57 written units. Its component-oriented output stays close to the UTN #57 representation. `Ir_fina` helper replacement must run before decomposition because it consumes the helper and changes the preceding merged code. If a required component code is absent from the CSV, no decomposition is invented.
 
 The formal inventory contains only explicit ZVVNMOD shapes from the font. Legacy
-FVS1/FVS2/FVS3/MVS values are not ZVVNMOD codes and are therefore not emitted as
-Rust constants. `discard_legacy_controls()` removes U+E140 through U+E143 from an
+FVS1/FVS2/FVS3/MVS/FVS4 values are not ZVVNMOD codes and are therefore not emitted as
+Rust constants. `discard_legacy_controls()` removes U+E140 through U+E144 from an
 input stream before `Ir_fina` replacement. Later mapping stages will reconstruct
-required UTN #57 MVS units from ZVVNMOD writing-unit patterns.
+required UTN #57 MVS units from ZVVNMOD written-unit patterns.
 
 ## Legacy control removal
 
 Legacy control values are discarded as the first conversion stage:
 
 ```text
-[A_INIT, U+E140, A_MEDI, U+E143]
+[A_INIT, U+E140, A_MEDI, U+E144]
 → [A_INIT, A_MEDI]
 ```
 
@@ -142,7 +155,7 @@ The 30 authoritative rules are stored in `data/ir-fina-replacements.csv` with re
 
 The merged website contract at `Satsrag/satsrag.github.io@0b50ba5b9f5c0ee66040ce6e8f343230b8832513` is consumed directly as CSV:
 
-- `data/utn57-written-units.csv` is byte-for-byte identical to the website target catalogue. It defines 97 typed UTN #57 targets, including `MVS` (`U+180E`) as a control; its locked SHA-256 is `2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6`.
+- `data/utn57-written-units.csv` is byte-for-byte identical to the website catalogue of the same name. It defines 97 positioned UTN #57 written units, including `MVS` (`U+180E`) as a control; its locked SHA-256 is `2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6`.
 - `data/zvvnmod-utn57-map.csv` is byte-for-byte identical to the website download artifact. It contains a canonical metadata comment followed by the `id,sources,targets,note` CSV header and 147 non-empty reviewed sequence relations: 100 main mappings plus all 47 particle mappings. Its locked SHA-256 is `cc58b012ea2e3a1709d723d115ad9eed00de13d32bba166991a1447c889a358c`; the independently locked reviewed baseline is `sha256:83a60c3e1ac9df98a14c1a6d979f7c5c8733f1e70d52b81f41de1dd321ea5016`.
 
 The generator validates canonical metadata, exact CSV schemas, row widths, quote transitions, ordered single-space sequences, stable row-ID syntax, and the reviewed ambiguity set. `python3 scripts/check_website_contract.py --website-root ../satsrag-site-mapping-editor` reads the merged website Git blobs, proves byte identity, and runs those copied bytes through the actual generator.
@@ -152,7 +165,7 @@ ZVVNMOD source identifiers in the relation are resolved against `data/zvvnmod-un
 The generated relation preserves all reviewed non-empty rows. `convert_zvvnmod_run()`
 applies these stages in order:
 
-1. discard legacy U+E140–U+E143 values;
+1. discard legacy `U+E140..=U+E144`;
 2. replace `Ir_fina` helpers;
 3. decompose general merged codes while retaining reviewed chachlag forms;
 4. apply longest-match, preserving every equal-longest candidate;
@@ -230,6 +243,19 @@ let output = convert_zvvnmod_to_utn57(zvvnmod_text)?;
 external `mongol-norm` bridge described below; that backend can later be replaced without changing
 Rust callers or the `zvvnmod-to-utn57` CLI.
 
+The complete-text classifier converts only the formal 139-code ZVVNMOD shape inventory,
+which includes ZVVNMOD's own Nirugu code. Standard Unicode `U+180A` Nirugu, `U+180E` MVS,
+`U+202F` NNBSP, and input `U+200D` ZWJ have no ZVVNMOD shaping semantics: they pass through
+unchanged and delimit adjacent shape runs.
+Suffix-specific semantics for `U+202F` are intentionally deferred; this change introduces no
+`U+202F` mapping or formal inventory code.
+The normalization backend may independently emit ZWJ while serializing positioned written units;
+that output is preserved without consuming or deduplicating input ZWJ. Every other character outside the formal shape inventory—including Unicode
+punctuation, digits, whitespace, ordinary mixed text, emoji, and non-ZVVNMOD private-use
+values—preserves its original code point and order. Source-specific aliases such as MenkShape
+`U+E23F..=U+E242` belong to an upstream source converter and are not interpreted here. Legacy
+ZVVNMOD `U+E140..=U+E144` FVS1-FVS4/MVS controls are explicitly excluded.
+
 ## External `mongol-norm` command
 
 The current UTN #57 output command uses an external Python command; it does not embed CPython or link
@@ -237,20 +263,21 @@ The current UTN #57 output command uses an external Python command; it does not 
 package once for the current user or deployment:
 
 ```bash
-cargo install zvvnmod-utn57 --version 0.1.0-alpha.2
+cargo install zvvnmod-utn57 --version 0.1.0-alpha.3
 zvvnmod-install-mongol-norm
 ```
 
-Then invoke the command with one ZVVNMOD PUA string:
+Then invoke the command with one complete mixed-text string:
 
 ```bash
 zvvnmod-to-utn57 '<zvvnmod-text>'
 ```
 
-The Rust command maps ZVVNMOD to typed positioned units, sends protocol-versioned JSON to the
-bundled Python bridge over stdin, and reads the canonical Mongolian Unicode serialization of the
-UTN #57 result from stdout. The bridge calls only
-the public API:
+The Rust command classifies ZVVNMOD runs and passthrough spans, converts each ZVVNMOD run directly
+to `Utn57PositionedWrittenUnit` values, and serializes only those runs under the JSON
+`positioned_written_unit_runs` field. The bundled Python bridge calls the public API below once per
+run and returns each result separately. Rust then interleaves those results with the passthrough
+spans at their original boundaries:
 
 ```python
 MongolianShaper("MNG").normalize_positioned_written_units(records)
@@ -284,7 +311,7 @@ python3 -m unittest discover -s tests -v
 cargo fmt --all -- --check
 cargo test
 cargo run --bin zvvnmod-install-mongol-norm
-cargo test --test command_bridge --test command_cli -- --ignored
+cargo test --test command_bridge --test command_cli --test api --test public_api -- --ignored
 cargo package
 ```
 

@@ -40,6 +40,8 @@ pub enum MongolNormCommandError {
     CommandFailed { code: Option<i32>, stderr: String },
     /// Successful command output was not UTF-8.
     InvalidUtf8 { message: String },
+    /// Bridge output did not contain exactly one framed string per requested run.
+    InvalidOutputProtocol { message: String },
 }
 
 impl fmt::Display for MongolNormCommandError {
@@ -75,6 +77,9 @@ impl fmt::Display for MongolNormCommandError {
             Self::InvalidUtf8 { message } => {
                 write!(formatter, "mongol-norm returned invalid UTF-8: {message}")
             }
+            Self::InvalidOutputProtocol { message } => {
+                write!(formatter, "invalid mongol-norm protocol output: {message}")
+            }
         }
     }
 }
@@ -98,20 +103,78 @@ fn default_python() -> OsString {
     std::env::var_os(PYTHON_ENV).unwrap_or_else(|| OsString::from("python3"))
 }
 
-fn positioned_payload(units: &[Utn57PositionedWrittenUnit]) -> String {
-    let mut payload = String::from("{\"protocol\":1,\"records\":[");
-    for (index, unit) in units.iter().enumerate() {
-        if index != 0 {
+fn positioned_written_unit_runs_json_payload(runs: &[Vec<Utn57PositionedWrittenUnit>]) -> String {
+    let mut payload = String::from("{\"positioned_written_unit_runs\":[");
+    for (run_index, run) in runs.iter().enumerate() {
+        if run_index != 0 {
             payload.push(',');
         }
-        payload.push_str("{\"unit\":\"");
-        payload.push_str(unit.written_unit.contract_name());
-        payload.push_str("\",\"position\":\"");
-        payload.push_str(unit.position.contract_name());
-        payload.push_str("\"}");
+        payload.push('[');
+        for (unit_index, unit) in run.iter().enumerate() {
+            if unit_index != 0 {
+                payload.push(',');
+            }
+            payload.push_str("{\"unit\":\"");
+            payload.push_str(unit.written_unit.contract_name());
+            payload.push_str("\",\"position\":\"");
+            payload.push_str(unit.position.contract_name());
+            payload.push_str("\"}");
+        }
+        payload.push(']');
     }
     payload.push_str("]}");
     payload
+}
+
+fn parse_normalized_runs(
+    output: String,
+    expected_runs: usize,
+) -> Result<Vec<String>, MongolNormCommandError> {
+    let bytes = output.as_bytes();
+    let mut cursor = 0;
+    let mut normalized_runs = Vec::with_capacity(expected_runs);
+    for run_index in 0..expected_runs {
+        let Some(relative_newline) = bytes[cursor..].iter().position(|byte| *byte == b'\n') else {
+            return Err(MongolNormCommandError::InvalidOutputProtocol {
+                message: format!("missing length for run {run_index}"),
+            });
+        };
+        let newline = cursor + relative_newline;
+        let length_text = std::str::from_utf8(&bytes[cursor..newline]).map_err(|error| {
+            MongolNormCommandError::InvalidOutputProtocol {
+                message: format!("invalid length for run {run_index}: {error}"),
+            }
+        })?;
+        let byte_length = length_text.parse::<usize>().map_err(|error| {
+            MongolNormCommandError::InvalidOutputProtocol {
+                message: format!("invalid length for run {run_index}: {error}"),
+            }
+        })?;
+        let start = newline + 1;
+        let Some(end) = start.checked_add(byte_length) else {
+            return Err(MongolNormCommandError::InvalidOutputProtocol {
+                message: format!("length overflow for run {run_index}"),
+            });
+        };
+        if end > bytes.len() {
+            return Err(MongolNormCommandError::InvalidOutputProtocol {
+                message: format!("truncated text for run {run_index}"),
+            });
+        }
+        let normalized = String::from_utf8(bytes[start..end].to_vec()).map_err(|error| {
+            MongolNormCommandError::InvalidOutputProtocol {
+                message: format!("run {run_index} is not valid UTF-8: {error}"),
+            }
+        })?;
+        normalized_runs.push(normalized);
+        cursor = end;
+    }
+    if cursor != bytes.len() {
+        return Err(MongolNormCommandError::InvalidOutputProtocol {
+            message: "unexpected trailing output".to_owned(),
+        });
+    }
+    Ok(normalized_runs)
 }
 
 struct Worker<T> {
@@ -203,9 +266,9 @@ fn terminate_process_tree(child: &mut Child) {
     let _ = child.kill();
 }
 
-/// Normalize positioned units with an explicit Python executable, install path, and timeout.
-fn normalize_positioned_with_mongol_norm_python_at(
-    units: &[Utn57PositionedWrittenUnit],
+/// Normalize positioned written units with an explicit Python executable, install path, and timeout.
+fn run_bridge_payload_with_mongol_norm_python_at(
+    payload: String,
     python: impl AsRef<OsStr>,
     module_path: impl AsRef<Path>,
     timeout: Duration,
@@ -229,7 +292,6 @@ fn normalize_positioned_with_mongol_norm_python_at(
             message: error.to_string(),
         })?;
 
-    let payload = positioned_payload(units);
     let Some(mut stdin) = child.stdin.take() else {
         terminate_process_tree(&mut child);
         return Err(MongolNormCommandError::WriteInput {
@@ -398,6 +460,56 @@ fn normalize_positioned_with_mongol_norm_python_at(
     })
 }
 
+/// Normalize positioned written units with an explicit Python executable, install path, and timeout.
+fn normalize_positioned_with_mongol_norm_python_at(
+    units: &[Utn57PositionedWrittenUnit],
+    python: impl AsRef<OsStr>,
+    module_path: impl AsRef<Path>,
+    timeout: Duration,
+) -> Result<String, MongolNormCommandError> {
+    let mut normalized = normalize_positioned_written_unit_runs_with_mongol_norm_python_at(
+        &[units.to_vec()],
+        python,
+        module_path,
+        timeout,
+    )?;
+    normalized
+        .pop()
+        .ok_or_else(|| MongolNormCommandError::InvalidOutputProtocol {
+            message: String::from("bridge returned no result for one requested run"),
+        })
+}
+
+fn normalize_positioned_written_unit_runs_with_mongol_norm_python_at(
+    runs: &[Vec<Utn57PositionedWrittenUnit>],
+    python: impl AsRef<OsStr>,
+    module_path: impl AsRef<Path>,
+    timeout: Duration,
+) -> Result<Vec<String>, MongolNormCommandError> {
+    let output = run_bridge_payload_with_mongol_norm_python_at(
+        positioned_written_unit_runs_json_payload(runs),
+        python,
+        module_path,
+        timeout,
+    )?;
+    parse_normalized_runs(output, runs.len())
+}
+
+pub(crate) fn normalize_positioned_written_unit_runs_with_mongol_norm(
+    runs: &[Vec<Utn57PositionedWrittenUnit>],
+) -> Result<Vec<String>, MongolNormCommandError> {
+    let module_path =
+        mongol_norm_install_path().map_err(|error| MongolNormCommandError::PythonPath {
+            message: error.to_string(),
+        })?;
+    normalize_positioned_written_unit_runs_with_mongol_norm_python_at(
+        runs,
+        default_python(),
+        module_path,
+        COMMAND_TIMEOUT,
+    )
+}
+
 /// Normalize positioned written units by invoking an explicit Python executable.
 pub fn normalize_positioned_with_mongol_norm_python(
     units: &[Utn57PositionedWrittenUnit],
@@ -539,6 +651,67 @@ mod tests {
         .unwrap();
 
         assert_eq!(output, "selected");
+    }
+
+    #[test]
+    fn batched_payload_returns_normalized_runs_separately() {
+        let _fixture_guard = lock_executable_fixture();
+        let temp = TempDir::new("positioned-runs");
+        let selected = temp.0.join("selected");
+        write_fake_distribution(&selected, "0.0.4", "0.0.4", "unused");
+        fs::write(
+            selected.join("mongol_norm/__init__.py"),
+            "__version__ = '0.0.4'\nclass MongolianShaper:\n    def __init__(self, _language): pass\n    def normalize_positioned_written_units(self, records): return records[0]['unit'] + '\\n' + chr(0x200D)\n",
+        )
+        .unwrap();
+        let runs = vec![vec![crate::UTN57_O_INIT], vec![crate::UTN57_AA_FINA]];
+
+        let output = normalize_positioned_written_unit_runs_with_mongol_norm_python_at(
+            &runs,
+            "python3",
+            &selected,
+            Duration::from_secs(5),
+        )
+        .unwrap();
+
+        assert_eq!(output, vec!["O\n\u{200D}", "Aa\n\u{200D}"]);
+    }
+
+    #[test]
+    fn framed_run_output_supports_newlines_and_multibyte_utf8() {
+        assert_eq!(
+            parse_normalized_runs("5\nA\n界4\n😀".to_owned(), 2).unwrap(),
+            vec!["A\n界", "😀"]
+        );
+    }
+
+    #[test]
+    fn malformed_framed_run_output_fails_closed() {
+        let overflow = format!("{}0\n", usize::MAX);
+        for (output, expected_runs) in [
+            ("x\n".to_owned(), 1),
+            (overflow, 1),
+            ("1\n界".to_owned(), 1),
+            ("3\nab".to_owned(), 1),
+            ("1\na".to_owned(), 2),
+            ("1\naX".to_owned(), 1),
+            ("1\na1\nb".to_owned(), 1),
+        ] {
+            assert!(matches!(
+                parse_normalized_runs(output, expected_runs),
+                Err(MongolNormCommandError::InvalidOutputProtocol { .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn json_payload_contains_only_positioned_written_unit_runs() {
+        let runs = vec![vec![crate::UTN57_O_INIT], vec![crate::UTN57_AA_FINA]];
+
+        assert_eq!(
+            positioned_written_unit_runs_json_payload(&runs),
+            "{\"positioned_written_unit_runs\":[[{\"unit\":\"O\",\"position\":\"init\"}],[{\"unit\":\"Aa\",\"position\":\"fina\"}]]}"
+        );
     }
 
     #[test]
