@@ -14,7 +14,7 @@
 - 生成包含97个 positioned UTN #57 written units与147条非空 reviewed rows（100条main + 47条particle）的 typed relation；
 - 对一个 ZVVNMOD shape run 执行 longest-match replacement，得到 positioned UTN #57 written units；
 - 编排完整文本：只转换正式 ZVVNMOD shape codes，把 Nirugu/MVS 作为结构输入处理，输入 ZWJ 与其余字符全部原样保留；
-- 把 positioned UTN #57 written units 序列化为 JSON，再调用已发布的 Python `mongol-norm==0.0.4`。
+- 通过纯 Rust 的 [`mongol-norm`](https://crates.io/crates/mongol-norm) crate 把 positioned UTN #57 written units 规范化为 canonical Unicode，直接链接进库中。
 
 数据流为：
 
@@ -22,12 +22,14 @@
 包含 ZVVNMOD shape 的完整文本
 → 分类正式 ZVVNMOD runs 与 passthrough spans
 → 每个 ZVVNMOD run 直接转成 `Utn57PositionedWrittenUnit`
-→ 只把 positioned runs 序列化为 JSON `positioned_written_unit_runs`
-→ mongol-norm 分别规范化每个 run
-→ Rust 按原边界交错补回 passthrough spans
+→ mongol-norm 在进程内分别规范化每个 run
+→ 按原边界交错补回 passthrough spans
 ```
 
-passthrough 文本不进入 JSON request 或 Python process；Rust 保存其原 code point 与 source boundary，并在 normalization 后补回。`zvvnmod-to-utn57` 每个完整输入只启动一次 Python，并在一个 JSON request 中发送全部 positioned-written-unit runs。反向转换和未 reviewed 的结构推断仍不在当前范围内。
+passthrough 文本不进入 normalizer；本库保存其原 code point 与 source boundary，并在
+normalization 后补回。全程在进程内完成：没有子进程、没有解释器，运行时不访问文件系统和网络，
+因此 Rust 能跑的地方本库都能跑，包括 `wasm32-unknown-unknown`。反向转换和未 reviewed
+的结构推断仍不在当前范围内。
 
 ## 目录
 
@@ -37,7 +39,6 @@ passthrough 文本不进入 JSON request 或 Python process；Rust 保存其原 
 ├── LICENSE
 ├── README.md
 ├── README.zh-CN.md
-├── requirements-mongol-norm.txt
 ├── data/
 │   ├── ir-fina-replacements.csv
 │   ├── utn57-written-units.csv
@@ -45,7 +46,6 @@ passthrough 文本不进入 JSON request 或 Python process；Rust 保存其原 
 │   └── zvvnmod-utn57-map.csv
 ├── scripts/
 │   ├── check_website_contract.py
-│   ├── mongol_norm_positioned.py
 │   ├── generate_ir_fina.py
 │   ├── generate_utn57_mapping.py
 │   ├── generate_zvvnmod.py
@@ -54,7 +54,7 @@ passthrough 文本不进入 JSON request 或 Python process；Rust 保存其原 
 │   └── strict_csv.py
 ├── src/
 │   ├── lib.rs
-│   ├── command_bridge.rs
+│   ├── normalize.rs
 │   ├── conversion.rs
 │   ├── preprocess.rs
 │   ├── text.rs
@@ -222,7 +222,7 @@ let options = Utn57ConversionOptions { k_variant: Utn57KVariant::K2 };
 assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].written_unit, Utn57WrittenUnit::K2);
 ```
 
-完整文本转换由 Rust 调用方和 CLI 共用同一个后端无关 API：
+完整文本转换由 Rust 调用方和 CLI 共用同一个 API：
 
 ```rust
 use zvvnmod_utn57::convert_zvvnmod_to_utn57;
@@ -230,74 +230,76 @@ use zvvnmod_utn57::convert_zvvnmod_to_utn57;
 let output = convert_zvvnmod_to_utn57(zvvnmod_text)?;
 ```
 
-`convert_zvvnmod_to_utn57` 是稳定的公共边界。当前 normalization backend 是下面说明的外部
-`mongol-norm` bridge；以后可以替换成 crate 自己实现的 normalizer，而不改变 Rust 调用方和
-`zvvnmod-to-utn57` CLI。
+`convert_zvvnmod_to_utn57` 是稳定的公共边界。它通过下面说明的 `mongol-norm` crate 完成
+normalization，不需要任何安装步骤。
 
 完整文本分类器只转换139个正式 ZVVNMOD shape codes，其中包含 ZVVNMOD 自己的 Nirugu 编码。
 标准 Unicode `U+180A` Nirugu、`U+180E` MVS、`U+202F` NNBSP 和输入 `U+200D` ZWJ
 都没有 ZVVNMOD shaping 语义：本库原样保留它们，并以它们分隔相邻 shape runs。
 `U+202F` 的 suffix 专用语义明确暂缓；本次不新增 `U+202F` mapping，也不把它加入正式 inventory。
-normalization 后端在序列化 positioned written units 时可能自行输出 ZWJ；
+normalizer 在编码 positioned written units 时可能自行输出 ZWJ；
 该后端输出同样原样保留，不会拿输入 ZWJ 去替换或去重。正式 shape inventory 之外
 的所有字符——包括 Unicode 标点、数字、空白、普通混合文本、emoji 和非 ZVVNMOD PUA——
 都按原 code point 和原顺序保留。MenkShape `U+E23F..=U+E242` 等 source-specific aliases
 由上游 source converter 处理，本库不解释其语义。旧 ZVVNMOD `U+E140..=U+E144`
 FVS1-FVS4/MVS 控制码明确排除。
 
-## 外部 `mongol-norm` 命令
+## `mongol-norm` normalization 后端
 
-当前 UTN #57 输出命令只调用外部 Python 命令，不嵌入 CPython，也不链接 `libpython`。
-从 Cargo registry 安装本 crate 后，为当前用户或部署环境安装一次经过验证的固定版本：
+Normalization 使用纯 Rust 的 [`mongol-norm`](https://crates.io/crates/mongol-norm) crate，
+作为普通 Cargo dependency 链接。它自身零依赖，不需要 Python，也没有要安装的数据文件：
 
-```bash
-cargo install zvvnmod-utn57 --version 0.1.0-alpha.3
-zvvnmod-install-mongol-norm
+```toml
+[dependencies]
+zvvnmod-utn57 = "0.1.0-alpha.4"
 ```
 
-然后传入一个完整 mixed-text 字符串：
-
 ```bash
+cargo install zvvnmod-utn57 --version 0.1.0-alpha.4
 zvvnmod-to-utn57 '<zvvnmod-text>'
 ```
 
-Rust 命令先分类 ZVVNMOD runs 与 passthrough spans，再把每个 ZVVNMOD run 直接转换为
-`Utn57PositionedWrittenUnit`，只把这些 runs 序列化到 JSON 的
-`positioned_written_unit_runs` 字段并通过 stdin 发送给内置 Python bridge。bridge 对每个 run
-调用以下公开 API并分别返回结果；最后由 Rust 按原边界补回 passthrough：
+`src/normalize.rs` 把每个 reviewed `Utn57PositionedWrittenUnit` 映射到后端的
+`PositionedWrittenUnit`，然后调用：
 
-```python
-MongolianShaper("MNG").normalize_positioned_written_units(records)
+```rust
+Shaper::new(Locale::Mng).normalize_positioned_written_units(&records)
 ```
 
-installer binary 把 hash-locked requirements 和 validation bridge 内嵌在 Cargo artifact 中，
-不依赖源码 checkout。它使用 `pip --target`，不需要 root，也不要求 `python3-venv`；只从
-PyPI 下载经过审核的 0.0.4 wheel，先在 staging directory 安装并验证，再替换目标目录。
-默认目录为 `$XDG_DATA_HOME/zvvnmod-utn57/mongol-norm/0.0.4/site`，没有
-`XDG_DATA_HOME` 时使用 `$HOME/.local/share/zvvnmod-utn57/mongol-norm/0.0.4/site`。
-installer 和 runtime 都支持用绝对路径 `ZVVNMOD_MONGOL_NORM_PATH` 覆盖目录，并优先使用
-`ZVVNMOD_MONGOL_NORM_PYTHON` 指定 Python；installer 仍把 `PYTHON` 作为低优先级 fallback。
+unit 和 position 的映射写成穷尽 `match`，而不是走 `contract_name` 查表：
+`src/generated/utn57_mapping.rs` 是生成代码，所以生成器新增 written unit 时会让本 crate
+**编译失败**，而不是只在运行时报错。`MNG` shaper 由 `OnceLock` 每进程构建一次，所有 run 共用。
 
-其他 Rust 项目把 `zvvnmod-utn57` 加为 dependency 时，`cargo build` 不会自动运行 pip。
-纯 Rust mapping 不需要 Python；调用 Python-backed UTN #57 normalization API 的部署环境显式运行一次
-`zvvnmod-install-mongol-norm`。
+后端的错误变体本身就是有用信息，因此不做包装。`Utn57TextConversionError::Normalize`
+原样携带 `mongol_norm::Error`，并且本 crate 重导出了 `mongol_norm`，调用方无需单独声明
+依赖即可 match `UnsupportedPositionedUnit`、`ChainPositionMismatch` 等具体变体：
 
-当前方案有意保持简单：每次 conversion command 启动一次 Python；30秒 deadline 覆盖
-进程与 stdin/stdout/stderr 收集，stdout 和 stderr 各自最多捕获 1 MiB。在 Unix 上，bridge
-通过 Rust 标准库进入独立 process group，并用一处有安全说明的 POSIX `kill` FFI 在 timeout
-或 pipeline error 时终止整个 group，包括 direct parent 已退出的 descendants；不增加 Rust
-runtime dependency。以后实际性能测试证明 process startup 是瓶颈时，再增加长生命周期 worker。
+```rust
+use zvvnmod_utn57::{convert_zvvnmod_to_utn57, mongol_norm, Utn57TextConversionError};
+
+match convert_zvvnmod_to_utn57(text) {
+    Ok(output) => println!("{output}"),
+    Err(Utn57TextConversionError::Normalize(mongol_norm::Error::ChainPositionMismatch)) => { /* … */ }
+    Err(error) => eprintln!("{error}"),
+}
+```
+
+Cargo 语义中每个 `0.0.x` 版本都与下一个不兼容，所以 `mongol-norm = "0.0.4"` 本身就是精确锁定，
+与它替换掉的 hash-locked wheel 意图一致。
 
 ## 验证
 
 ```bash
 python3 -m unittest discover -s tests -v
 cargo fmt --all -- --check
-cargo test
-cargo run --bin zvvnmod-install-mongol-norm
-cargo test --test command_bridge --test command_cli --test api --test public_api -- --ignored
+cargo test --all-targets
+cargo clippy --all-targets -- -D warnings
+cargo check --target wasm32-unknown-unknown --lib
 cargo package
 ```
+
+这里的 Python 只是 `scripts/` 下的构建期生成器套件；库本身运行时不含 Python。
+没有任何测试带 `#[ignore]`，也没有任何测试需要先跑安装步骤。
 
 ## 许可证
 

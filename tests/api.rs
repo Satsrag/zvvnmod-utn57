@@ -1,10 +1,21 @@
 use std::error::Error;
+use zvvnmod_utn57::mongol_norm;
 use zvvnmod_utn57::{convert_zvvnmod_to_utn57, Utn57TextConversionError};
 
 #[test]
-fn public_error_boundary_does_not_expose_backend_type_in_its_source_signature() {
+fn the_public_error_is_a_standard_error() {
     fn assert_error<T: Error>() {}
     assert_error::<Utn57TextConversionError>();
+}
+
+#[test]
+fn callers_can_match_the_backend_error_through_the_re_export() {
+    let error = Utn57TextConversionError::Normalize(mongol_norm::Error::ChainPositionMismatch);
+
+    assert!(matches!(
+        error,
+        Utn57TextConversionError::Normalize(mongol_norm::Error::ChainPositionMismatch)
+    ));
 }
 
 #[test]
@@ -22,7 +33,6 @@ fn non_zvvnmod_private_use_characters_pass_through_unchanged() {
 }
 
 #[test]
-#[ignore = "requires mongol-norm 0.0.4 installed by zvvnmod-install-mongol-norm"]
 fn public_api_converts_complete_mixed_text_in_one_call() {
     let input = "English \u{E001},中\r\n\u{E001}😀";
     let expected = "English \u{1824}\u{180B}\u{200D},中\r\n\u{1824}\u{180B}\u{200D}😀";
@@ -31,7 +41,6 @@ fn public_api_converts_complete_mixed_text_in_one_call() {
 }
 
 #[test]
-#[ignore = "requires mongol-norm 0.0.4 installed by zvvnmod-install-mongol-norm"]
 fn standard_nirugu_passes_through_between_independently_normalized_runs() {
     assert_eq!(
         convert_zvvnmod_to_utn57("\u{E001}\u{180A}\u{E011}").unwrap(),
@@ -40,7 +49,6 @@ fn standard_nirugu_passes_through_between_independently_normalized_runs() {
 }
 
 #[test]
-#[ignore = "requires mongol-norm 0.0.4 installed by zvvnmod-install-mongol-norm"]
 fn input_zwj_passes_through_between_independently_normalized_runs() {
     // The backend may add a trailing ZWJ to the left run. The input ZWJ is a
     // separate literal and is neither consumed nor deduplicated. The right run
@@ -52,7 +60,6 @@ fn input_zwj_passes_through_between_independently_normalized_runs() {
 }
 
 #[test]
-#[ignore = "requires mongol-norm 0.0.4 installed by zvvnmod-install-mongol-norm"]
 fn standard_mvs_passes_through_between_independently_normalized_runs() {
     assert_eq!(
         convert_zvvnmod_to_utn57("\u{E001}\u{180E}\u{E00D}").unwrap(),
