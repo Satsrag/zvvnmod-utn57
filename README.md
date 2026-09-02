@@ -14,7 +14,7 @@ The current first milestone includes:
 - a typed, generated relation containing 97 positioned UTN #57 written units and 147 non-empty reviewed mapping rows (100 main + 47 particle);
 - executable longest-match replacement from one ZVVNMOD shape run to positioned UTN #57 written units;
 - complete-text orchestration that converts only formal ZVVNMOD shape codes, retains Nirugu/MVS as structural input, and passes input ZWJ and all other characters through unchanged;
-- a command bridge that serializes positioned UTN #57 written units as JSON and invokes the published `mongol-norm==0.0.4` Python package.
+- canonical Unicode normalization of positioned UTN #57 written units through the pure-Rust [`mongol-norm`](https://crates.io/crates/mongol-norm) crate, linked directly into the library.
 
 The data flow is:
 
@@ -22,12 +22,15 @@ The data flow is:
 complete text containing ZVVNMOD shapes
 → classify formal ZVVNMOD runs and passthrough spans
 → convert each ZVVNMOD run to `Utn57PositionedWrittenUnit` values
-→ serialize only the positioned runs as JSON `positioned_written_unit_runs`
-→ normalize each run with mongol-norm
-→ interleave the unchanged passthrough spans in Rust
+→ normalize each run with mongol-norm, in process
+→ interleave the unchanged passthrough spans
 ```
 
-Passthrough text never enters the JSON request or Python process; Rust keeps its original code points and source boundaries and restores it after normalization. The `zvvnmod-to-utn57` command starts Python once per complete input and sends all positioned-written-unit runs in one JSON request; reverse conversion and unreviewed structural inference remain out of scope.
+Passthrough text never reaches the normalizer; the crate keeps its original code points and source
+boundaries and restores it after normalization. Everything runs in process: no subprocess, no
+interpreter, no filesystem or network access at run time, so the library builds and runs anywhere
+Rust does, `wasm32-unknown-unknown` included. Reverse conversion and unreviewed structural
+inference remain out of scope.
 
 ## Layout
 
@@ -37,7 +40,6 @@ Passthrough text never enters the JSON request or Python process; Rust keeps its
 ├── LICENSE
 ├── README.md
 ├── README.zh-CN.md
-├── requirements-mongol-norm.txt
 ├── data/
 │   ├── ir-fina-replacements.csv
 │   ├── utn57-written-units.csv
@@ -45,7 +47,6 @@ Passthrough text never enters the JSON request or Python process; Rust keeps its
 │   └── zvvnmod-utn57-map.csv
 ├── scripts/
 │   ├── check_website_contract.py
-│   ├── mongol_norm_positioned.py
 │   ├── generate_ir_fina.py
 │   ├── generate_utn57_mapping.py
 │   ├── generate_zvvnmod.py
@@ -54,7 +55,7 @@ Passthrough text never enters the JSON request or Python process; Rust keeps its
 │   └── strict_csv.py
 ├── src/
 │   ├── lib.rs
-│   ├── command_bridge.rs
+│   ├── normalize.rs
 │   ├── conversion.rs
 │   ├── preprocess.rs
 │   ├── text.rs
@@ -231,7 +232,7 @@ let options = Utn57ConversionOptions { k_variant: Utn57KVariant::K2 };
 assert_eq!(convert_zvvnmod_run_with_options(&[K_INIT], options).unwrap()[0].written_unit, Utn57WrittenUnit::K2);
 ```
 
-For complete text conversion, Rust callers and the CLI share the same backend-neutral API:
+For complete text conversion, Rust callers and the CLI share the same API:
 
 ```rust
 use zvvnmod_utn57::convert_zvvnmod_to_utn57;
@@ -239,9 +240,8 @@ use zvvnmod_utn57::convert_zvvnmod_to_utn57;
 let output = convert_zvvnmod_to_utn57(zvvnmod_text)?;
 ```
 
-`convert_zvvnmod_to_utn57` is the stable public boundary. Its current normalization backend is the
-external `mongol-norm` bridge described below; that backend can later be replaced without changing
-Rust callers or the `zvvnmod-to-utn57` CLI.
+`convert_zvvnmod_to_utn57` is the stable public boundary. It normalizes through the `mongol-norm`
+crate described below, and needs no setup step of any kind.
 
 The complete-text classifier converts only the formal 139-code ZVVNMOD shape inventory,
 which includes ZVVNMOD's own Nirugu code. Standard Unicode `U+180A` Nirugu, `U+180E` MVS,
@@ -249,71 +249,73 @@ which includes ZVVNMOD's own Nirugu code. Standard Unicode `U+180A` Nirugu, `U+1
 unchanged and delimit adjacent shape runs.
 Suffix-specific semantics for `U+202F` are intentionally deferred; this change introduces no
 `U+202F` mapping or formal inventory code.
-The normalization backend may independently emit ZWJ while serializing positioned written units;
+The normalizer may independently emit ZWJ while encoding positioned written units;
 that output is preserved without consuming or deduplicating input ZWJ. Every other character outside the formal shape inventory—including Unicode
 punctuation, digits, whitespace, ordinary mixed text, emoji, and non-ZVVNMOD private-use
 values—preserves its original code point and order. Source-specific aliases such as MenkShape
 `U+E23F..=U+E242` belong to an upstream source converter and are not interpreted here. Legacy
 ZVVNMOD `U+E140..=U+E144` FVS1-FVS4/MVS controls are explicitly excluded.
 
-## External `mongol-norm` command
+## The `mongol-norm` normalization backend
 
-The current UTN #57 output command uses an external Python command; it does not embed CPython or link
-`libpython`. After installing this crate from a Cargo registry, install the exact reviewed Python
-package once for the current user or deployment:
+Normalization is the pure-Rust [`mongol-norm`](https://crates.io/crates/mongol-norm) crate, linked
+as an ordinary Cargo dependency. It has no dependencies of its own, no Python, and no data files to
+install:
 
-```bash
-cargo install zvvnmod-utn57 --version 0.1.0-alpha.3
-zvvnmod-install-mongol-norm
+```toml
+[dependencies]
+zvvnmod-utn57 = "0.1.0-alpha.4"
 ```
 
-Then invoke the command with one complete mixed-text string:
-
 ```bash
+cargo install zvvnmod-utn57 --version 0.1.0-alpha.4
 zvvnmod-to-utn57 '<zvvnmod-text>'
 ```
 
-The Rust command classifies ZVVNMOD runs and passthrough spans, converts each ZVVNMOD run directly
-to `Utn57PositionedWrittenUnit` values, and serializes only those runs under the JSON
-`positioned_written_unit_runs` field. The bundled Python bridge calls the public API below once per
-run and returns each result separately. Rust then interleaves those results with the passthrough
-spans at their original boundaries:
+`src/normalize.rs` maps each reviewed `Utn57PositionedWrittenUnit` onto the backend's
+`PositionedWrittenUnit` and calls:
 
-```python
-MongolianShaper("MNG").normalize_positioned_written_units(records)
+```rust
+Shaper::new(Locale::Mng).normalize_positioned_written_units(&records)
 ```
 
-The installer binary embeds the hash-locked requirements and validation bridge in the Cargo
-artifact, so it does not depend on a source checkout. It uses `pip --target`, needs neither root nor
-`python3-venv`, downloads only the reviewed 0.0.4 wheel from PyPI, stages and validates it before
-replacing the destination, and verifies the singleton `O:init` result. The default destination is
-`$XDG_DATA_HOME/zvvnmod-utn57/mongol-norm/0.0.4/site`, falling back to
-`$HOME/.local/share/zvvnmod-utn57/mongol-norm/0.0.4/site`. Both installer and runtime honor
-`ZVVNMOD_MONGOL_NORM_PATH` as an explicit absolute-path override and select a custom Python executable with
-`ZVVNMOD_MONGOL_NORM_PYTHON`; the installer also retains `PYTHON` as a lower-priority fallback.
+The unit and position mappings are exhaustive `match` expressions rather than lookups through
+`contract_name`. `src/generated/utn57_mapping.rs` is generated, so a written unit added by the
+generator fails this crate's build instead of only failing at run time. The `MNG` shaper is built
+once per process behind a `OnceLock` and shared by every run.
 
-Adding `zvvnmod-utn57` as a Rust dependency does not run pip during `cargo build`. Pure Rust mapping
-needs no Python installation. Deployments that call the Unicode normalization APIs run
-`zvvnmod-install-mongol-norm` once as an explicit setup step.
+Because the backend's errors are the useful ones, they are not wrapped away.
+`Utn57TextConversionError::Normalize` carries `mongol_norm::Error` verbatim, and the crate
+re-exports `mongol_norm`, so a caller can match `UnsupportedPositionedUnit`,
+`ChainPositionMismatch` and friends without declaring the dependency separately:
 
-This subprocess bridge is deliberately simple and starts Python once per conversion command. A
-conversion, including stdin/stdout/stderr collection, has a 30-second deadline, with stdout and
-stderr capture limited to 1 MiB each. On Unix, the standard-library command integration places the
-bridge in a dedicated process group; a small documented POSIX `kill` FFI call terminates the whole
-group on timeout or pipeline error, including descendants whose direct parent already exited. No
-Rust runtime dependency is added. The bridge is suitable for the current CLI integration; a
-persistent worker can be added later if profiling shows process startup is a bottleneck.
+```rust
+use zvvnmod_utn57::{convert_zvvnmod_to_utn57, mongol_norm, Utn57TextConversionError};
+
+match convert_zvvnmod_to_utn57(text) {
+    Ok(output) => println!("{output}"),
+    Err(Utn57TextConversionError::Normalize(mongol_norm::Error::ChainPositionMismatch)) => { /* … */ }
+    Err(error) => eprintln!("{error}"),
+}
+```
+
+Cargo treats every `0.0.x` release as incompatible with the next, so the `mongol-norm = "0.0.4"`
+requirement already pins that exact version — the same intent as the hash-locked wheel this
+replaced.
 
 ## Validation
 
 ```bash
 python3 -m unittest discover -s tests -v
 cargo fmt --all -- --check
-cargo test
-cargo run --bin zvvnmod-install-mongol-norm
-cargo test --test command_bridge --test command_cli --test api --test public_api -- --ignored
+cargo test --all-targets
+cargo clippy --all-targets -- -D warnings
+cargo check --target wasm32-unknown-unknown --lib
 cargo package
 ```
+
+The Python here is only the build-time generator suite under `scripts/`; the library itself has no
+Python at run time. No test is `#[ignore]`d and none needs an install step.
 
 ## License
 

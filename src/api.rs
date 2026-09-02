@@ -1,48 +1,47 @@
-use crate::command_bridge::{
-    normalize_positioned_written_unit_runs_with_mongol_norm, MongolNormCommandError,
-};
+use crate::normalize::normalize_positioned_written_units;
 use crate::{
-    classify_zvvnmod_text_character, convert_zvvnmod_run, zvvnmod_code, Utn57PositionedWrittenUnit,
-    ZvvnmodCode, ZvvnmodTextCharacterKind,
+    classify_zvvnmod_text_character, convert_zvvnmod_run, zvvnmod_code, Utn57ConversionError,
+    Utn57PositionedWrittenUnit, ZvvnmodCode, ZvvnmodTextCharacterKind,
 };
 use std::error::Error;
 use std::fmt;
 
-#[derive(Debug)]
-enum Utn57TextConversionErrorKind {
-    Backend(MongolNormCommandError),
-}
-
 /// Failure while converting complete ZVVNMOD text to canonical UTN #57 output.
-///
-/// The concrete normalization backend is intentionally kept behind this
-/// backend-neutral error boundary.
-#[derive(Debug)]
-pub struct Utn57TextConversionError {
-    kind: Utn57TextConversionErrorKind,
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Utn57TextConversionError {
+    /// ZVVNMOD → positioned UTN #57 unit conversion failed.
+    Conversion(Utn57ConversionError),
+    /// `mongol-norm` could not encode the positioned units of a run.
+    Normalize(mongol_norm::Error),
 }
 
 impl fmt::Display for Utn57TextConversionError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.kind {
-            Utn57TextConversionErrorKind::Backend(error) => error.fmt(formatter),
+        match self {
+            Self::Conversion(error) => error.fmt(formatter),
+            Self::Normalize(error) => error.fmt(formatter),
         }
     }
 }
 
 impl Error for Utn57TextConversionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match &self.kind {
-            Utn57TextConversionErrorKind::Backend(error) => Some(error),
+        match self {
+            Self::Conversion(error) => Some(error),
+            Self::Normalize(error) => Some(error),
         }
     }
 }
 
-impl From<MongolNormCommandError> for Utn57TextConversionError {
-    fn from(source: MongolNormCommandError) -> Self {
-        Self {
-            kind: Utn57TextConversionErrorKind::Backend(source),
-        }
+impl From<Utn57ConversionError> for Utn57TextConversionError {
+    fn from(error: Utn57ConversionError) -> Self {
+        Self::Conversion(error)
+    }
+}
+
+impl From<mongol_norm::Error> for Utn57TextConversionError {
+    fn from(error: mongol_norm::Error) -> Self {
+        Self::Normalize(error)
     }
 }
 
@@ -90,14 +89,6 @@ fn classify_complete_text(input: &str) -> Vec<ClassifiedTextPart> {
     parts
 }
 
-fn convert_classified_zvvnmod_run(
-    run: Vec<ZvvnmodCode>,
-) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57TextConversionError> {
-    convert_zvvnmod_run(&run)
-        .map_err(MongolNormCommandError::from)
-        .map_err(Utn57TextConversionError::from)
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum ReconstructionStep {
     NormalizedRun(usize),
@@ -116,7 +107,7 @@ fn build_normalization_plan(input: &str) -> Result<NormalizationPlan, Utn57TextC
     for part in classify_complete_text(input) {
         match part {
             ClassifiedTextPart::ZvvnmodRun(run) => {
-                let positioned = convert_classified_zvvnmod_run(run)?;
+                let positioned = convert_zvvnmod_run(&run)?;
                 let run_index = positioned_written_unit_runs.len();
                 positioned_written_unit_runs.push(positioned);
                 reconstruction.push(ReconstructionStep::NormalizedRun(run_index));
@@ -148,18 +139,21 @@ fn reconstruct_complete_text(
 
 /// Convert complete text containing ZVVNMOD shape runs to canonical UTN #57 output.
 ///
-/// Formal ZVVNMOD shape runs are converted through one external normalization
-/// process per call. Characters outside the formal ZVVNMOD shape inventory,
+/// Formal ZVVNMOD shape runs are normalized in process by the `mongol-norm`
+/// crate. Characters outside the formal ZVVNMOD shape inventory,
 /// including punctuation, digits, whitespace, ordinary Unicode, emoji, and
 /// non-ZVVNMOD private-use values, preserve their order and code points.
 /// Legacy ZVVNMOD `U+E140..=U+E144` FVS1-FVS4/MVS controls are excluded.
+///
+/// # Errors
+///
+/// Returns [`Utn57TextConversionError`] for either conversion stage.
 pub fn convert_zvvnmod_to_utn57(input: &str) -> Result<String, Utn57TextConversionError> {
     let plan = build_normalization_plan(input)?;
-    let normalized_runs = if plan.positioned_written_unit_runs.is_empty() {
-        Vec::new()
-    } else {
-        normalize_positioned_written_unit_runs_with_mongol_norm(&plan.positioned_written_unit_runs)?
-    };
+    let mut normalized_runs = Vec::with_capacity(plan.positioned_written_unit_runs.len());
+    for run in &plan.positioned_written_unit_runs {
+        normalized_runs.push(normalize_positioned_written_units(run)?);
+    }
     Ok(reconstruct_complete_text(
         plan.reconstruction,
         normalized_runs,
@@ -171,7 +165,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn text_outside_the_zvvnmod_shape_inventory_needs_no_backend() {
+    fn text_outside_the_zvvnmod_shape_inventory_is_preserved() {
         let input = "English 中 😀\t\r\n\u{1802}\u{1810}\u{E23F}";
         assert_eq!(convert_zvvnmod_to_utn57(input).unwrap(), input);
     }
@@ -185,7 +179,7 @@ mod tests {
     }
 
     #[test]
-    fn non_zvvnmod_private_use_passes_through_without_backend_startup() {
+    fn non_zvvnmod_private_use_passes_through_unchanged() {
         let input = "a\u{E145}\u{F0000}\u{100000}b";
         assert_eq!(convert_zvvnmod_to_utn57(input).unwrap(), input);
     }
