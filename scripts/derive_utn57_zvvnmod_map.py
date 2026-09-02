@@ -18,7 +18,16 @@ sequences users actually type (`A_MEDI AA_FINA`, `N_MEDI N_MEDI`) and are not
 canonical spellings. Every inventory unit that no rule reaches gets a row with
 empty `targets`, which the runtime treats as "no ZVVNMOD glyph".
 
-Rows whose choice is a judgement call carry a `REVIEW:` note.
+Two units are overridden after comparing the derived draft with meco-core's
+own Unicode → ZVVNMOD tables (`REVIEWED_OVERRIDES` below); the note on each row
+says why. Rows whose choice is still a judgement call carry a `REVIEW:` note.
+
+The runtime recomposes merged ZVVNMOD glyphs after mapping: a component
+sequence that matches an entry of `ZVVNMOD_CODE_DECOMPOSITIONS` (for example
+`B_INIT A_MEDI`) is emitted as the merged code (`B_A_INIT`). Downstream
+converters key on those merged codes — meco-core turns a bare `AA_FINA` into a
+separated (MVS) vowel — so this table lists component spellings only and the
+merge is a fixed runtime step, not data.
 """
 
 from __future__ import annotations
@@ -37,6 +46,22 @@ INVENTORY = ROOT / "data" / "utn57-written-units.csv"
 OUTPUT = ROOT / "data" / "utn57-zvvnmod-map.csv"
 
 PRECEDENCE = {"target": 0, "source": 1, "chachlag": 2}
+
+# Reviewed choices that differ from the precedence rule. Each entry is
+# (targets, reason); the reason lands in the row's note verbatim.
+REVIEWED_OVERRIDES = {
+    "Aa:fina": (
+        "A_MEDI AA_FINA",
+        "reviewed: the connected Aa final is tooth+swash (context:A_MEDI_AA_FINA); "
+        "the runtime merges the tooth into the preceding bowed glyph (B_A_INIT AA_FINA); "
+        "meco-core agrees; target:Aa:fina (bare AA_FINA) not chosen",
+    ),
+    "Hx:medi": (
+        "N_MEDI N_MEDI",
+        "reviewed: meco-core and particle:05/32/44 spell medial ɣ as N_MEDI N_MEDI; "
+        "target:Hx:medi (M_MEDI M_MEDI) not chosen",
+    ),
+}
 
 # Golden-corpus witnesses for units that only FVS-forced spellings produce.
 UNREPRESENTABLE_WITNESSES = {
@@ -124,8 +149,16 @@ def main() -> None:
             note += f"; K2:{entry['position']} shares this glyph"
         if unit_id == "Dd:fina":
             note += "; particle:25 spells O:medi Dd:fina with one O_MEDI so ᠨᠤᠭᠤᠳ reverses with one more O_MEDI than that particle row"
-        if unit_id == "Hx:medi":
-            note = "REVIEW: particle:05/32/44 spell this unit N_MEDI N_MEDI (not chosen); " + note
+        if unit_id in REVIEWED_OVERRIDES:
+            targets, reason = REVIEWED_OVERRIDES[unit_id]
+            emit(f"{kind}:{unit_id}", unit_id, targets, reason)
+            continue
+        if unit_id == "G:fina":
+            note = (
+                "REVIEW: meco-core's own Unicode→ZVVNMOD emits H_FINA here; "
+                "I_MEDI AA_FINA converts onward to ᠪᠢᠴᠢᠭ (MenkLetter) while H_FINA yields ᠬ+FVS3; "
+                "keeping the target row; " + note
+            )
         emit(f"{kind}:{unit_id}", unit_id, chosen[1] if chosen else "", note)
 
     # Multi-unit rows: the chachlag triples, in forward-row order.
