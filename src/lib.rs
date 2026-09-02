@@ -1,11 +1,4 @@
-//! ZVVNMOD ↔ UTN #57 转换基础组件。
-//!
 //! ZVVNMOD ↔ UTN #57 conversion primitives.
-//!
-//! 当前包含显式字体 shape 的自动生成 ZVVNMOD code 定义、legacy control 删除、
-//! `Ir_fina` replacement、merged-code decomposition，以及由 reviewed runtime CSV
-//! 生成的 typed UTN #57 written-unit replacement，以及由纯 Rust `mongol-norm`
-//! crate 驱动的 canonical 归一化。
 //!
 //! The crate contains generated ZVVNMOD code definitions for explicit font shapes,
 //! legacy-control removal, `Ir_fina` replacement, merged-code decomposition, and
@@ -14,6 +7,13 @@
 //!
 //! Normalization errors are `mongol-norm`'s own [`mongol_norm::Error`]. The crate is re-exported
 //! so a caller can match its variants without declaring the dependency separately.
+//!
+//! ZVVNMOD ↔ UTN #57 转换基础组件。
+//!
+//! 当前包含显式字体 shape 的自动生成 ZVVNMOD code 定义、legacy control 删除、
+//! `Ir_fina` replacement、merged-code decomposition，以及由 reviewed runtime CSV
+//! 生成的 typed UTN #57 written-unit replacement，以及由纯 Rust `mongol-norm`
+//! crate 驱动的 canonical 归一化。
 
 pub mod generated {
     pub mod code_decomposition_map;
