@@ -251,11 +251,11 @@ Normalization 使用纯 Rust 的 [`mongol-norm`](https://crates.io/crates/mongol
 
 ```toml
 [dependencies]
-zvvnmod-utn57 = "0.1.0-alpha.4"
+zvvnmod-utn57 = "0.1.0"
 ```
 
 ```bash
-cargo install zvvnmod-utn57 --version 0.1.0-alpha.4
+cargo install zvvnmod-utn57 --version 0.1.0
 zvvnmod-to-utn57 '<zvvnmod-text>'
 ```
 
@@ -284,8 +284,8 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-Cargo 语义中每个 `0.0.x` 版本都与下一个不兼容，所以 `mongol-norm = "0.0.4"` 本身就是精确锁定，
-与它替换掉的 hash-locked wheel 意图一致。
+`mongol-norm = "0.1.1"` 采用 0.1 系列引入的稳定 Rust API。`Cargo.lock` 会记录精确解析到的
+版本，确保 application 和 CLI 构建可复现。
 
 ## 验证
 

@@ -264,11 +264,11 @@ install:
 
 ```toml
 [dependencies]
-zvvnmod-utn57 = "0.1.0-alpha.4"
+zvvnmod-utn57 = "0.1.0"
 ```
 
 ```bash
-cargo install zvvnmod-utn57 --version 0.1.0-alpha.4
+cargo install zvvnmod-utn57 --version 0.1.0
 zvvnmod-to-utn57 '<zvvnmod-text>'
 ```
 
@@ -299,9 +299,9 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-Cargo treats every `0.0.x` release as incompatible with the next, so the `mongol-norm = "0.0.4"`
-requirement already pins that exact version — the same intent as the hash-locked wheel this
-replaced.
+The `mongol-norm = "0.1.1"` requirement adopts the stable Rust API introduced in the 0.1
+series. `Cargo.lock` records the exact resolved release for reproducible application and CLI
+builds.
 
 ## Validation
 
