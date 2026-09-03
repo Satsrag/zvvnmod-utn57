@@ -14,7 +14,7 @@ from generate_zvvnmod import generate_utn57_mapping, read_utn57_mapping_csv, rea
 ROOT = Path(__file__).resolve().parents[1]
 WEBSITE_MAP = "mapping/data/zvvnmod-utn57-map.csv"
 WEBSITE_TARGETS = "mapping/data/utn57-written-units.csv"
-EXPECTED_WEBSITE_REVISION = "0b50ba5b9f5c0ee66040ce6e8f343230b8832513"
+EXPECTED_WEBSITE_REVISION = "0764c208e9b778339c95ea7f124afc3f2816bc01"
 
 
 def resolve_revision(repository: Path, revision: str) -> str:
