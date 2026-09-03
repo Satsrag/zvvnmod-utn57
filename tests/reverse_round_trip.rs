@@ -23,7 +23,8 @@ const K2_ROWS: [&str; 3] = ["K2:init", "K2:medi", "K2:fina"];
 /// UTN units that ZVVNMOD writes as a sequence of other units: it has no
 /// separate glyph for them.
 ///
-/// Six of the nine are unambiguous in practice. Their two-unit reading is legal
+/// All nine round-trip through the forward map, which maps each shared spelling
+/// back to its composite. Six of the nine are unambiguous in practice. Their two-unit reading is legal
 /// UTN spelling but not conformant, and it never occurs: counted over 2268
 /// shaped samples (this crate's 276-word natural list plus mongol-norm's 1992
 /// golden vectors), `A:init Aa:isol`, `A:medi Aa:isol`, `O:medi Aa:isol`,
@@ -50,22 +51,6 @@ const COMPOSITE_UNITS: [(&str, &str); 9] = [
     ("H:medi", "A:medi A:medi"),
     ("Hx:medi", "N:medi N:medi"),
 ];
-
-/// The one composite whose ZVVNMOD spelling the forward map does not map back
-/// to it. ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly
-/// `N_MEDI N_MEDI` — but the forward map's `target:Hx:medi` row says
-/// `M_MEDI M_MEDI`, so the trip back lands on two N units instead.
-///
-/// The forward map is byte-identical to the website contract CSV
-/// (`scripts/check_website_contract.py`), so the correction has to land there
-/// first. It is safe: `N:medi N:medi` never occurs in conformant UTN, so
-/// preferring the longer `Hx:medi` match swallows nothing legitimate, and no
-/// new entry is needed in `REVIEWED_MAPPING_AMBIGUITIES` because
-/// `("N_MEDI", "N_MEDI")` would then have exactly one target sequence.
-///
-/// Pinned so that correcting either table fails this suite rather than passing
-/// silently.
-const HX_MEDI_RETURNS: &str = "N:medi N:medi";
 
 /// `NAME: ZvvnmodCode = ZvvnmodCode(0x____)` → code point.
 fn code_points() -> HashMap<String, u32> {
@@ -176,7 +161,7 @@ fn every_reverse_row_names_real_zvvnmod_codes() {
 fn every_reverse_row_round_trips_through_the_forward_converter() {
     let mut failures = Vec::new();
     for row in rows() {
-        if K2_ROWS.contains(&row.sources.as_str()) || row.sources == "Hx:medi" {
+        if K2_ROWS.contains(&row.sources.as_str()) {
             continue;
         }
         let units = convert_zvvnmod_run(&recompose(&row.codes))
@@ -212,26 +197,6 @@ fn the_k2_rows_are_the_only_ones_the_forward_converter_resolves_to_another_unit(
             row.sources
         );
     }
-}
-
-#[test]
-fn hx_medi_still_returns_two_n_units() {
-    let row = rows()
-        .into_iter()
-        .find(|row| row.sources == "Hx:medi")
-        .expect("Hx:medi is a row of the reverse map");
-    let units = convert_zvvnmod_run(&recompose(&row.codes)).unwrap();
-    let spelled = units
-        .iter()
-        .map(|unit| spell(*unit))
-        .collect::<Vec<_>>()
-        .join(" ");
-    assert_eq!(
-        spelled, HX_MEDI_RETURNS,
-        "Hx:medi no longer disagrees the way this test records; if the forward map's \
-         target:Hx:medi row was corrected to N_MEDI N_MEDI, move Hx:medi back into the \
-         round-trip test"
-    );
 }
 
 /// The composite list is a claim about the data, so derive it and check it.

@@ -1,4 +1,4 @@
-# metadata={"schema":"utn57-zvvnmod-runtime-map-v1","baseline":"sha256:cc58b012ea2e3a1709d723d115ad9eed00de13d32bba166991a1447c889a358c"}
+# metadata={"schema":"utn57-zvvnmod-runtime-map-v1","baseline":"sha256:1f0cb6b8b476022726cec5f2a55973b9423ea96d7b8fd79c98b8447cf73b3592"}
 id,sources,targets,note
 unit:A:isol,A:isol,A_INIT AA_FINA,from target:A:isol; composite glyph sequence; ZVVNMOD writes A:init + Aa:isol identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
 unit:A:init,A:init,A_INIT,from source:A_INIT
@@ -36,7 +36,7 @@ unit:H:fina,H:fina,H_FINA,from source:H_FINA
 unit:Hr:medi,Hr:medi,HR_MEDI,from source:HR_MEDI
 unit:Hr:fina,Hr:fina,HR_FINA,from source:HR_FINA
 unit:Hx:init,Hx:init,HX_INIT,from source:HX_INIT
-unit:Hx:medi,Hx:medi,N_MEDI N_MEDI,reviewed: ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly N_MEDI N_MEDI; meco-core and particle:05/32/44 agree; the forward map's target:Hx:medi row says M_MEDI M_MEDI and needs correcting upstream in the website contract CSV; ZVVNMOD writes N:medi + N:medi identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
+unit:Hx:medi,Hx:medi,N_MEDI N_MEDI,reviewed: ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly N_MEDI N_MEDI; meco-core and particle:05/32/44 agree; the forward map said M_MEDI M_MEDI until satsrag.github.io#16 corrected it; ZVVNMOD writes N:medi + N:medi identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
 unit:Hx:fina,Hx:fina,,reviewed: no ZVVNMOD glyph — the inventory's only Hx final is the merged 'Hx f Aa f' (U+E09D); there is no standalone one so this unit is reachable only through the chachlag row and a bare Hx:fina is a conversion error
 unit:I:isol,I:isol,I_ISOL,from source:I_ISOL
 unit:I:init,I:init,I_INIT,from source:I_INIT

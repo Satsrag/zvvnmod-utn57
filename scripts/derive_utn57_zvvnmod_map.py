@@ -80,8 +80,8 @@ REVIEWED_OVERRIDES = {
     "Hx:medi": (
         "N_MEDI N_MEDI",
         "reviewed: ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly N_MEDI N_MEDI; "
-        "meco-core and particle:05/32/44 agree; the forward map's target:Hx:medi row says "
-        "M_MEDI M_MEDI and needs correcting upstream in the website contract CSV",
+        "meco-core and particle:05/32/44 agree; the forward map said M_MEDI M_MEDI until "
+        "satsrag.github.io#16 corrected it",
     ),
 }
 
