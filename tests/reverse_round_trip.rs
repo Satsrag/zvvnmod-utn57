@@ -270,3 +270,38 @@ fn every_composite_unit_is_still_ambiguous() {
         "the set of UTN units ZVVNMOD writes as a sequence of others changed"
     );
 }
+
+/// The seven units with no ZVVNMOD glyph, checked against the font inventory
+/// rather than trusted: no code in `data/zvvnmod-unicode-names.csv` names them.
+/// `Hx:fina` and `N:fina` appear only inside the merged `Hx f Aa f` (U+E09D) and
+/// `N f Aa f` (U+E077), which the chachlag rows already carry.
+const WITHOUT_GLYPH: [&str; 7] = [
+    "Gx:init", "Gx:medi", "Hx:fina", "Ix:isol", "N:fina", "Sz:fina", "Ux:isol",
+];
+
+#[test]
+fn the_rows_without_a_zvvnmod_spelling_are_exactly_the_units_without_a_glyph() {
+    let spelled: Vec<String> = rows().into_iter().map(|row| row.sources).collect();
+    let mut missing: Vec<&str> = MAP
+        .lines()
+        .skip(2)
+        .filter_map(|line| {
+            let fields: Vec<&str> = line.split(',').collect();
+            fields[2].is_empty().then_some(fields[1])
+        })
+        .filter(|source| *source != "MVS")
+        .collect();
+    missing.sort_unstable();
+    let mut expected = WITHOUT_GLYPH;
+    expected.sort_unstable();
+    assert_eq!(
+        missing, expected,
+        "the set of units with no ZVVNMOD glyph changed"
+    );
+    for unit in WITHOUT_GLYPH {
+        assert!(
+            !spelled.contains(&unit.to_owned()),
+            "{unit} has no glyph but carries a spelling"
+        );
+    }
+}

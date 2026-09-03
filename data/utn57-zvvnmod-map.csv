@@ -27,9 +27,9 @@ unit:F:medi,F:medi,F_MEDI,from source:F_MEDI
 unit:F:fina,F:fina,F_FINA,from source:F_FINA
 unit:G:init,G:init,G_INIT,from source:G_INIT
 unit:G:medi,G:medi,G_MEDI,from source:G_MEDI
-unit:G:fina,G:fina,I_MEDI AA_FINA,REVIEW: meco-core's own Unicode→ZVVNMOD emits H_FINA here; I_MEDI AA_FINA converts onward to ᠪᠢᠴᠢᠭ (MenkLetter) while H_FINA yields ᠬ+FVS3; keeping the target row; from target:G:fina; composite glyph sequence; ZVVNMOD writes I:medi + Aa:isol identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
-unit:Gx:init,Gx:init,,REVIEW: no ZVVNMOD glyph; seen only as ᠬ᠏ (h+FVS4)
-unit:Gx:medi,Gx:medi,,REVIEW: no ZVVNMOD glyph; seen only as ᠰᠠᠬ᠏ᠠᠯ (h+FVS4 medial)
+unit:G:fina,G:fina,I_MEDI AA_FINA,reviewed: ZVVNMOD has no G_FINA — H_FINA is the family's only final glyph — so final g is written as this composite; meco-core substitutes H_FINA and loses the ᠭ/ᠬ distinction (I_MEDI AA_FINA converts onward to ᠪᠢᠴᠢᠭ where H_FINA yields ᠬ+FVS3); from target:G:fina; composite glyph sequence; ZVVNMOD writes I:medi + Aa:isol identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
+unit:Gx:init,Gx:init,,reviewed: no ZVVNMOD glyph — no name in the ZVVNMOD inventory mentions Gx at all
+unit:Gx:medi,Gx:medi,,reviewed: no ZVVNMOD glyph — no name in the ZVVNMOD inventory mentions Gx at all
 unit:H:init,H:init,H_INIT,from source:H_INIT
 unit:H:medi,H:medi,A_MEDI A_MEDI,from target:H:medi; composite glyph sequence; ZVVNMOD writes A:medi + A:medi identically and that reading is conformant UTN (85 witnesses e.g. ᠲᠡᠩᠷᠢ) — reverse conversion emits the shared spelling either way; picking between them is the forward direction's problem
 unit:H:fina,H:fina,H_FINA,from source:H_FINA
@@ -37,12 +37,12 @@ unit:Hr:medi,Hr:medi,HR_MEDI,from source:HR_MEDI
 unit:Hr:fina,Hr:fina,HR_FINA,from source:HR_FINA
 unit:Hx:init,Hx:init,HX_INIT,from source:HX_INIT
 unit:Hx:medi,Hx:medi,N_MEDI N_MEDI,reviewed: ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly N_MEDI N_MEDI; meco-core and particle:05/32/44 agree; the forward map's target:Hx:medi row says M_MEDI M_MEDI and needs correcting upstream in the website contract CSV; ZVVNMOD writes N:medi + N:medi identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
-unit:Hx:fina,Hx:fina,,REVIEW: no ZVVNMOD glyph; seen only as ᠪᠠᠳᠠᠭ᠍ (g+FVS3 final); representable only inside chachlag as HX_AA_FINA
+unit:Hx:fina,Hx:fina,,reviewed: no ZVVNMOD glyph — the inventory's only Hx final is the merged 'Hx f Aa f' (U+E09D); there is no standalone one so this unit is reachable only through the chachlag row
 unit:I:isol,I:isol,I_ISOL,from source:I_ISOL
 unit:I:init,I:init,I_INIT,from source:I_INIT
 unit:I:medi,I:medi,I_MEDI,from source:I_MEDI
 unit:I:fina,I:fina,I_FINA,from source:I_FINA
-unit:Ix:isol,Ix:isol,,REVIEW: no ZVVNMOD glyph; seen only as ᠢ᠌ (i+FVS2)
+unit:Ix:isol,Ix:isol,,reviewed: no ZVVNMOD glyph — no name in the ZVVNMOD inventory mentions Ix at all — 'I isol' (U+E01A) is I:isol
 unit:J:medi,J:medi,J_MEDI,from source:J_MEDI
 unit:J:fina,J:fina,J_FINA,from source:J_FINA
 unit:K:init,K:init,K_INIT,from source:K_INIT; K and K2 share this glyph so K2:init spells it too
@@ -59,7 +59,7 @@ unit:M:medi,M:medi,M_MEDI,from source:M_MEDI
 unit:M:fina,M:fina,M_FINA,from source:M_FINA
 unit:N:init,N:init,N_INIT,from source:N_INIT
 unit:N:medi,N:medi,N_MEDI,from source:N_MEDI
-unit:N:fina,N:fina,,REVIEW: no ZVVNMOD glyph; seen only as ᠣᠨ᠋ (n+FVS1 final); plain final n shapes as A:fina; representable only inside chachlag as N_AA_FINA
+unit:N:fina,N:fina,,reviewed: no ZVVNMOD glyph — the inventory's only N final is the merged 'N f Aa f' (U+E077); there is no standalone one so this unit is reachable only through the chachlag row
 unit:O:init,O:init,O_INIT,from source:O_INIT
 unit:O:medi,O:medi,O_MEDI,from source:O_MEDI
 unit:O:fina,O:fina,O_FINA,from source:O_FINA
@@ -78,14 +78,14 @@ unit:S:fina,S:fina,S_FINA,from source:S_FINA
 unit:Sh:init,Sh:init,SH_INIT,from source:SH_INIT
 unit:Sh:medi,Sh:medi,SH_MEDI,from source:SH_MEDI
 unit:Sh:fina,Sh:fina,SH_FINA,from source:SH_FINA
-unit:Sz:fina,Sz:fina,,REVIEW: no ZVVNMOD glyph; seen only as ᠬᠦᠮᠦᠰ᠋ (s+FVS1 final)
+unit:Sz:fina,Sz:fina,,reviewed: no ZVVNMOD glyph — no name in the ZVVNMOD inventory mentions Sz at all — 'S f' (U+E03E) is S:fina
 unit:T:init,T:init,T_INIT,from source:T_INIT
 unit:T:medi,T:medi,T_MEDI,from source:T_MEDI
 unit:T:fina,T:fina,T_FINA,from source:T_FINA
 unit:U:isol,U:isol,U_ISOL,from source:U_ISOL
 unit:U:fina,U:fina,U_FINA,from source:U_FINA
 unit:Ue:fina,Ue:fina,UE_FINA,from source:UE_FINA
-unit:Ux:isol,Ux:isol,,REVIEW: no ZVVNMOD glyph; seen only as ᠲᠠᠨ᠎ᠤ᠌ (u+FVS2 after MVS)
+unit:Ux:isol,Ux:isol,,reviewed: no ZVVNMOD glyph — no name in the ZVVNMOD inventory mentions Ux at all — 'U isol' (U+E01B) is U:isol
 unit:W:init,W:init,W_INIT,from source:W_INIT
 unit:W:medi,W:medi,W_MEDI,from source:W_MEDI
 unit:W:fina,W:fina,W_FINA,from source:W_FINA

@@ -111,15 +111,18 @@ def composite_note(unit_id: str) -> str:
         f"({witness}) so this unit is the only reading"
     )
 
-# Golden-corpus witnesses for units that only FVS-forced spellings produce.
+# Units with no ZVVNMOD glyph, each with the evidence from
+# data/zvvnmod-unicode-names.csv — the 139-code font inventory itself.
 UNREPRESENTABLE_WITNESSES = {
-    "Gx:init": "ᠬ᠏ (h+FVS4)",
-    "Gx:medi": "ᠰᠠᠬ᠏ᠠᠯ (h+FVS4 medial)",
-    "Hx:fina": "ᠪᠠᠳᠠᠭ᠍ (g+FVS3 final); representable only inside chachlag as HX_AA_FINA",
-    "Ix:isol": "ᠢ᠌ (i+FVS2)",
-    "N:fina": "ᠣᠨ᠋ (n+FVS1 final); plain final n shapes as A:fina; representable only inside chachlag as N_AA_FINA",
-    "Sz:fina": "ᠬᠦᠮᠦᠰ᠋ (s+FVS1 final)",
-    "Ux:isol": "ᠲᠠᠨ᠎ᠤ᠌ (u+FVS2 after MVS)",
+    "Gx:init": "no name in the ZVVNMOD inventory mentions Gx at all",
+    "Gx:medi": "no name in the ZVVNMOD inventory mentions Gx at all",
+    "Hx:fina": "the inventory's only Hx final is the merged 'Hx f Aa f' (U+E09D); "
+    "there is no standalone one so this unit is reachable only through the chachlag row",
+    "Ix:isol": "no name in the ZVVNMOD inventory mentions Ix at all — 'I isol' (U+E01A) is I:isol",
+    "N:fina": "the inventory's only N final is the merged 'N f Aa f' (U+E077); there is no "
+    "standalone one so this unit is reachable only through the chachlag row",
+    "Sz:fina": "no name in the ZVVNMOD inventory mentions Sz at all — 'S f' (U+E03E) is S:fina",
+    "Ux:isol": "no name in the ZVVNMOD inventory mentions Ux at all — 'U isol' (U+E01B) is U:isol",
 }
 
 
@@ -156,8 +159,10 @@ def main() -> None:
     def note_for(key: tuple[str, ...], chosen: tuple[str, str] | None) -> str:
         unit_id = " ".join(key)
         if chosen is None:
-            witness = UNREPRESENTABLE_WITNESSES.get(unit_id, "not reached by any forward rule")
-            return f"REVIEW: no ZVVNMOD glyph; seen only as {witness}"
+            witness = UNREPRESENTABLE_WITNESSES.get(unit_id)
+            if witness is None:
+                return "REVIEW: no ZVVNMOD glyph and not reached by any forward rule"
+            return f"reviewed: no ZVVNMOD glyph — {witness}"
         rule_id, sources = chosen
         parts = [f"from {rule_id}"]
         others = sorted(
@@ -205,9 +210,10 @@ def main() -> None:
             note += composite_note(unit_id)
         if unit_id == "G:fina":
             note = (
-                "REVIEW: meco-core's own Unicode→ZVVNMOD emits H_FINA here; "
-                "I_MEDI AA_FINA converts onward to ᠪᠢᠴᠢᠭ (MenkLetter) while H_FINA yields ᠬ+FVS3; "
-                "keeping the target row; " + note
+                "reviewed: ZVVNMOD has no G_FINA — H_FINA is the family's only final glyph — "
+                "so final g is written as this composite; meco-core substitutes H_FINA and loses "
+                "the ᠭ/ᠬ distinction (I_MEDI AA_FINA converts onward to ᠪᠢᠴᠢᠭ where H_FINA "
+                "yields ᠬ+FVS3); " + note
             )
         emit(f"{kind}:{unit_id}", unit_id, chosen[1] if chosen else "", note)
 
