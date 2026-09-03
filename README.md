@@ -13,7 +13,7 @@ The current first milestone includes:
 - 30 user-confirmed `Ir_fina` replacement rules;
 - a typed, generated relation containing 97 positioned UTN #57 written units and 147 non-empty reviewed mapping rows (100 main + 47 particle);
 - executable longest-match replacement from one ZVVNMOD shape run to positioned UTN #57 written units;
-- complete-text orchestration that converts only formal ZVVNMOD shape codes, retains Nirugu/MVS as structural input, and passes input ZWJ and all other characters through unchanged;
+- complete-text orchestration that converts only formal ZVVNMOD shape codes, retains Nirugu/MVS as structural input, translates the detached-suffix boundary, and passes input ZWJ and all other characters through unchanged;
 - canonical Unicode normalization of positioned UTN #57 written units through the pure-Rust [`mongol-norm`](https://crates.io/crates/mongol-norm) crate, linked directly into the library.
 - the reverse direction: shaping Mongolian text into positioned UTN #57 written units and spelling them in ZVVNMOD, with merged-glyph recomposition.
 
@@ -249,10 +249,10 @@ crate described below, and needs no setup step of any kind.
 
 The complete-text classifier converts only the formal 139-code ZVVNMOD shape inventory,
 which includes ZVVNMOD's own Nirugu code. Standard Unicode `U+180A` Nirugu, `U+180E` MVS,
-`U+202F` NNBSP, and input `U+200D` ZWJ have no ZVVNMOD shaping semantics: they pass through
-unchanged and delimit adjacent shape runs.
-Suffix-specific semantics for `U+202F` are intentionally deferred; this change introduces no
-`U+202F` mapping or formal inventory code.
+and input `U+200D` ZWJ have no ZVVNMOD shaping semantics: they pass through
+unchanged and delimit adjacent shape runs. `U+202F` also delimits adjacent runs, but it is
+not passthrough: it is the [detached-suffix boundary](#the-detached-suffix-boundary) and is
+read back as UTN #57 `MVS`.
 The normalizer may independently emit ZWJ while encoding positioned written units;
 that output is preserved without consuming or deduplicating input ZWJ. Every other character outside the formal shape inventory—including Unicode
 punctuation, digits, whitespace, ordinary mixed text, emoji, and non-ZVVNMOD private-use
@@ -288,6 +288,33 @@ written unit, plus the ten `X:fina MVS Aa:isol` chachlag triples that collapse
 into a single merged code. `scripts/derive_utn57_zvvnmod_map.py` derives it from
 the forward map, and its `baseline` pins the forward map's digest so the two
 cannot drift apart.
+
+### The detached-suffix boundary
+
+UTN #57 writes the boundary between a stem and its detached suffix as `MVS`.
+ZVVNMOD writes it as `U+202F`, and an ordinary word space as `U+0020`:
+
+| | UTN #57 | ZVVNMOD |
+|---|---|---|
+| detached suffix | `MVS` (`U+180E`), or `U+202F` on input | `U+202F` |
+| word space | `U+0020` | `U+0020` |
+
+Both directions translate it. ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ — `1832 1820 182F 180E 1820 202F 1836
+1822 1828` — converts to `E042 E005 E03B E00D 202F E04D E006 E00C` and reads
+back with its `MVS` intact. The two spaces have to stay apart for that: spelling
+both `U+0020` would leave the reverse direction guessing which spaces separate
+words and which separate a stem from its suffix.
+
+A boundary before a chachlag ᠠ/ᠡ needs no separator — the ten chachlag rows
+consume their `MVS` into a merged glyph, and `E03B E00D` above is one of them.
+`U+202F` is a boundary, not a shape, so it carries no formal inventory code; the
+classifier reports it as `ZvvnmodTextCharacterKind::SuffixSeparator`.
+
+Through 0.1.1 the boundary reached ZVVNMOD as a raw `U+180E`, which is a UTN #57
+control rather than a ZVVNMOD one, and every downstream spoke rendered it as a
+stray control ([meco-rust#22](https://github.com/Satsrag/meco-rust/issues/22)).
+`U+180E` in ZVVNMOD input still passes through onto the same `MVS`, so text
+written by an earlier release keeps its boundary.
 
 ### Merged glyphs are recomposed, not stored
 

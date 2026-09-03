@@ -47,9 +47,17 @@ impl From<mongol_norm::Error> for Utn57TextConversionError {
     }
 }
 
+/// UTN #57 `MVS`, the written-unit spelling of a detached-suffix boundary.
+///
+/// The inverse of [`ZVVNMOD_SUFFIX_SEPARATOR`](crate::ZVVNMOD_SUFFIX_SEPARATOR):
+/// what the reverse direction writes as `U+202F` is read back as this.
+const UTN57_SUFFIX_SEPARATOR: char = '\u{180E}';
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum ClassifiedTextPart {
     ZvvnmodRun(Vec<ZvvnmodCode>),
+    /// A detached-suffix boundary, which delimits the runs on either side of it.
+    SuffixSeparator,
     Passthrough(String),
 }
 
@@ -83,6 +91,9 @@ fn classify_complete_text(input: &str) -> Vec<ClassifiedTextPart> {
                 // Legacy PUA FVS1-FVS4/MVS controls are excluded without
                 // breaking the surrounding ZVVNMOD run.
             }
+            ZvvnmodTextCharacterKind::SuffixSeparator => {
+                parts.push(ClassifiedTextPart::SuffixSeparator);
+            }
             ZvvnmodTextCharacterKind::Passthrough => {
                 append_passthrough(&mut parts, character);
             }
@@ -94,6 +105,7 @@ fn classify_complete_text(input: &str) -> Vec<ClassifiedTextPart> {
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum ReconstructionStep {
     NormalizedRun(usize),
+    SuffixSeparator,
     Passthrough(String),
 }
 
@@ -114,6 +126,9 @@ fn build_normalization_plan(input: &str) -> Result<NormalizationPlan, Utn57TextC
                 positioned_written_unit_runs.push(positioned);
                 reconstruction.push(ReconstructionStep::NormalizedRun(run_index));
             }
+            ClassifiedTextPart::SuffixSeparator => {
+                reconstruction.push(ReconstructionStep::SuffixSeparator);
+            }
             ClassifiedTextPart::Passthrough(text) => {
                 reconstruction.push(ReconstructionStep::Passthrough(text));
             }
@@ -133,6 +148,7 @@ fn reconstruct_complete_text(
     for step in reconstruction {
         match step {
             ReconstructionStep::NormalizedRun(index) => output.push_str(&normalized_runs[index]),
+            ReconstructionStep::SuffixSeparator => output.push(UTN57_SUFFIX_SEPARATOR),
             ReconstructionStep::Passthrough(text) => output.push_str(&text),
         }
     }
@@ -142,9 +158,12 @@ fn reconstruct_complete_text(
 /// Convert complete text containing ZVVNMOD shape runs to canonical UTN #57 output.
 ///
 /// Formal ZVVNMOD shape runs are normalized in process by the `mongol-norm`
-/// crate. Characters outside the formal ZVVNMOD shape inventory,
+/// crate. `U+202F`, the detached-suffix boundary ZVVNMOD writes between a stem
+/// and its detached suffix, delimits the runs on either side of it and is read
+/// back as UTN #57 `MVS`. Characters outside the formal ZVVNMOD shape inventory,
 /// including punctuation, digits, whitespace, ordinary Unicode, emoji, and
-/// non-ZVVNMOD private-use values, preserve their order and code points.
+/// non-ZVVNMOD private-use values, preserve their order and code points — the
+/// `U+0020` ZVVNMOD writes between words included.
 /// Legacy ZVVNMOD `U+E140..=U+E144` FVS1-FVS4/MVS controls are excluded.
 ///
 /// # Errors
@@ -188,7 +207,7 @@ mod tests {
 
     #[test]
     fn standard_controls_pass_through_and_delimit_zvvnmod_runs() {
-        let controls = "\u{180A}\u{180E}\u{202F}";
+        let controls = "\u{180A}\u{180E}";
         let plan = build_normalization_plan(&format!("\u{E001}{controls}\u{E00D}")).unwrap();
 
         assert_eq!(plan.positioned_written_unit_runs.len(), 2);
@@ -197,6 +216,21 @@ mod tests {
             vec![
                 ReconstructionStep::NormalizedRun(0),
                 ReconstructionStep::Passthrough(controls.to_owned()),
+                ReconstructionStep::NormalizedRun(1),
+            ]
+        );
+    }
+
+    #[test]
+    fn the_suffix_separator_delimits_runs_as_its_own_step() {
+        let plan = build_normalization_plan("\u{E001}\u{202F}\u{E00D}").unwrap();
+
+        assert_eq!(plan.positioned_written_unit_runs.len(), 2);
+        assert_eq!(
+            plan.reconstruction,
+            vec![
+                ReconstructionStep::NormalizedRun(0),
+                ReconstructionStep::SuffixSeparator,
                 ReconstructionStep::NormalizedRun(1),
             ]
         );
@@ -267,8 +301,10 @@ impl From<Utn57ReverseError> for ZvvnmodTextConversionError {
 /// Convert complete text containing Mongolian words to ZVVNMOD output.
 ///
 /// Runs of Mongolian word characters — letters, FVS, MVS, NNBSP, nirugu and
-/// ZWJ — are shaped, positioned, and spelled in ZVVNMOD. Every other character
-/// preserves its order and code point, mirroring
+/// ZWJ — are shaped, positioned, and spelled in ZVVNMOD. A detached-suffix
+/// boundary the chachlag rules did not consume is spelled `U+202F`, so
+/// [`convert_zvvnmod_to_utn57`] can tell it from the `U+0020` between words.
+/// Every other character preserves its order and code point, mirroring
 /// [`convert_zvvnmod_to_utn57`]'s treatment of text outside the ZVVNMOD shape
 /// inventory.
 ///

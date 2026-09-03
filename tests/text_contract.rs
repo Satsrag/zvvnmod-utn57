@@ -17,11 +17,12 @@ fn formal_zvvnmod_shape_inventory_is_exactly_139_codes() {
 }
 
 #[test]
-fn character_kind_contract_has_exactly_three_variants() {
+fn character_kind_contract_has_exactly_four_variants() {
     fn label(kind: ZvvnmodTextCharacterKind) -> &'static str {
         match kind {
             ZvvnmodTextCharacterKind::Shape => "shape",
             ZvvnmodTextCharacterKind::LegacyControl => "legacy-control",
+            ZvvnmodTextCharacterKind::SuffixSeparator => "suffix-separator",
             ZvvnmodTextCharacterKind::Passthrough => "passthrough",
         }
     }
@@ -31,12 +32,16 @@ fn character_kind_contract_has_exactly_three_variants() {
         label(ZvvnmodTextCharacterKind::LegacyControl),
         "legacy-control"
     );
+    assert_eq!(
+        label(ZvvnmodTextCharacterKind::SuffixSeparator),
+        "suffix-separator"
+    );
     assert_eq!(label(ZvvnmodTextCharacterKind::Passthrough), "passthrough");
 }
 
 #[test]
-fn standard_nirugu_mvs_nnbsp_and_zwj_are_passthrough() {
-    for character in ['\u{180A}', '\u{180E}', '\u{202F}', '\u{200D}'] {
+fn standard_nirugu_mvs_zwj_and_the_word_space_are_passthrough() {
+    for character in ['\u{180A}', '\u{180E}', '\u{200D}', '\u{0020}'] {
         assert_eq!(
             classify_zvvnmod_text_character(character),
             ZvvnmodTextCharacterKind::Passthrough,
@@ -44,6 +49,16 @@ fn standard_nirugu_mvs_nnbsp_and_zwj_are_passthrough() {
             character as u32
         );
     }
+}
+
+#[test]
+fn nnbsp_is_the_detached_suffix_boundary_not_passthrough() {
+    assert_eq!(
+        classify_zvvnmod_text_character('\u{202F}'),
+        ZvvnmodTextCharacterKind::SuffixSeparator
+    );
+    // It is a boundary, not a shape: it has no code in the formal inventory.
+    assert!(zvvnmod_code('\u{202F}').is_none());
 }
 
 #[test]
