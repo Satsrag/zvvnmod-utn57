@@ -30,8 +30,8 @@ complete text containing ZVVNMOD shapes
 Passthrough text never reaches the normalizer; the crate keeps its original code points and source
 boundaries and restores it after normalization. Everything runs in process: no subprocess, no
 interpreter, no filesystem or network access at run time, so the library builds and runs anywhere
-Rust does, `wasm32-unknown-unknown` included. Reverse conversion and unreviewed structural
-inference remain out of scope.
+Rust does, `wasm32-unknown-unknown` included. The reverse direction is described below;
+unreviewed structural inference remains out of scope.
 
 ## Layout
 

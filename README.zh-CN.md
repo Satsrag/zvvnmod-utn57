@@ -29,8 +29,8 @@
 
 passthrough 文本不进入 normalizer；本库保存其原 code point 与 source boundary，并在
 normalization 后补回。全程在进程内完成：没有子进程、没有解释器，运行时不访问文件系统和网络，
-因此 Rust 能跑的地方本库都能跑，包括 `wasm32-unknown-unknown`。反向转换和未 reviewed
-的结构推断仍不在当前范围内。
+因此 Rust 能跑的地方本库都能跑，包括 `wasm32-unknown-unknown`。反向转换见下文；
+未 reviewed 的结构推断仍不在当前范围内。
 
 ## 目录
 
