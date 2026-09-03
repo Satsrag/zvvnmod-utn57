@@ -1,6 +1,6 @@
 use crate::{
     convert_zvvnmod_run, Utn57ConversionError, Utn57Position, Utn57PositionedWrittenUnit,
-    Utn57WrittenUnit, ZvvnmodCode,
+    Utn57WrittenUnit, ZvvnmodCode, UTN57_POSITIONED_WRITTEN_UNITS,
 };
 use mongol_norm::{Error, Locale, PositionedWrittenUnit, Shaper, UnitPosition, WrittenUnit};
 use std::sync::OnceLock;
@@ -104,6 +104,151 @@ pub fn normalize_positioned_written_units(
     let records: Vec<PositionedWrittenUnit> =
         units.iter().copied().map(positioned_written_unit).collect();
     shaper().normalize_positioned_written_units(&records)
+}
+
+/// Which reviewed UTN #57 unit is this `mongol-norm` unit?
+///
+/// The inverse of [`written_unit`], resolved by searching the reviewed
+/// inventory rather than by a second `match`, so the two cannot drift apart.
+/// Returns `None` for a unit outside the inventory, such as `Zwj`.
+fn utn57_written_unit(unit: WrittenUnit) -> Option<Utn57WrittenUnit> {
+    UTN57_POSITIONED_WRITTEN_UNITS
+        .iter()
+        .map(|record| record.written_unit)
+        .find(|candidate| written_unit(*candidate) == unit)
+}
+
+/// Is this reviewed `(unit, position)` pair in the HUD inventory?
+fn is_reviewed(unit: Utn57WrittenUnit, position: Utn57Position) -> bool {
+    UTN57_POSITIONED_WRITTEN_UNITS.contains(&Utn57PositionedWrittenUnit::new(unit, position))
+}
+
+/// The joining position of the `start`-th of `count` slots.
+///
+/// Mirrors `mongol-norm`'s own `slot_position` for a one-slot unit, so a
+/// sequence shaped here re-encodes to the shape it came from.
+const fn slot_position(start: usize, count: usize) -> Utn57Position {
+    match (start, count) {
+        (0, 1) => Utn57Position::Isol,
+        (0, _) => Utn57Position::Init,
+        _ if start + 1 == count => Utn57Position::Fina,
+        _ => Utn57Position::Medi,
+    }
+}
+
+/// Failure while shaping Mongolian text into positioned UTN #57 units.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Utn57ShapeError {
+    /// `mongol-norm` could not shape the text.
+    Shape(Error),
+    /// A shaped unit is outside the reviewed UTN #57 inventory.
+    UnsupportedWrittenUnit {
+        /// Position of the unit in the shaped sequence.
+        index: usize,
+        /// The unit with no reviewed UTN #57 counterpart.
+        unit: WrittenUnit,
+    },
+}
+
+impl std::fmt::Display for Utn57ShapeError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Shape(error) => error.fmt(formatter),
+            Self::UnsupportedWrittenUnit { index, unit } => write!(
+                formatter,
+                "written unit {unit} at index {index} is outside the reviewed UTN #57 inventory"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for Utn57ShapeError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Shape(error) => Some(error),
+            Self::UnsupportedWrittenUnit { .. } => None,
+        }
+    }
+}
+
+impl From<Error> for Utn57ShapeError {
+    fn from(error: Error) -> Self {
+        Self::Shape(error)
+    }
+}
+
+/// Shape one Mongolian word into positioned UTN #57 written units.
+///
+/// `mongol-norm` returns a flat written-unit sequence; this recovers the
+/// joining position of each unit the way the positioned encoder infers it.
+/// The sequence is split at the structural units, and each remaining chain is
+/// padded by one slot on any side a joiner (`Nirugu` or `Zwj`) sits against, so
+/// a chain that continues past its edge is positioned as if it did. `Mvs` and
+/// `Nirugu` become `Control` records; `Zwj` supplies joining context and is not
+/// itself a record.
+///
+/// A position of `Isol` that the reviewed inventory does not carry falls back to
+/// `Init`, matching how isolated forms borrow the initial glyph.
+///
+/// # Errors
+///
+/// Returns [`Utn57ShapeError::Shape`] when `mongol-norm` rejects the text — it
+/// accepts only Mongolian letters, FVS, MVS, NNBSP, nirugu and ZWJ — and
+/// [`Utn57ShapeError::UnsupportedWrittenUnit`] for a shaped unit outside the
+/// reviewed UTN #57 inventory.
+pub fn shape_utn57_positioned_written_units(
+    text: &str,
+) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57ShapeError> {
+    let shape = shaper().shape(text)?;
+    let is_joiner = |unit: WrittenUnit| matches!(unit, WrittenUnit::Nirugu | WrittenUnit::Zwj);
+
+    let mut records = Vec::with_capacity(shape.len());
+    let mut index = 0;
+    while index < shape.len() {
+        let unit = shape[index];
+        if matches!(
+            unit,
+            WrittenUnit::Mvs | WrittenUnit::Nirugu | WrittenUnit::Zwj
+        ) {
+            if unit != WrittenUnit::Zwj {
+                let written = utn57_written_unit(unit)
+                    .ok_or(Utn57ShapeError::UnsupportedWrittenUnit { index, unit })?;
+                records.push(Utn57PositionedWrittenUnit::new(
+                    written,
+                    Utn57Position::Control,
+                ));
+            }
+            index += 1;
+            continue;
+        }
+        // A chain runs to the next structural unit.
+        let start = index;
+        while index < shape.len()
+            && !matches!(
+                shape[index],
+                WrittenUnit::Mvs | WrittenUnit::Nirugu | WrittenUnit::Zwj
+            )
+        {
+            index += 1;
+        }
+        let chain = &shape[start..index];
+        let joined_left = start > 0 && is_joiner(shape[start - 1]);
+        let joined_right = index < shape.len() && is_joiner(shape[index]);
+        let count = chain.len() + usize::from(joined_left) + usize::from(joined_right);
+        for (offset, unit) in chain.iter().enumerate() {
+            let written =
+                utn57_written_unit(*unit).ok_or(Utn57ShapeError::UnsupportedWrittenUnit {
+                    index: start + offset,
+                    unit: *unit,
+                })?;
+            let mut position = slot_position(offset + usize::from(joined_left), count);
+            if position == Utn57Position::Isol && !is_reviewed(written, position) {
+                position = Utn57Position::Init;
+            }
+            records.push(Utn57PositionedWrittenUnit::new(written, position));
+        }
+    }
+    Ok(records)
 }
 
 /// Failure while converting one ZVVNMOD run to canonical Mongolian Unicode.
@@ -217,5 +362,103 @@ mod tests {
     #[test]
     fn the_shaper_is_built_once_for_the_whole_process() {
         assert!(std::ptr::eq(shaper(), shaper()));
+    }
+}
+
+#[cfg(test)]
+mod shaping_tests {
+    use super::*;
+
+    fn spell(records: &[Utn57PositionedWrittenUnit]) -> String {
+        records
+            .iter()
+            .map(|record| {
+                let position = record.position.contract_name();
+                if position == "control" {
+                    record.written_unit.contract_name().to_owned()
+                } else {
+                    format!("{}:{position}", record.written_unit.contract_name())
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
+
+    #[test]
+    fn a_word_positions_every_unit_by_its_place_in_the_chain() {
+        // ᠮᠣᠩᠭᠣᠯ shapes to M+O+A+G+Hx+O+L.
+        assert_eq!(
+            spell(
+                &shape_utn57_positioned_written_units(
+                    "\u{182E}\u{1823}\u{1829}\u{182D}\u{1823}\u{182F}"
+                )
+                .unwrap()
+            ),
+            "M:init O:medi A:medi G:medi Hx:medi O:medi L:fina"
+        );
+    }
+
+    #[test]
+    fn mvs_becomes_a_control_record_and_splits_the_chain() {
+        // ᠰᠢᠨ᠎ᠡ shapes to S+I+N+Mvs+Aa.
+        assert_eq!(
+            spell(
+                &shape_utn57_positioned_written_units("\u{1830}\u{1822}\u{1828}\u{180E}\u{1821}")
+                    .unwrap()
+            ),
+            "S:init I:medi N:fina Mvs Aa:isol"
+        );
+    }
+
+    #[test]
+    fn a_trailing_zwj_makes_a_single_unit_initial_rather_than_isolated() {
+        // ᠤ+FVS1+ZWJ shapes to O+Zwj: the joiner pads the chain's right edge.
+        assert_eq!(
+            spell(&shape_utn57_positioned_written_units("\u{1824}\u{180B}\u{200D}").unwrap()),
+            "O:init"
+        );
+    }
+
+    #[test]
+    fn a_lone_letter_is_isolated() {
+        assert_eq!(
+            spell(&shape_utn57_positioned_written_units("\u{1822}").unwrap()),
+            "A:init I:fina"
+        );
+    }
+
+    /// The property the inversion owes: what it recovers must re-encode to the
+    /// text it was shaped from.
+    #[test]
+    fn shaping_and_normalizing_are_inverses() {
+        let words = [
+            "\u{182E}\u{1823}\u{1829}\u{182D}\u{1823}\u{182F}", // ᠮᠣᠩᠭᠣᠯ
+            "\u{182A}\u{1822}\u{1834}\u{1822}\u{182D}",         // ᠪᠢᠴᠢᠭ
+            "\u{1824}\u{182F}\u{1824}\u{1830}",                 // ᠤᠯᠤᠰ
+            "\u{1830}\u{1822}\u{1828}\u{180E}\u{1821}",         // ᠰᠢᠨ᠎ᠡ
+            "\u{182A}\u{1820}\u{182D}\u{180E}\u{1820}",         // ᠪᠠᠭ᠎ᠠ
+            "\u{182C}\u{1821}\u{182F}\u{1821}",                 // ᠬᠡᠯᠡ
+            "\u{1828}\u{1824}\u{182D}\u{1824}\u{1833}",         // ᠨᠤᠭᠤᠳ
+        ];
+        for word in words {
+            let records = shape_utn57_positioned_written_units(word).unwrap();
+            let encoded = normalize_positioned_written_units(&records).unwrap();
+            assert_eq!(
+                shaper().shape(&encoded).unwrap(),
+                shaper().shape(word).unwrap(),
+                "{word} reshaped differently through {}",
+                spell(&records)
+            );
+        }
+    }
+
+    #[test]
+    fn a_unit_outside_the_reviewed_inventory_reports_its_index() {
+        // Todo's E has no UTN #57 counterpart, and MNG shaping rejects it, so
+        // the error path here is the shaping one.
+        assert!(matches!(
+            shape_utn57_positioned_written_units("x"),
+            Err(Utn57ShapeError::Shape(_))
+        ));
     }
 }

@@ -15,6 +15,7 @@ The current first milestone includes:
 - executable longest-match replacement from one ZVVNMOD shape run to positioned UTN #57 written units;
 - complete-text orchestration that converts only formal ZVVNMOD shape codes, retains Nirugu/MVS as structural input, and passes input ZWJ and all other characters through unchanged;
 - canonical Unicode normalization of positioned UTN #57 written units through the pure-Rust [`mongol-norm`](https://crates.io/crates/mongol-norm) crate, linked directly into the library.
+- the reverse direction: shaping Mongolian text into positioned UTN #57 written units and spelling them in ZVVNMOD, with merged-glyph recomposition.
 
 The data flow is:
 
@@ -43,10 +44,12 @@ inference remain out of scope.
 ├── data/
 │   ├── ir-fina-replacements.csv
 │   ├── utn57-written-units.csv
+│   ├── utn57-zvvnmod-map.csv
 │   ├── zvvnmod-unicode-names.csv
 │   └── zvvnmod-utn57-map.csv
 ├── scripts/
 │   ├── check_website_contract.py
+│   ├── derive_utn57_zvvnmod_map.py
 │   ├── generate_ir_fina.py
 │   ├── generate_utn57_mapping.py
 │   ├── generate_zvvnmod.py
@@ -56,6 +59,7 @@ inference remain out of scope.
 ├── src/
 │   ├── lib.rs
 │   ├── normalize.rs
+│   ├── reverse.rs
 │   ├── conversion.rs
 │   ├── preprocess.rs
 │   ├── text.rs
@@ -256,6 +260,73 @@ values—preserves its original code point and order. Source-specific aliases su
 `U+E23F..=U+E242` belong to an upstream source converter and are not interpreted here. Legacy
 ZVVNMOD `U+E140..=U+E144` FVS1-FVS4/MVS controls are explicitly excluded.
 
+## Reverse conversion: Mongolian text → ZVVNMOD
+
+```rust
+use zvvnmod_utn57::convert_utn57_to_zvvnmod;
+
+let output = convert_utn57_to_zvvnmod(mongolian_text)?;
+```
+
+```bash
+utn57-to-zvvnmod '<mongolian-text>'
+```
+
+The data flow mirrors the forward direction:
+
+```text
+complete text containing Mongolian words
+→ split word runs from passthrough spans
+→ shape each run with mongol-norm and recover each unit's joining position
+→ replace positioned units with ZVVNMOD codes by reviewed longest match
+→ recompose component runs into merged ZVVNMOD glyphs
+→ interleave the unchanged passthrough spans
+```
+
+`data/utn57-zvvnmod-map.csv` holds the reviewed relation: one row per positioned
+written unit, plus the ten `X:fina MVS Aa:isol` chachlag triples that collapse
+into a single merged code. `scripts/derive_utn57_zvvnmod_map.py` derives it from
+the forward map, and its `baseline` pins the forward map's digest so the two
+cannot drift apart.
+
+### Merged glyphs are recomposed, not stored
+
+The table spells every unit in components; `recompose_zvvnmod_codes` merges them
+afterwards, so `B:medi Aa:fina` becomes `B_A_MEDI AA_FINA` rather than
+`B_MEDI A_MEDI AA_FINA`. This is not cosmetic — downstream converters key on the
+merged codes, and the split spelling picks up a stray MVS:
+
+| ZVVNMOD for the ᠪᠠ suffix | through meco-core → Delehi |
+|---|---|
+| `B_A_MEDI AA_FINA` (merged) | ᠪᠠ |
+| `B_MEDI A_MEDI AA_FINA` (split) | ᠪᠠ᠎ᠠ |
+
+Across every entry of the decomposition map, alone and followed by `AA_FINA`,
+merged and split reach different text in 86 of 118 cases.
+
+### Units with no ZVVNMOD glyph are reported, not replaced
+
+Seven positioned units have no glyph in the 139-code ZVVNMOD inventory:
+`Gx:init`, `Gx:medi`, `Hx:fina`, `Ix:isol`, `N:fina`, `Sz:fina` and `Ux:isol`.
+`Hx:fina` and `N:fina` remain reachable inside their chachlag rows, which
+longest match finds first; a bare one returns
+`Utn57ReverseError::Unrepresentable` carrying the offending record's index.
+Substituting a near glyph would change the text silently, which is what
+`convert_zvvnmod_to_utn57`'s counterpart in other converters does.
+
+### What the reverse direction cannot recover
+
+ZVVNMOD encodes glyph shapes, so it merges distinctions UTN #57 keeps: `K` and
+`K2` share one glyph outright, and `Dd:medi`, `Dd:fina` and `H:medi` are each
+written the same way as a two-unit sequence that also occurs in real words.
+Reverse conversion emits the shared spelling either way — the ambiguity is the
+forward direction's to resolve.
+
+For the same reason, `Unicode → ZVVNMOD → Unicode` is not lossless and is not a
+correctness metric here. The property the table owes is
+`positioned units → ZVVNMOD → positioned units`, which `tests/reverse_round_trip.rs`
+checks for every row.
+
 ## The `mongol-norm` normalization backend
 
 Normalization is the pure-Rust [`mongol-norm`](https://crates.io/crates/mongol-norm) crate, linked
@@ -264,12 +335,13 @@ install:
 
 ```toml
 [dependencies]
-zvvnmod-utn57 = "0.1.0"
+zvvnmod-utn57 = "0.1"
 ```
 
 ```bash
-cargo install zvvnmod-utn57 --version 0.1.0
+cargo install zvvnmod-utn57
 zvvnmod-to-utn57 '<zvvnmod-text>'
+utn57-to-zvvnmod '<mongolian-text>'
 ```
 
 `src/normalize.rs` maps each reviewed `Utn57PositionedWrittenUnit` onto the backend's
@@ -313,6 +385,9 @@ cargo clippy --all-targets -- -D warnings
 cargo check --target wasm32-unknown-unknown --lib
 cargo package
 ```
+
+The reverse relation is checked two ways: `tests/reverse_round_trip.rs` runs every row
+back through the forward converter, and `tests/reverse_api.rs` covers the public surface.
 
 The Python here is only the build-time generator suite under `scripts/`; the library itself has no
 Python at run time. No test is `#[ignore]`d and none needs an install step.

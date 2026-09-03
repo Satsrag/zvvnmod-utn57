@@ -1,8 +1,10 @@
-use crate::normalize::normalize_positioned_written_units;
+use crate::normalize::{normalize_positioned_written_units, shape_utn57_positioned_written_units};
 use crate::{
-    classify_zvvnmod_text_character, convert_zvvnmod_run, zvvnmod_code, Utn57ConversionError,
-    Utn57PositionedWrittenUnit, ZvvnmodCode, ZvvnmodTextCharacterKind,
+    classify_zvvnmod_text_character, convert_utn57_run_to_zvvnmod, convert_zvvnmod_run,
+    zvvnmod_code, Utn57ConversionError, Utn57PositionedWrittenUnit, Utn57ReverseError,
+    Utn57ShapeError, ZvvnmodCode, ZvvnmodTextCharacterKind,
 };
+use mongol_norm::is_mongolian_word_char;
 use std::error::Error;
 use std::fmt;
 
@@ -221,4 +223,83 @@ mod tests {
             "left\u{200D}\u{200D}right"
         );
     }
+}
+
+/// Failure while converting complete Mongolian text to ZVVNMOD output.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ZvvnmodTextConversionError {
+    /// A Mongolian word could not be shaped into positioned UTN #57 units.
+    Shape(Utn57ShapeError),
+    /// Positioned UTN #57 units could not be spelled in ZVVNMOD.
+    Reverse(Utn57ReverseError),
+}
+
+impl fmt::Display for ZvvnmodTextConversionError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Shape(error) => error.fmt(formatter),
+            Self::Reverse(error) => error.fmt(formatter),
+        }
+    }
+}
+
+impl Error for ZvvnmodTextConversionError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Shape(error) => Some(error),
+            Self::Reverse(error) => Some(error),
+        }
+    }
+}
+
+impl From<Utn57ShapeError> for ZvvnmodTextConversionError {
+    fn from(error: Utn57ShapeError) -> Self {
+        Self::Shape(error)
+    }
+}
+
+impl From<Utn57ReverseError> for ZvvnmodTextConversionError {
+    fn from(error: Utn57ReverseError) -> Self {
+        Self::Reverse(error)
+    }
+}
+
+/// Convert complete text containing Mongolian words to ZVVNMOD output.
+///
+/// Runs of Mongolian word characters — letters, FVS, MVS, NNBSP, nirugu and
+/// ZWJ — are shaped, positioned, and spelled in ZVVNMOD. Every other character
+/// preserves its order and code point, mirroring
+/// [`convert_zvvnmod_to_utn57`]'s treatment of text outside the ZVVNMOD shape
+/// inventory.
+///
+/// # Errors
+///
+/// Returns [`ZvvnmodTextConversionError`] for either conversion stage. A unit
+/// the ZVVNMOD font has no glyph for is reported rather than replaced by a near
+/// glyph, so the output never silently differs from the input.
+pub fn convert_utn57_to_zvvnmod(input: &str) -> Result<String, ZvvnmodTextConversionError> {
+    fn flush(word: &mut String, output: &mut String) -> Result<(), ZvvnmodTextConversionError> {
+        if word.is_empty() {
+            return Ok(());
+        }
+        let records = shape_utn57_positioned_written_units(word)?;
+        for code in convert_utn57_run_to_zvvnmod(&records)? {
+            output.push(code.as_char().expect("ZVVNMOD codes are scalar values"));
+        }
+        word.clear();
+        Ok(())
+    }
+
+    let mut output = String::with_capacity(input.len());
+    let mut word = String::new();
+    for character in input.chars() {
+        if is_mongolian_word_char(character) {
+            word.push(character);
+        } else {
+            flush(&mut word, &mut output)?;
+            output.push(character);
+        }
+    }
+    flush(&mut word, &mut output)?;
+    Ok(output)
 }
