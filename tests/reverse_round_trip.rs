@@ -20,16 +20,31 @@ const CODE_NAMES: &str = include_str!("../src/generated/zvvnmod_codes.rs");
 /// round-trip without the caller supplying the variant.
 const K2_ROWS: [&str; 3] = ["K2:init", "K2:medi", "K2:fina"];
 
-/// Rows the reverse map and the forward map genuinely disagree about, with what
-/// the forward converter returns instead. Pinned here so that resolving one
-/// fails this test rather than passing silently.
+/// UTN units that ZVVNMOD writes as a sequence of other units: it has no
+/// separate glyph for them. Reverse conversion emits the shared spelling and
+/// the trip back cannot recover which reading was meant — the same ambiguity
+/// forward conversion faces, seen from the other side.
 ///
-/// `Hx:medi`: the reverse map spells medial ɣ `N_MEDI N_MEDI`, which is what
-/// meco-core emits and what particle rows 05/32/44 of the forward map use, but
-/// the forward map's own `target:Hx:medi` row says `M_MEDI M_MEDI`, so the trip
-/// back lands on two N units. Whichever spelling is right, one of the two
-/// tables has to change; `M_MEDI M_MEDI` renders as ᠮᠮ through meco-core.
-const KNOWN_CONFLICTS: [(&str, &str); 1] = [("Hx:medi", "N:medi N:medi")];
+/// `every_composite_unit_is_still_ambiguous` derives this list from the table
+/// and asserts it is exactly these, so a table change surfaces here.
+const COMPOSITE_UNITS: [(&str, &str); 9] = [
+    ("A:isol", "A:init Aa:isol"),
+    ("Aa:fina", "A:medi Aa:isol"),
+    ("B2:fina", "O:medi Aa:isol"),
+    ("Cr:init", "O:init O:medi"),
+    ("Dd:medi", "O:medi A:medi"),
+    ("Dd:fina", "O:medi A:fina"),
+    ("G:fina", "I:medi Aa:isol"),
+    ("H:medi", "A:medi A:medi"),
+    ("Hx:medi", "N:medi N:medi"),
+];
+
+/// The one composite whose ZVVNMOD spelling the forward map does not map back
+/// to it. ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly
+/// `N_MEDI N_MEDI` — but the forward map's `target:Hx:medi` row says
+/// `M_MEDI M_MEDI`, so the trip back lands on two N units instead. Pinned so
+/// that correcting either table fails this suite rather than passing silently.
+const HX_MEDI_RETURNS: &str = "N:medi N:medi";
 
 /// `NAME: ZvvnmodCode = ZvvnmodCode(0x____)` → code point.
 fn code_points() -> HashMap<String, u32> {
@@ -140,11 +155,7 @@ fn every_reverse_row_names_real_zvvnmod_codes() {
 fn every_reverse_row_round_trips_through_the_forward_converter() {
     let mut failures = Vec::new();
     for row in rows() {
-        if K2_ROWS.contains(&row.sources.as_str())
-            || KNOWN_CONFLICTS
-                .iter()
-                .any(|(source, _)| *source == row.sources)
-        {
+        if K2_ROWS.contains(&row.sources.as_str()) || row.sources == "Hx:medi" {
             continue;
         }
         let units = convert_zvvnmod_run(&recompose(&row.codes))
@@ -183,22 +194,58 @@ fn the_k2_rows_are_the_only_ones_the_forward_converter_resolves_to_another_unit(
 }
 
 #[test]
-fn the_known_forward_map_conflicts_are_still_exactly_the_pinned_ones() {
-    for (source, expected) in KNOWN_CONFLICTS {
-        let row = rows()
-            .into_iter()
-            .find(|row| row.sources == source)
-            .unwrap_or_else(|| panic!("{source} is no longer a row of the reverse map"));
-        let units = convert_zvvnmod_run(&recompose(&row.codes)).unwrap();
-        let spelled = units
-            .iter()
-            .map(|unit| spell(*unit))
-            .collect::<Vec<_>>()
-            .join(" ");
-        assert_eq!(
-            spelled, expected,
-            "{source} no longer disagrees the way KNOWN_CONFLICTS records; \
-             if the forward map was corrected, drop this entry"
-        );
+fn hx_medi_still_returns_two_n_units() {
+    let row = rows()
+        .into_iter()
+        .find(|row| row.sources == "Hx:medi")
+        .expect("Hx:medi is a row of the reverse map");
+    let units = convert_zvvnmod_run(&recompose(&row.codes)).unwrap();
+    let spelled = units
+        .iter()
+        .map(|unit| spell(*unit))
+        .collect::<Vec<_>>()
+        .join(" ");
+    assert_eq!(
+        spelled, HX_MEDI_RETURNS,
+        "Hx:medi no longer disagrees the way this test records; if the forward map's \
+         target:Hx:medi row was corrected to N_MEDI N_MEDI, move Hx:medi back into the \
+         round-trip test"
+    );
+}
+
+/// The composite list is a claim about the data, so derive it and check it.
+#[test]
+fn every_composite_unit_is_still_ambiguous() {
+    let spelled: Vec<(String, Vec<ZvvnmodCode>)> = rows()
+        .into_iter()
+        .filter(|row| !row.sources.contains(' '))
+        .map(|row| (row.sources, recompose(&row.codes)))
+        .collect();
+
+    let mut derived = Vec::new();
+    for (unit, codes) in &spelled {
+        // Which ordered pair of single units spells this unit's glyph sequence?
+        for (left, left_codes) in &spelled {
+            for (right, right_codes) in &spelled {
+                let mut pair = left_codes.clone();
+                pair.extend_from_slice(right_codes);
+                if &recompose(&pair) == codes && left != unit && right != unit {
+                    derived.push((unit.clone(), format!("{left} {right}")));
+                }
+            }
+        }
     }
+    derived.sort();
+    derived.dedup_by_key(|(unit, _)| unit.clone());
+
+    let expected: Vec<(String, String)> = COMPOSITE_UNITS
+        .iter()
+        .map(|(unit, pair)| ((*unit).to_owned(), (*pair).to_owned()))
+        .collect();
+    let mut expected_sorted = expected.clone();
+    expected_sorted.sort();
+    assert_eq!(
+        derived, expected_sorted,
+        "the set of UTN units ZVVNMOD writes as a sequence of others changed"
+    );
 }

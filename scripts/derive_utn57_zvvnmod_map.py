@@ -71,9 +71,26 @@ REVIEWED_OVERRIDES = {
     ),
     "Hx:medi": (
         "N_MEDI N_MEDI",
-        "reviewed: meco-core and particle:05/32/44 spell medial ɣ as N_MEDI N_MEDI; "
-        "target:Hx:medi (M_MEDI M_MEDI) not chosen",
+        "reviewed: ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly N_MEDI N_MEDI; "
+        "meco-core and particle:05/32/44 agree; the forward map's target:Hx:medi row "
+        "(M_MEDI M_MEDI) disagrees and does not round-trip",
     ),
+}
+
+# UTN units that ZVVNMOD writes as a sequence of other units. Reverse conversion
+# emits the shared spelling; the trip back cannot recover which reading was meant,
+# exactly as forward conversion cannot. Derived from the table itself by
+# `tests/reverse_round_trip.rs`, listed here only so the CSV says so in its notes.
+COMPOSITE_UNITS = {
+    "A:isol": "A:init + Aa:isol",
+    "Aa:fina": "A:medi + Aa:isol",
+    "B2:fina": "O:medi + Aa:isol",
+    "Cr:init": "O:init + O:medi",
+    "Dd:medi": "O:medi + A:medi",
+    "Dd:fina": "O:medi + A:fina",
+    "G:fina": "I:medi + Aa:isol",
+    "H:medi": "A:medi + A:medi",
+    "Hx:medi": "N:medi + N:medi",
 }
 
 # Golden-corpus witnesses for units that only FVS-forced spellings produce.
@@ -159,13 +176,15 @@ def main() -> None:
             continue
         kind = "control" if entry["position"] == "control" else "unit"
         if unit_id in ("K:init", "K:medi", "K:fina"):
-            note += f"; K2:{entry['position']} shares this glyph"
-        if unit_id == "Dd:fina":
-            note += "; particle:25 spells O:medi Dd:fina with one O_MEDI so ᠨᠤᠭᠤᠳ reverses with one more O_MEDI than that particle row"
+            note += f"; K and K2 share this glyph so K2:{entry['position']} spells it too"
         if unit_id in REVIEWED_OVERRIDES:
             targets, reason = REVIEWED_OVERRIDES[unit_id]
+            if unit_id in COMPOSITE_UNITS:
+                reason += f"; ZVVNMOD writes {COMPOSITE_UNITS[unit_id]} identically"
             emit(f"{kind}:{unit_id}", unit_id, targets, reason)
             continue
+        if unit_id in COMPOSITE_UNITS:
+            note += f"; ZVVNMOD writes {COMPOSITE_UNITS[unit_id]} identically"
         if unit_id == "G:fina":
             note = (
                 "REVIEW: meco-core's own Unicode→ZVVNMOD emits H_FINA here; "
