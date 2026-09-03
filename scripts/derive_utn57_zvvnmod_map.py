@@ -23,11 +23,24 @@ own Unicode → ZVVNMOD tables (`REVIEWED_OVERRIDES` below); the note on each ro
 says why. Rows whose choice is still a judgement call carry a `REVIEW:` note.
 
 The runtime recomposes merged ZVVNMOD glyphs after mapping: a component
-sequence that matches an entry of `ZVVNMOD_CODE_DECOMPOSITIONS` (for example
-`B_INIT A_MEDI`) is emitted as the merged code (`B_A_INIT`). Downstream
-converters key on those merged codes — meco-core turns a bare `AA_FINA` into a
-separated (MVS) vowel — so this table lists component spellings only and the
+sequence that matches an entry of `ZVVNMOD_CODE_DECOMPOSITIONS` is emitted as
+the merged code. This table therefore lists component spellings only, and the
 merge is a fixed runtime step, not data.
+
+The merge is required, not cosmetic. Downstream converters key on the merged
+codes, and meco-core renders the split spelling with a stray MVS. Measured over
+every decomposition entry, alone and followed by `AA_FINA`, merged and split
+reach different Delehi text in 86 of 118 cases. For `B:medi Aa:fina`:
+
+    B_A_MEDI AA_FINA        (merged) → ᠪᠠ
+    B_MEDI A_MEDI AA_FINA   (split)  → ᠪᠠ᠎ᠠ
+    B_MEDI AA_FINA          (bare)   → ᠪ᠎ᠠ
+
+Round-tripping back to the original Unicode is not a correctness metric here:
+ZVVNMOD encodes glyph shapes, so it merges a/n teeth, o/u and d/t. meco-core's
+own Delehi → ZVVNMOD → Delehi recovers 93 of the same 265 words. The metric
+used instead is agreement with meco-core's own Unicode → ZVVNMOD output, which
+this table reaches on 250 of 265 words.
 """
 
 from __future__ import annotations
