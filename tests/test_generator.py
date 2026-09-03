@@ -16,10 +16,10 @@ IR_FINA_RULES = ROOT / "data" / "ir-fina-replacements.csv"
 MAPPING = ROOT / "data" / "zvvnmod-utn57-map.csv"
 TARGETS = ROOT / "data" / "utn57-written-units.csv"
 WEBSITE_CHECKER = ROOT / "scripts" / "check_website_contract.py"
-MAPPING_SHA256 = "cc58b012ea2e3a1709d723d115ad9eed00de13d32bba166991a1447c889a358c"
+MAPPING_SHA256 = "1f0cb6b8b476022726cec5f2a55973b9423ea96d7b8fd79c98b8447cf73b3592"
 TARGETS_SHA256 = "2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6"
 PARTICLE_RELATIONS_SHA256 = "396563dfa46cad6225fc92d07e7a6cc2e7c563f155bf70351ceb9448fbf75e5e"
-TEST_MAPPING_BASELINE = "sha256:83a60c3e1ac9df98a14c1a6d979f7c5c8733f1e70d52b81f41de1dd321ea5016"
+TEST_MAPPING_BASELINE = "sha256:843af21ad5356565c2f0559a18feaafa3d000ae666d9035c389e26eda199c237"
 TEST_MAPPING_METADATA = (
     '# metadata={"schema":"zvvnmod-utn57-runtime-map-v1",'
     f'"baseline":"{TEST_MAPPING_BASELINE}"}}\n'
@@ -542,7 +542,7 @@ class ShapeNamingTests(unittest.TestCase):
         self.assertEqual(len(mapping.rules), 147)
         self.assertEqual(
             mapping.baseline,
-            "sha256:83a60c3e1ac9df98a14c1a6d979f7c5c8733f1e70d52b81f41de1dd321ea5016",
+            "sha256:843af21ad5356565c2f0559a18feaafa3d000ae666d9035c389e26eda199c237",
         )
         self.assertEqual(mapping.targets[-1].id, "MVS")
         self.assertEqual(mapping.targets[-1].position, "control")

@@ -1161,7 +1161,7 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
     // target:Hx:medi
     ZvvnmodToUtn57Mapping {
         id: "target:Hx:medi",
-        sources: &[M_MEDI, M_MEDI],
+        sources: &[N_MEDI, N_MEDI],
         targets: &[UTN57_HX_MEDI],
         intrinsic_position: Some(Utn57Position::Medi),
     },
