@@ -22,6 +22,14 @@ Two units are overridden after comparing the derived draft with meco-core's
 own Unicode → ZVVNMOD tables (`REVIEWED_OVERRIDES` below); the note on each row
 says why. Rows whose choice is still a judgement call carry a `REVIEW:` note.
 
+A row with empty `targets` has no ZVVNMOD glyph. Reverse conversion reports a
+typed error there rather than substituting a near glyph: meco-core substitutes,
+and it corrupts. It encodes a bare `N:fina` (ᠣᠨ᠋) as the chachlag merged code
+`N_AA_FINA`, which reads back as ᠣᠨ᠎ᠠ — a vowel that was not in the input — and
+encodes a bare `Hx:fina` (ᠪᠠᠳᠠᠭ᠍) as `H_FINA`, dropping the FVS3. `Hx:fina` and
+`N:fina` are still reachable inside their chachlag rows, which longest match
+finds first.
+
 The runtime recomposes merged ZVVNMOD glyphs after mapping: a component
 sequence that matches an entry of `ZVVNMOD_CODE_DECOMPOSITIONS` is emitted as
 the merged code. This table therefore lists component spellings only, and the
@@ -117,10 +125,12 @@ UNREPRESENTABLE_WITNESSES = {
     "Gx:init": "no name in the ZVVNMOD inventory mentions Gx at all",
     "Gx:medi": "no name in the ZVVNMOD inventory mentions Gx at all",
     "Hx:fina": "the inventory's only Hx final is the merged 'Hx f Aa f' (U+E09D); "
-    "there is no standalone one so this unit is reachable only through the chachlag row",
+    "there is no standalone one so this unit is reachable only through the chachlag row "
+    "and a bare Hx:fina is a conversion error",
     "Ix:isol": "no name in the ZVVNMOD inventory mentions Ix at all — 'I isol' (U+E01A) is I:isol",
     "N:fina": "the inventory's only N final is the merged 'N f Aa f' (U+E077); there is no "
-    "standalone one so this unit is reachable only through the chachlag row",
+    "standalone one so this unit is reachable only through the chachlag row "
+    "and a bare N:fina is a conversion error",
     "Sz:fina": "no name in the ZVVNMOD inventory mentions Sz at all — 'S f' (U+E03E) is S:fina",
     "Ux:isol": "no name in the ZVVNMOD inventory mentions Ux at all — 'U isol' (U+E01B) is U:isol",
 }
@@ -210,10 +220,11 @@ def main() -> None:
             note += composite_note(unit_id)
         if unit_id == "G:fina":
             note = (
-                "reviewed: ZVVNMOD has no G_FINA — H_FINA is the family's only final glyph — "
-                "so final g is written as this composite; meco-core substitutes H_FINA and loses "
-                "the ᠭ/ᠬ distinction (I_MEDI AA_FINA converts onward to ᠪᠢᠴᠢᠭ where H_FINA "
-                "yields ᠬ+FVS3); " + note
+                "reviewed: ZVVNMOD writes final g by vowel-harmony class rather than with one "
+                "G_FINA code — H_FINA (U+E032) for masculine words (ᠴᠠᠭ shapes to H:fina) and "
+                "this composite for feminine ones (ᠪᠢᠴᠢᠭ) and for final ᠩ (ᠸᠠᠩ); meco-core makes "
+                "the same split — FROM_DELEHI_CHAGH emits E032 where FROM_DELEHI_HUNDII emits "
+                "E006 E00D — corroborating both this row and source:H_FINA; " + note
             )
         emit(f"{kind}:{unit_id}", unit_id, chosen[1] if chosen else "", note)
 

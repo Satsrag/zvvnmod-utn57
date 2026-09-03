@@ -27,7 +27,7 @@ unit:F:medi,F:medi,F_MEDI,from source:F_MEDI
 unit:F:fina,F:fina,F_FINA,from source:F_FINA
 unit:G:init,G:init,G_INIT,from source:G_INIT
 unit:G:medi,G:medi,G_MEDI,from source:G_MEDI
-unit:G:fina,G:fina,I_MEDI AA_FINA,reviewed: ZVVNMOD has no G_FINA — H_FINA is the family's only final glyph — so final g is written as this composite; meco-core substitutes H_FINA and loses the ᠭ/ᠬ distinction (I_MEDI AA_FINA converts onward to ᠪᠢᠴᠢᠭ where H_FINA yields ᠬ+FVS3); from target:G:fina; composite glyph sequence; ZVVNMOD writes I:medi + Aa:isol identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
+unit:G:fina,G:fina,I_MEDI AA_FINA,reviewed: ZVVNMOD writes final g by vowel-harmony class rather than with one G_FINA code — H_FINA (U+E032) for masculine words (ᠴᠠᠭ shapes to H:fina) and this composite for feminine ones (ᠪᠢᠴᠢᠭ) and for final ᠩ (ᠸᠠᠩ); meco-core makes the same split — FROM_DELEHI_CHAGH emits E032 where FROM_DELEHI_HUNDII emits E006 E00D — corroborating both this row and source:H_FINA; from target:G:fina; composite glyph sequence; ZVVNMOD writes I:medi + Aa:isol identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
 unit:Gx:init,Gx:init,,reviewed: no ZVVNMOD glyph — no name in the ZVVNMOD inventory mentions Gx at all
 unit:Gx:medi,Gx:medi,,reviewed: no ZVVNMOD glyph — no name in the ZVVNMOD inventory mentions Gx at all
 unit:H:init,H:init,H_INIT,from source:H_INIT
@@ -37,7 +37,7 @@ unit:Hr:medi,Hr:medi,HR_MEDI,from source:HR_MEDI
 unit:Hr:fina,Hr:fina,HR_FINA,from source:HR_FINA
 unit:Hx:init,Hx:init,HX_INIT,from source:HX_INIT
 unit:Hx:medi,Hx:medi,N_MEDI N_MEDI,reviewed: ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly N_MEDI N_MEDI; meco-core and particle:05/32/44 agree; the forward map's target:Hx:medi row says M_MEDI M_MEDI and needs correcting upstream in the website contract CSV; ZVVNMOD writes N:medi + N:medi identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
-unit:Hx:fina,Hx:fina,,reviewed: no ZVVNMOD glyph — the inventory's only Hx final is the merged 'Hx f Aa f' (U+E09D); there is no standalone one so this unit is reachable only through the chachlag row
+unit:Hx:fina,Hx:fina,,reviewed: no ZVVNMOD glyph — the inventory's only Hx final is the merged 'Hx f Aa f' (U+E09D); there is no standalone one so this unit is reachable only through the chachlag row and a bare Hx:fina is a conversion error
 unit:I:isol,I:isol,I_ISOL,from source:I_ISOL
 unit:I:init,I:init,I_INIT,from source:I_INIT
 unit:I:medi,I:medi,I_MEDI,from source:I_MEDI
@@ -59,7 +59,7 @@ unit:M:medi,M:medi,M_MEDI,from source:M_MEDI
 unit:M:fina,M:fina,M_FINA,from source:M_FINA
 unit:N:init,N:init,N_INIT,from source:N_INIT
 unit:N:medi,N:medi,N_MEDI,from source:N_MEDI
-unit:N:fina,N:fina,,reviewed: no ZVVNMOD glyph — the inventory's only N final is the merged 'N f Aa f' (U+E077); there is no standalone one so this unit is reachable only through the chachlag row
+unit:N:fina,N:fina,,reviewed: no ZVVNMOD glyph — the inventory's only N final is the merged 'N f Aa f' (U+E077); there is no standalone one so this unit is reachable only through the chachlag row and a bare N:fina is a conversion error
 unit:O:init,O:init,O_INIT,from source:O_INIT
 unit:O:medi,O:medi,O_MEDI,from source:O_MEDI
 unit:O:fina,O:fina,O_FINA,from source:O_FINA
