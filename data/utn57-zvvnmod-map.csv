@@ -20,8 +20,8 @@ unit:Cr:init,Cr:init,O_INIT O_MEDI,from target:Cr:init; composite glyph sequence
 unit:D:init,D:init,D_INIT,from source:D_INIT
 unit:D:medi,D:medi,D_MEDI,from source:D_MEDI
 unit:D:fina,D:fina,D_FINA,from source:D_FINA
-unit:Dd:medi,Dd:medi,O_MEDI A_MEDI,from target:Dd:medi; composite glyph sequence; ZVVNMOD writes O:medi + A:medi identically and that reading is conformant UTN (17 witnesses e.g. ᠮᠣᠩᠭᠣᠯ) so the trip back cannot recover which was meant
-unit:Dd:fina,Dd:fina,O_MEDI A_FINA,from target:Dd:fina; composite glyph sequence; ZVVNMOD writes O:medi + A:fina identically and that reading is conformant UTN (51 witnesses e.g. ᠬᠦᠮᠦᠨ) so the trip back cannot recover which was meant
+unit:Dd:medi,Dd:medi,O_MEDI A_MEDI,from target:Dd:medi; composite glyph sequence; ZVVNMOD writes O:medi + A:medi identically and that reading is conformant UTN (17 witnesses e.g. ᠮᠣᠩᠭᠣᠯ) — reverse conversion emits the shared spelling either way; picking between them is the forward direction's problem
+unit:Dd:fina,Dd:fina,O_MEDI A_FINA,from target:Dd:fina; composite glyph sequence; ZVVNMOD writes O:medi + A:fina identically and that reading is conformant UTN (51 witnesses e.g. ᠬᠦᠮᠦᠨ) — reverse conversion emits the shared spelling either way; picking between them is the forward direction's problem
 unit:F:init,F:init,F_INIT,from source:F_INIT
 unit:F:medi,F:medi,F_MEDI,from source:F_MEDI
 unit:F:fina,F:fina,F_FINA,from source:F_FINA
@@ -31,7 +31,7 @@ unit:G:fina,G:fina,I_MEDI AA_FINA,REVIEW: meco-core's own Unicode→ZVVNMOD emit
 unit:Gx:init,Gx:init,,REVIEW: no ZVVNMOD glyph; seen only as ᠬ᠏ (h+FVS4)
 unit:Gx:medi,Gx:medi,,REVIEW: no ZVVNMOD glyph; seen only as ᠰᠠᠬ᠏ᠠᠯ (h+FVS4 medial)
 unit:H:init,H:init,H_INIT,from source:H_INIT
-unit:H:medi,H:medi,A_MEDI A_MEDI,from target:H:medi; composite glyph sequence; ZVVNMOD writes A:medi + A:medi identically and that reading is conformant UTN (85 witnesses e.g. ᠲᠡᠩᠷᠢ) so the trip back cannot recover which was meant
+unit:H:medi,H:medi,A_MEDI A_MEDI,from target:H:medi; composite glyph sequence; ZVVNMOD writes A:medi + A:medi identically and that reading is conformant UTN (85 witnesses e.g. ᠲᠡᠩᠷᠢ) — reverse conversion emits the shared spelling either way; picking between them is the forward direction's problem
 unit:H:fina,H:fina,H_FINA,from source:H_FINA
 unit:Hr:medi,Hr:medi,HR_MEDI,from source:HR_MEDI
 unit:Hr:fina,Hr:fina,HR_FINA,from source:HR_FINA

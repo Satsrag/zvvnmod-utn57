@@ -103,7 +103,8 @@ def composite_note(unit_id: str) -> str:
     if kind == "ambiguous":
         return (
             f"; ZVVNMOD writes {reading} identically and that reading is conformant UTN "
-            f"({witness}) so the trip back cannot recover which was meant"
+            f"({witness}) — reverse conversion emits the shared spelling either way; "
+            "picking between them is the forward direction's problem"
         )
     return (
         f"; ZVVNMOD writes {reading} identically but that reading is legal-not-conformant UTN "
