@@ -19,12 +19,14 @@ pub mod generated {
     pub mod code_decomposition_map;
     pub mod ir_fina;
     pub mod utn57_mapping;
+    pub mod utn57_reverse_mapping;
     pub mod zvvnmod_codes;
 }
 pub mod api;
 pub mod conversion;
 pub mod normalize;
 pub mod preprocess;
+pub mod reverse;
 pub mod text;
 
 pub use api::*;
@@ -32,9 +34,11 @@ pub use conversion::*;
 pub use generated::code_decomposition_map::*;
 pub use generated::ir_fina::*;
 pub use generated::utn57_mapping::*;
+pub use generated::utn57_reverse_mapping::*;
 pub use generated::zvvnmod_codes::*;
 pub use normalize::*;
 pub use preprocess::*;
+pub use reverse::*;
 pub use text::*;
 
 /// The normalization backend, re-exported so callers can match [`mongol_norm::Error`]

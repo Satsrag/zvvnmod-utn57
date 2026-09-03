@@ -18,6 +18,10 @@ path = "src/lib.rs"
 name = "zvvnmod-to-utn57"
 path = "src/bin/zvvnmod-to-utn57.rs"
 
+[[bin]]
+name = "utn57-to-zvvnmod"
+path = "src/bin/utn57-to-zvvnmod.rs"
+
 [dependencies]
 # Pure-Rust normalization backend. Cargo.lock pins the exact resolved release
 # for reproducible application and CLI builds.

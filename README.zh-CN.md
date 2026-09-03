@@ -15,6 +15,7 @@
 - 对一个 ZVVNMOD shape run 执行 longest-match replacement，得到 positioned UTN #57 written units；
 - 编排完整文本：只转换正式 ZVVNMOD shape codes，把 Nirugu/MVS 作为结构输入处理，输入 ZWJ 与其余字符全部原样保留；
 - 通过纯 Rust 的 [`mongol-norm`](https://crates.io/crates/mongol-norm) crate 把 positioned UTN #57 written units 规范化为 canonical Unicode，直接链接进库中。
+- 反向：把蒙古文文本 shape 成 positioned UTN #57 written units 再拼成 ZVVNMOD，并做联合字形合并。
 
 数据流为：
 
@@ -42,10 +43,12 @@ normalization 后补回。全程在进程内完成：没有子进程、没有解
 ├── data/
 │   ├── ir-fina-replacements.csv
 │   ├── utn57-written-units.csv
+│   ├── utn57-zvvnmod-map.csv
 │   ├── zvvnmod-unicode-names.csv
 │   └── zvvnmod-utn57-map.csv
 ├── scripts/
 │   ├── check_website_contract.py
+│   ├── derive_utn57_zvvnmod_map.py
 │   ├── generate_ir_fina.py
 │   ├── generate_utn57_mapping.py
 │   ├── generate_zvvnmod.py
@@ -55,6 +58,7 @@ normalization 后补回。全程在进程内完成：没有子进程、没有解
 ├── src/
 │   ├── lib.rs
 │   ├── normalize.rs
+│   ├── reverse.rs
 │   ├── conversion.rs
 │   ├── preprocess.rs
 │   ├── text.rs
@@ -244,6 +248,65 @@ normalizer 在编码 positioned written units 时可能自行输出 ZWJ；
 由上游 source converter 处理，本库不解释其语义。旧 ZVVNMOD `U+E140..=U+E144`
 FVS1-FVS4/MVS 控制码明确排除。
 
+## 反向转换：蒙古文文本 → ZVVNMOD
+
+```rust
+use zvvnmod_utn57::convert_utn57_to_zvvnmod;
+
+let output = convert_utn57_to_zvvnmod(mongolian_text)?;
+```
+
+```bash
+utn57-to-zvvnmod '<mongolian-text>'
+```
+
+数据流与正向对称：
+
+```text
+包含蒙古文单词的完整文本
+→ 分离单词 runs 与 passthrough spans
+→ 用 mongol-norm shape 每个 run，并还原每个单位的连写位置
+→ 按 reviewed longest match 把 positioned units 替换为 ZVVNMOD 码
+→ 把组件序列合并成联合 ZVVNMOD 字形
+→ 按原边界补回 passthrough spans
+```
+
+`data/utn57-zvvnmod-map.csv` 是 reviewed 关系表：每个 positioned written unit
+一行，外加十条 `X:fina MVS Aa:isol` chachlag 三元组（合并成单个码）。
+`scripts/derive_utn57_zvvnmod_map.py` 从正向表推导它，其 `baseline` 钉住正向表的
+摘要，两张表不会各自漂移。
+
+### 联合字形由运行时合并，不写进表
+
+表里一律写组件形式，之后由 `recompose_zvvnmod_codes` 合并，所以
+`B:medi Aa:fina` 得到 `B_A_MEDI AA_FINA` 而不是 `B_MEDI A_MEDI AA_FINA`。
+这不是美观问题——下游转换器按联合码查表，拆开的写法会多出一个 MVS：
+
+| ᠪᠠ 后缀的 ZVVNMOD 写法 | 经 meco-core → Delehi |
+|---|---|
+| `B_A_MEDI AA_FINA`（联合） | ᠪᠠ |
+| `B_MEDI A_MEDI AA_FINA`（拆开） | ᠪᠠ᠎ᠠ |
+
+把分解表的每个条目单独以及后接 `AA_FINA` 各测一遍，118 例中有 86 例两者结果不同。
+
+### 没有字形的单位报错，不替换
+
+139 个码的 ZVVNMOD 清单里有七个 positioned unit 没有字形：`Gx:init`、`Gx:medi`、
+`Hx:fina`、`Ix:isol`、`N:fina`、`Sz:fina`、`Ux:isol`。其中 `Hx:fina` 和 `N:fina`
+仍可通过 chachlag 行到达（最长匹配会先命中）；单独出现时返回
+`Utn57ReverseError::Unrepresentable`，并带上出错记录的索引。用相近字形顶替会静默
+改变文本，本库不这么做。
+
+### 反向无法还原的部分
+
+ZVVNMOD 编码的是字形，因此合并了 UTN #57 保留的区分：`K` 与 `K2` 共用一个字形；
+`Dd:medi`、`Dd:fina`、`H:medi` 各自与一个同样出现在真实词里的两单位序列写法相同。
+反向输出共享写法即可——消歧是正向方向的事。
+
+同理，`Unicode → ZVVNMOD → Unicode` 本就有损，不能用作正确性标准。这张表真正
+该保证的是 `positioned units → ZVVNMOD → positioned units`，
+`tests/reverse_round_trip.rs` 对每一行都做了检查。
+
 ## `mongol-norm` normalization 后端
 
 Normalization 使用纯 Rust 的 [`mongol-norm`](https://crates.io/crates/mongol-norm) crate，
@@ -251,12 +314,13 @@ Normalization 使用纯 Rust 的 [`mongol-norm`](https://crates.io/crates/mongol
 
 ```toml
 [dependencies]
-zvvnmod-utn57 = "0.1.0"
+zvvnmod-utn57 = "0.1"
 ```
 
 ```bash
-cargo install zvvnmod-utn57 --version 0.1.0
+cargo install zvvnmod-utn57
 zvvnmod-to-utn57 '<zvvnmod-text>'
+utn57-to-zvvnmod '<mongolian-text>'
 ```
 
 `src/normalize.rs` 把每个 reviewed `Utn57PositionedWrittenUnit` 映射到后端的
@@ -297,6 +361,9 @@ cargo clippy --all-targets -- -D warnings
 cargo check --target wasm32-unknown-unknown --lib
 cargo package
 ```
+
+反向关系有两道检查：`tests/reverse_round_trip.rs` 把每一行送回正向转换器，
+`tests/reverse_api.rs` 覆盖公开 API。
 
 这里的 Python 只是 `scripts/` 下的构建期生成器套件；库本身运行时不含 Python。
 没有任何测试带 `#[ignore]`，也没有任何测试需要先跑安装步骤。

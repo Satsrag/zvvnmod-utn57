@@ -14,11 +14,13 @@ GENERATOR = ROOT / "scripts" / "generate_zvvnmod.py"
 NAMES = ROOT / "data" / "zvvnmod-unicode-names.csv"
 IR_FINA_RULES = ROOT / "data" / "ir-fina-replacements.csv"
 MAPPING = ROOT / "data" / "zvvnmod-utn57-map.csv"
+REVERSE_MAPPING = ROOT / "data" / "utn57-zvvnmod-map.csv"
 TARGETS = ROOT / "data" / "utn57-written-units.csv"
 WEBSITE_CHECKER = ROOT / "scripts" / "check_website_contract.py"
 MAPPING_SHA256 = "1f0cb6b8b476022726cec5f2a55973b9423ea96d7b8fd79c98b8447cf73b3592"
 TARGETS_SHA256 = "2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6"
 PARTICLE_RELATIONS_SHA256 = "396563dfa46cad6225fc92d07e7a6cc2e7c563f155bf70351ceb9448fbf75e5e"
+REVERSE_MAPPING_SHA256 = "6432b79e628e9ef9ff0bc31e6ef96f93bea9ceff254930b6b35c7d9ff820e731"
 TEST_MAPPING_BASELINE = "sha256:843af21ad5356565c2f0559a18feaafa3d000ae666d9035c389e26eda199c237"
 TEST_MAPPING_METADATA = (
     '# metadata={"schema":"zvvnmod-utn57-runtime-map-v1",'
@@ -623,3 +625,64 @@ class ShapeNamingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReverseMappingTests(unittest.TestCase):
+    """The reverse relation is derived from the forward one and must stay in step."""
+
+    def load(self):
+        gen = load_generator()
+        model = gen.build_model(gen.read_csv(NAMES))
+        targets = gen.read_utn57_targets_csv(TARGETS)
+        return gen, model, targets
+
+    def test_reverse_mapping_artifact_is_locked_and_covers_every_unit(self):
+        gen, model, targets = self.load()
+        self.assertEqual(
+            hashlib.sha256(REVERSE_MAPPING.read_bytes()).hexdigest(), REVERSE_MAPPING_SHA256
+        )
+        rules = gen.read_utn57_reverse_mapping_csv(REVERSE_MAPPING, MAPPING, model, targets)
+        single = {rule.sources[0].id for rule in rules if len(rule.sources) == 1}
+        self.assertEqual(single, {target.id for target in targets})
+        self.assertEqual(len(rules), 107)
+        # The chachlag triples are the only multi-unit rows.
+        multi = [rule for rule in rules if len(rule.sources) > 1]
+        self.assertEqual(len(multi), 10)
+        for rule in multi:
+            self.assertEqual([target.id for target in rule.sources[1:]], ["MVS", "Aa:isol"])
+
+    def test_reverse_mapping_is_fail_closed(self):
+        gen, model, targets = self.load()
+        body = REVERSE_MAPPING.read_text(encoding="utf-8")
+        header, rows = body.split("\n", 1)
+        cases = [
+            (header.replace("utn57-zvvnmod-runtime-map-v1", "wrong") + "\n" + rows,
+             "metadata differs from schema"),
+            (header.replace(header.split('"baseline":"')[1].split('"')[0], "sha256:" + "0" * 64)
+             + "\n" + rows,
+             "baseline does not match the forward map"),
+            (body.replace("unit:A:isol,", "bad/id,", 1), "invalid or duplicate ID"),
+            (body.replace("unit:A:isol,A:isol,", "unit:A:isol,NOT_A_UNIT,", 1), "unknown source"),
+            (body.replace(",A_INIT AA_FINA,", ",NOT_A_CODE,", 1), "unknown target"),
+            (body.replace(",A_INIT AA_FINA,", ",A_INIT  AA_FINA,", 1), "single spaces"),
+            (body.replace("unit:A:medi,A:medi,", "unit:A:medi,A:isol,", 1), "duplicate source"),
+        ]
+        for candidate, message in cases:
+            with self.subTest(message=message):
+                with tempfile.TemporaryDirectory() as directory:
+                    path = Path(directory) / "reverse.csv"
+                    path.write_text(candidate, encoding="utf-8")
+                    with self.assertRaisesRegex(ValueError, message):
+                        gen.read_utn57_reverse_mapping_csv(path, MAPPING, model, targets)
+
+    def test_reverse_mapping_rejects_a_missing_unit(self):
+        gen, model, targets = self.load()
+        body = REVERSE_MAPPING.read_text(encoding="utf-8")
+        without_a_isol = "\n".join(
+            line for line in body.split("\n") if not line.startswith("unit:A:isol,")
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "reverse.csv"
+            path.write_text(without_a_isol, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "missing rows for A:isol"):
+                gen.read_utn57_reverse_mapping_csv(path, MAPPING, model, targets)
