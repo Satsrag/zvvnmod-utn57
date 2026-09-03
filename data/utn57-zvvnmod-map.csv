@@ -1,42 +1,42 @@
 # metadata={"schema":"utn57-zvvnmod-runtime-map-v1","baseline":"sha256:cc58b012ea2e3a1709d723d115ad9eed00de13d32bba166991a1447c889a358c"}
 id,sources,targets,note
-unit:A:isol,A:isol,A_INIT AA_FINA,from target:A:isol; composite glyph sequence; ZVVNMOD writes A:init + Aa:isol identically
+unit:A:isol,A:isol,A_INIT AA_FINA,from target:A:isol; composite glyph sequence; ZVVNMOD writes A:init + Aa:isol identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
 unit:A:init,A:init,A_INIT,from source:A_INIT
 unit:A:medi,A:medi,A_MEDI,from source:A_MEDI
 unit:A:fina,A:fina,A_FINA,from source:A_FINA
 unit:Aa:isol,Aa:isol,AA_FINA,from source:AA_FINA
-unit:Aa:fina,Aa:fina,A_MEDI AA_FINA,reviewed: the connected Aa final is tooth+swash (context:A_MEDI_AA_FINA); the runtime merges the tooth into the preceding bowed glyph (B_A_INIT AA_FINA); meco-core agrees; target:Aa:fina (bare AA_FINA) not chosen; ZVVNMOD writes A:medi + Aa:isol identically
+unit:Aa:fina,Aa:fina,A_MEDI AA_FINA,reviewed: the connected Aa final is tooth+swash (context:A_MEDI_AA_FINA); the runtime merges the tooth into the preceding bowed glyph (B_A_INIT AA_FINA); meco-core agrees; target:Aa:fina (bare AA_FINA) not chosen; ZVVNMOD writes A:medi + Aa:isol identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
 unit:B:init,B:init,B_INIT,from source:B_INIT
 unit:B:medi,B:medi,B_MEDI,from source:B_MEDI
 unit:B:fina,B:fina,B_FINA,from source:B_FINA
-unit:B2:fina,B2:fina,O_MEDI AA_FINA,from target:B2:fina; composite glyph sequence; ZVVNMOD writes O:medi + Aa:isol identically
+unit:B2:fina,B2:fina,O_MEDI AA_FINA,from target:B2:fina; composite glyph sequence; ZVVNMOD writes O:medi + Aa:isol identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
 unit:C:init,C:init,C_INIT,from source:C_INIT
 unit:C:medi,C:medi,C_MEDI,from source:C_MEDI
 unit:C:fina,C:fina,C_FINA,from source:C_FINA
 unit:Ch:init,Ch:init,CH_INIT,from source:CH_INIT
 unit:Ch:medi,Ch:medi,CH_MEDI,from source:CH_MEDI
 unit:Ch:fina,Ch:fina,CH_FINA,from source:CH_FINA
-unit:Cr:init,Cr:init,O_INIT O_MEDI,from target:Cr:init; composite glyph sequence; ZVVNMOD writes O:init + O:medi identically
+unit:Cr:init,Cr:init,O_INIT O_MEDI,from target:Cr:init; composite glyph sequence; ZVVNMOD writes O:init + O:medi identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
 unit:D:init,D:init,D_INIT,from source:D_INIT
 unit:D:medi,D:medi,D_MEDI,from source:D_MEDI
 unit:D:fina,D:fina,D_FINA,from source:D_FINA
-unit:Dd:medi,Dd:medi,O_MEDI A_MEDI,from target:Dd:medi; composite glyph sequence; ZVVNMOD writes O:medi + A:medi identically
-unit:Dd:fina,Dd:fina,O_MEDI A_FINA,from target:Dd:fina; composite glyph sequence; ZVVNMOD writes O:medi + A:fina identically
+unit:Dd:medi,Dd:medi,O_MEDI A_MEDI,from target:Dd:medi; composite glyph sequence; ZVVNMOD writes O:medi + A:medi identically and that reading is conformant UTN (17 witnesses e.g. ᠮᠣᠩᠭᠣᠯ) so the trip back cannot recover which was meant
+unit:Dd:fina,Dd:fina,O_MEDI A_FINA,from target:Dd:fina; composite glyph sequence; ZVVNMOD writes O:medi + A:fina identically and that reading is conformant UTN (51 witnesses e.g. ᠬᠦᠮᠦᠨ) so the trip back cannot recover which was meant
 unit:F:init,F:init,F_INIT,from source:F_INIT
 unit:F:medi,F:medi,F_MEDI,from source:F_MEDI
 unit:F:fina,F:fina,F_FINA,from source:F_FINA
 unit:G:init,G:init,G_INIT,from source:G_INIT
 unit:G:medi,G:medi,G_MEDI,from source:G_MEDI
-unit:G:fina,G:fina,I_MEDI AA_FINA,REVIEW: meco-core's own Unicode→ZVVNMOD emits H_FINA here; I_MEDI AA_FINA converts onward to ᠪᠢᠴᠢᠭ (MenkLetter) while H_FINA yields ᠬ+FVS3; keeping the target row; from target:G:fina; composite glyph sequence; ZVVNMOD writes I:medi + Aa:isol identically
+unit:G:fina,G:fina,I_MEDI AA_FINA,REVIEW: meco-core's own Unicode→ZVVNMOD emits H_FINA here; I_MEDI AA_FINA converts onward to ᠪᠢᠴᠢᠭ (MenkLetter) while H_FINA yields ᠬ+FVS3; keeping the target row; from target:G:fina; composite glyph sequence; ZVVNMOD writes I:medi + Aa:isol identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
 unit:Gx:init,Gx:init,,REVIEW: no ZVVNMOD glyph; seen only as ᠬ᠏ (h+FVS4)
 unit:Gx:medi,Gx:medi,,REVIEW: no ZVVNMOD glyph; seen only as ᠰᠠᠬ᠏ᠠᠯ (h+FVS4 medial)
 unit:H:init,H:init,H_INIT,from source:H_INIT
-unit:H:medi,H:medi,A_MEDI A_MEDI,from target:H:medi; composite glyph sequence; ZVVNMOD writes A:medi + A:medi identically
+unit:H:medi,H:medi,A_MEDI A_MEDI,from target:H:medi; composite glyph sequence; ZVVNMOD writes A:medi + A:medi identically and that reading is conformant UTN (85 witnesses e.g. ᠲᠡᠩᠷᠢ) so the trip back cannot recover which was meant
 unit:H:fina,H:fina,H_FINA,from source:H_FINA
 unit:Hr:medi,Hr:medi,HR_MEDI,from source:HR_MEDI
 unit:Hr:fina,Hr:fina,HR_FINA,from source:HR_FINA
 unit:Hx:init,Hx:init,HX_INIT,from source:HX_INIT
-unit:Hx:medi,Hx:medi,N_MEDI N_MEDI,reviewed: ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly N_MEDI N_MEDI; meco-core and particle:05/32/44 agree; the forward map's target:Hx:medi row (M_MEDI M_MEDI) disagrees and does not round-trip; ZVVNMOD writes N:medi + N:medi identically
+unit:Hx:medi,Hx:medi,N_MEDI N_MEDI,reviewed: ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly N_MEDI N_MEDI; meco-core and particle:05/32/44 agree; the forward map's target:Hx:medi row says M_MEDI M_MEDI and needs correcting upstream in the website contract CSV; ZVVNMOD writes N:medi + N:medi identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
 unit:Hx:fina,Hx:fina,,REVIEW: no ZVVNMOD glyph; seen only as ᠪᠠᠳᠠᠭ᠍ (g+FVS3 final); representable only inside chachlag as HX_AA_FINA
 unit:I:isol,I:isol,I_ISOL,from source:I_ISOL
 unit:I:init,I:init,I_INIT,from source:I_INIT

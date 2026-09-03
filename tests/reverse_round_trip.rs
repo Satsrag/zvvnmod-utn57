@@ -21,9 +21,21 @@ const CODE_NAMES: &str = include_str!("../src/generated/zvvnmod_codes.rs");
 const K2_ROWS: [&str; 3] = ["K2:init", "K2:medi", "K2:fina"];
 
 /// UTN units that ZVVNMOD writes as a sequence of other units: it has no
-/// separate glyph for them. Reverse conversion emits the shared spelling and
-/// the trip back cannot recover which reading was meant — the same ambiguity
-/// forward conversion faces, seen from the other side.
+/// separate glyph for them.
+///
+/// Six of the nine are unambiguous in practice. Their two-unit reading is legal
+/// UTN spelling but not conformant, and it never occurs: counted over 2268
+/// shaped samples (this crate's 276-word natural list plus mongol-norm's 1992
+/// golden vectors), `A:init Aa:isol`, `A:medi Aa:isol`, `O:medi Aa:isol`,
+/// `O:init O:medi`, `I:medi Aa:isol` and `N:medi N:medi` appear zero times,
+/// while the composites they collide with appear 5, 137, 3, 6, 122 and 136
+/// times. For those the composite is the only reading and the trip back is
+/// lossless.
+///
+/// The other three are genuinely ambiguous — both readings occur in real words:
+/// `Dd:medi` against `O:medi A:medi` (17 witnesses, ᠮᠣᠩᠭᠣᠯ), `Dd:fina` against
+/// `O:medi A:fina` (51, ᠬᠦᠮᠦᠨ) and `H:medi` against `A:medi A:medi` (85,
+/// ᠲᠡᠩᠷᠢ). ZVVNMOD cannot tell those apart, so the trip back has to pick one.
 ///
 /// `every_composite_unit_is_still_ambiguous` derives this list from the table
 /// and asserts it is exactly these, so a table change surfaces here.
@@ -42,8 +54,17 @@ const COMPOSITE_UNITS: [(&str, &str); 9] = [
 /// The one composite whose ZVVNMOD spelling the forward map does not map back
 /// to it. ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly
 /// `N_MEDI N_MEDI` — but the forward map's `target:Hx:medi` row says
-/// `M_MEDI M_MEDI`, so the trip back lands on two N units instead. Pinned so
-/// that correcting either table fails this suite rather than passing silently.
+/// `M_MEDI M_MEDI`, so the trip back lands on two N units instead.
+///
+/// The forward map is byte-identical to the website contract CSV
+/// (`scripts/check_website_contract.py`), so the correction has to land there
+/// first. It is safe: `N:medi N:medi` never occurs in conformant UTN, so
+/// preferring the longer `Hx:medi` match swallows nothing legitimate, and no
+/// new entry is needed in `REVIEWED_MAPPING_AMBIGUITIES` because
+/// `("N_MEDI", "N_MEDI")` would then have exactly one target sequence.
+///
+/// Pinned so that correcting either table fails this suite rather than passing
+/// silently.
 const HX_MEDI_RETURNS: &str = "N:medi N:medi";
 
 /// `NAME: ZvvnmodCode = ZvvnmodCode(0x____)` → code point.

@@ -72,26 +72,43 @@ REVIEWED_OVERRIDES = {
     "Hx:medi": (
         "N_MEDI N_MEDI",
         "reviewed: ZVVNMOD has no distinct medial ɣ glyph — the shape is exactly N_MEDI N_MEDI; "
-        "meco-core and particle:05/32/44 agree; the forward map's target:Hx:medi row "
-        "(M_MEDI M_MEDI) disagrees and does not round-trip",
+        "meco-core and particle:05/32/44 agree; the forward map's target:Hx:medi row says "
+        "M_MEDI M_MEDI and needs correcting upstream in the website contract CSV",
     ),
 }
 
-# UTN units that ZVVNMOD writes as a sequence of other units. Reverse conversion
-# emits the shared spelling; the trip back cannot recover which reading was meant,
-# exactly as forward conversion cannot. Derived from the table itself by
-# `tests/reverse_round_trip.rs`, listed here only so the CSV says so in its notes.
+# UTN units that ZVVNMOD writes as a sequence of other units, and whether that
+# two-unit reading is itself conformant UTN. Counted over 2268 shaped samples:
+# this crate's 276-word natural list plus mongol-norm's 1992 golden vectors.
+#
+# `unambiguous`: the two-unit reading never occurs — it is legal UTN spelling but
+# not conformant, so the composite is the only reading and the round trip is
+# lossless. `ambiguous`: both readings occur in real words, so ZVVNMOD genuinely
+# cannot tell them apart and the trip back has to pick one.
 COMPOSITE_UNITS = {
-    "A:isol": "A:init + Aa:isol",
-    "Aa:fina": "A:medi + Aa:isol",
-    "B2:fina": "O:medi + Aa:isol",
-    "Cr:init": "O:init + O:medi",
-    "Dd:medi": "O:medi + A:medi",
-    "Dd:fina": "O:medi + A:fina",
-    "G:fina": "I:medi + Aa:isol",
-    "H:medi": "A:medi + A:medi",
-    "Hx:medi": "N:medi + N:medi",
+    "A:isol": ("A:init + Aa:isol", "unambiguous", "never observed"),
+    "Aa:fina": ("A:medi + Aa:isol", "unambiguous", "never observed"),
+    "B2:fina": ("O:medi + Aa:isol", "unambiguous", "never observed"),
+    "Cr:init": ("O:init + O:medi", "unambiguous", "never observed"),
+    "G:fina": ("I:medi + Aa:isol", "unambiguous", "never observed"),
+    "Hx:medi": ("N:medi + N:medi", "unambiguous", "never observed"),
+    "Dd:medi": ("O:medi + A:medi", "ambiguous", "17 witnesses e.g. ᠮᠣᠩᠭᠣᠯ"),
+    "Dd:fina": ("O:medi + A:fina", "ambiguous", "51 witnesses e.g. ᠬᠦᠮᠦᠨ"),
+    "H:medi": ("A:medi + A:medi", "ambiguous", "85 witnesses e.g. ᠲᠡᠩᠷᠢ"),
 }
+
+
+def composite_note(unit_id: str) -> str:
+    reading, kind, witness = COMPOSITE_UNITS[unit_id]
+    if kind == "ambiguous":
+        return (
+            f"; ZVVNMOD writes {reading} identically and that reading is conformant UTN "
+            f"({witness}) so the trip back cannot recover which was meant"
+        )
+    return (
+        f"; ZVVNMOD writes {reading} identically but that reading is legal-not-conformant UTN "
+        f"({witness}) so this unit is the only reading"
+    )
 
 # Golden-corpus witnesses for units that only FVS-forced spellings produce.
 UNREPRESENTABLE_WITNESSES = {
@@ -180,11 +197,11 @@ def main() -> None:
         if unit_id in REVIEWED_OVERRIDES:
             targets, reason = REVIEWED_OVERRIDES[unit_id]
             if unit_id in COMPOSITE_UNITS:
-                reason += f"; ZVVNMOD writes {COMPOSITE_UNITS[unit_id]} identically"
+                reason += composite_note(unit_id)
             emit(f"{kind}:{unit_id}", unit_id, targets, reason)
             continue
         if unit_id in COMPOSITE_UNITS:
-            note += f"; ZVVNMOD writes {COMPOSITE_UNITS[unit_id]} identically"
+            note += composite_note(unit_id)
         if unit_id == "G:fina":
             note = (
                 "REVIEW: meco-core's own Unicode→ZVVNMOD emits H_FINA here; "
