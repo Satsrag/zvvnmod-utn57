@@ -1,17 +1,27 @@
 //! The detached-suffix boundary, in both directions.
 //!
-//! ZVVNMOD writes a detached suffix as `U+202F`, and an ordinary word space as
-//! `U+0020`. UTN #57 writes the same boundary as `MVS`. Keeping the two spaces
-//! apart is what lets the boundary survive a conversion: a hub that spelled both
-//! with `U+0020` could not be read back without guessing which spaces separate
-//! words and which separate a stem from its suffix.
+//! ZVVNMOD spells the boundary between a stem and its detached suffix with an
+//! ordinary `U+0020`, the same character it writes between two words. UTN #57
+//! spells it `MVS`.
 //!
-//! The baselines are meco's own hub text — `meco translate --from delehi --to
-//! zvvnmod`, meco 0.4.0 — with its separator respelled `U+202F`. Every other
-//! code below is meco's, character for character. A round trip through this
-//! crate would be no baseline at all: before this contract existed, `U+180E`
-//! passed through unchanged in both directions, so `utn57 → zvvnmod → utn57` was
-//! stable while both halves leaked a UTN #57 control into ZVVNMOD text.
+//! The baselines below are meco's own hub text — `Delehi -> Zvvnmod`, meco
+//! 0.4.0 — character for character, separator included. Of the 49 rows in
+//! meco's Java-oracle corpus whose Delehi input carries a `U+202F`, the ZVVNMOD
+//! output contains `U+0020` 211 times and `U+202F` not once.
+//!
+//! Two spellings therefore collapse into one on the hub, and that is a property
+//! of the hub rather than a defect here: ZVVNMOD carries the distinction in the
+//! *glyph after* the boundary, not in the boundary character. A detached suffix
+//! takes a suffix-initial glyph — `E04D` for ᠶᠢᠨ, `E001` for ᠤᠨ — where the same
+//! letters opening a word of their own take `E050` and `E000 E008`. Recovering a
+//! `MVS` from a `U+0020` means reading those glyphs against a lexical suffix
+//! table, which meco has and this crate does not; so the boundary reaches
+//! ZVVNMOD intact and does not come back.
+//!
+//! None of this is testable by round trip. The separator passed through
+//! symmetrically in both directions before 0.1.2 and again after it, so
+//! `utn57 -> zvvnmod -> utn57` stayed stable across two wrong spellings. Every
+//! baseline here is a literal.
 
 use zvvnmod_utn57::{convert_utn57_to_zvvnmod, convert_zvvnmod_to_utn57};
 
@@ -23,14 +33,15 @@ fn hex(text: &str) -> String {
         .join(" ")
 }
 
-/// ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ — `tal-a-yin`, a chachlag ᠠ and a consonant-initial detached suffix.
-const TAL_A_YIN_HUB: &str = "E042 E005 E03B E00D 202F E04D E006 E00C";
+/// ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ — `tal-a-yin`, a stem ending in a chachlag ᠠ and a consonant-initial
+/// detached suffix.
+const TAL_A_YIN_HUB: &str = "E042 E005 E03B E00D 0020 E04D E006 E00C";
 
 /// ᠮᠣᠩᠭᠣᠯ ᠤᠨ — `mongol-un`, a vowel-initial detached suffix.
-const MONGOL_UN_HUB: &str = "E036 E008 E005 E031 E028 E028 E008 E03B 202F E001 E00C";
+const MONGOL_UN_HUB: &str = "E036 E008 E005 E031 E028 E028 E008 E03B 0020 E001 E00C";
 
 #[test]
-fn a_detached_suffix_boundary_is_a_narrow_no_break_space() {
+fn a_detached_suffix_boundary_is_an_ordinary_space() {
     // ᠲᠠᠯ᠎ᠠ + NNBSP + ᠶᠢᠨ.
     assert_eq!(
         hex(&convert_utn57_to_zvvnmod(
@@ -63,10 +74,32 @@ fn an_mvs_spelling_of_the_same_boundary_reaches_the_same_hub_text() {
 }
 
 #[test]
+fn a_stem_final_chachlag_vowel_carries_its_own_boundary_without_a_separator() {
+    // The whole word, so that both of its MVS are in view at once. ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ has
+    // two — and exactly one separator, because only one of them is a detached
+    // suffix. The other closes the stem: `E00D` is Aa:isol, the detached ᠠ
+    // itself, and writing `0020 E00D` in front of it would split ᠲᠠᠯ᠎ᠠ into a
+    // word ᠲᠠᠯ and a stray vowel. meco emits no separator there either.
+    assert_eq!(TAL_A_YIN_HUB, "E042 E005 E03B E00D 0020 E04D E006 E00C");
+
+    // The stem alone, with nothing after it to separate from.
+    // ᠲᠠᠯ᠎ᠠ
+    assert_eq!(
+        hex(&convert_utn57_to_zvvnmod("\u{1832}\u{1820}\u{182F}\u{180E}\u{1820}").unwrap()),
+        "E042 E005 E03B E00D"
+    );
+    // ᠰᠢᠨ᠎ᠡ, where the chachlag ᠡ merges into the preceding ᠨ as `E077`.
+    assert_eq!(
+        hex(&convert_utn57_to_zvvnmod("\u{1830}\u{1822}\u{1828}\u{180E}\u{1821}").unwrap()),
+        "E03C E006 E077"
+    );
+}
+
+#[test]
 fn a_lone_boundary_converts_in_both_directions() {
-    assert_eq!(convert_utn57_to_zvvnmod("\u{180E}").unwrap(), "\u{202F}");
-    assert_eq!(convert_utn57_to_zvvnmod("\u{202F}").unwrap(), "\u{202F}");
-    assert_eq!(convert_zvvnmod_to_utn57("\u{202F}").unwrap(), "\u{180E}");
+    assert_eq!(convert_utn57_to_zvvnmod("\u{180E}").unwrap(), "\u{0020}");
+    assert_eq!(convert_utn57_to_zvvnmod("\u{202F}").unwrap(), "\u{0020}");
+    assert_eq!(convert_zvvnmod_to_utn57("\u{0020}").unwrap(), "\u{0020}");
 }
 
 #[test]
@@ -74,69 +107,46 @@ fn a_boundary_before_a_consonant_initial_suffix_survives_on_its_own() {
     // ᠶᠢᠨ behind a boundary, with no stem in front of it.
     assert_eq!(
         hex(&convert_utn57_to_zvvnmod("\u{180E}\u{1836}\u{1822}\u{1828}").unwrap()),
-        "202F E04D E006 E00C"
+        "0020 E04D E006 E00C"
     );
 }
 
 #[test]
-fn a_vowel_initial_detached_suffix_keeps_its_merged_chachlag_spelling() {
-    // A boundary before a chachlag ᠠ/ᠡ is carried by the merged chachlag glyph
-    // itself, so no separator is emitted. Both baselines are meco's hub text.
-    // ᠲᠠᠯ᠎ᠠ
-    assert_eq!(
-        hex(&convert_utn57_to_zvvnmod("\u{1832}\u{1820}\u{182F}\u{180E}\u{1820}").unwrap()),
-        "E042 E005 E03B E00D"
-    );
-    // ᠰᠢᠨ᠎ᠡ
-    assert_eq!(
-        hex(&convert_utn57_to_zvvnmod("\u{1830}\u{1822}\u{1828}\u{180E}\u{1821}").unwrap()),
-        "E03C E006 E077"
-    );
-}
-
-/// The property the two directions owe: a detached suffix boundary reaches the
-/// far side of a conversion, for consonant-initial and vowel-initial suffixes
-/// alike.
-#[test]
-fn a_detached_suffix_boundary_survives_a_conversion_in_both_directions() {
-    let words = [
-        // ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ — consonant-initial, and a chachlag ᠠ ahead of it.
-        "\u{1832}\u{1820}\u{182F}\u{180E}\u{1820}\u{202F}\u{1836}\u{1822}\u{1828}",
-        // ᠮᠣᠩᠭᠣᠯ ᠤᠨ — vowel-initial.
-        "\u{182E}\u{1823}\u{1829}\u{182D}\u{1823}\u{182F}\u{202F}\u{1824}\u{1828}",
-        // ᠬᠡᠯᠡ ᠪᠡᠨ — a bowed consonant, which recomposes into a merged glyph.
-        "\u{182C}\u{1821}\u{182F}\u{1821}\u{202F}\u{182A}\u{1821}\u{1828}",
-    ];
-    for word in words {
-        let zvvnmod = convert_utn57_to_zvvnmod(word).unwrap();
-        assert!(
-            zvvnmod.contains('\u{202F}'),
-            "{} lost its boundary: {}",
-            hex(word),
-            hex(&zvvnmod)
-        );
-
-        let utn57 = convert_zvvnmod_to_utn57(&zvvnmod).unwrap();
-        assert!(
-            utn57.contains('\u{180E}'),
-            "{} lost its boundary on the way back: {}",
-            hex(&zvvnmod),
-            hex(&utn57)
-        );
-    }
-}
-
-#[test]
-fn a_word_space_is_not_a_detached_suffix_boundary() {
-    // ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ written as two words. ZVVNMOD keeps the space, and ᠶ takes its
-    // word-initial glyph E050 rather than the suffix-initial E04D — meco's own
-    // hub text for the same two words.
+fn a_word_space_reaches_the_same_separator_but_a_different_suffix_glyph() {
+    // ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ written as two words. The separator is the same `U+0020` — what
+    // differs is ᠶ, which takes its word-initial `E050` rather than the
+    // suffix-initial `E04D` above. meco's own hub text for the same two words.
     assert_eq!(
         hex(&convert_utn57_to_zvvnmod(
             "\u{1832}\u{1820}\u{182F}\u{180E}\u{1820}\u{0020}\u{1836}\u{1822}\u{1828}"
         )
         .unwrap()),
         "E042 E005 E03B E00D 0020 E050 E006 E00C"
+    );
+
+    // ᠮᠠᠯ ᠤᠨ, the same contrast on a vowel-initial suffix: `E001` against the
+    // `E000 E008` a word-initial ᠤ is written with.
+    assert_eq!(
+        hex(&convert_utn57_to_zvvnmod("\u{182E}\u{1820}\u{182F}\u{202F}\u{1824}\u{1828}").unwrap()),
+        "E036 E005 E03B 0020 E001 E00C"
+    );
+    assert_eq!(
+        hex(&convert_utn57_to_zvvnmod("\u{182E}\u{1820}\u{182F}\u{0020}\u{1824}\u{1828}").unwrap()),
+        "E036 E005 E03B 0020 E000 E008 E00C"
+    );
+}
+
+#[test]
+fn the_hub_text_reads_back_with_the_stem_boundary_intact_and_the_suffix_detached() {
+    // ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ on the hub, read back. The stem's own MVS returns, carried by
+    // `E00D`. The suffix boundary returns as the `U+0020` the hub spells it
+    // with: telling it from a word space needs the lexical suffix table this
+    // crate has no counterpart for, so ᠶᠢᠨ reads back as a word of its own.
+    let hub = "\u{E042}\u{E005}\u{E03B}\u{E00D}\u{0020}\u{E04D}\u{E006}\u{E00C}";
+
+    assert_eq!(
+        hex(&convert_zvvnmod_to_utn57(hub).unwrap()),
+        "1832 1820 182F 180E 1820 0020 1822 180B 1822 180D 1820 180C"
     );
 }
 
@@ -151,26 +161,19 @@ fn a_word_space_stays_a_word_space_through_both_directions() {
 }
 
 #[test]
-fn the_boundary_is_read_back_as_mvs_and_delimits_the_runs_it_separates() {
-    // The hub text above, read back. ᠶᠢᠨ is positioned as its own word, exactly
-    // as a detached suffix is, and the boundary returns as MVS.
-    let hub = "\u{E042}\u{E005}\u{E03B}\u{E00D}\u{202F}\u{E04D}\u{E006}\u{E00C}";
+fn zvvnmod_text_carrying_an_older_boundary_spelling_still_reads_it_back_as_mvs() {
+    // 0.1.1 spelled the boundary `U+180E` and 0.1.2 spelled it `U+202F`. Neither
+    // is what ZVVNMOD writes, and neither is emitted any more, but text already
+    // stored in those spellings still reaches the same MVS.
+    let hub_0_1_1 = "\u{E042}\u{E005}\u{E03B}\u{E00D}\u{180E}\u{E04D}\u{E006}\u{E00C}";
+    let hub_0_1_2 = "\u{E042}\u{E005}\u{E03B}\u{E00D}\u{202F}\u{E04D}\u{E006}\u{E00C}";
 
     assert_eq!(
-        hex(&convert_zvvnmod_to_utn57(hub).unwrap()),
+        hex(&convert_zvvnmod_to_utn57(hub_0_1_2).unwrap()),
         "1832 1820 182F 180E 1820 180E 1822 180B 1822 180D 1820 180C"
     );
-}
-
-#[test]
-fn zvvnmod_text_carrying_the_old_utn57_control_still_reads_its_boundary_back() {
-    // Text this crate emitted before 0.1.2 spelled the boundary U+180E. It is
-    // not a ZVVNMOD code, so it passes through — and lands on the same MVS.
-    let old = "\u{E042}\u{E005}\u{E03B}\u{E00D}\u{180E}\u{E04D}\u{E006}\u{E00C}";
-    let current = "\u{E042}\u{E005}\u{E03B}\u{E00D}\u{202F}\u{E04D}\u{E006}\u{E00C}";
-
     assert_eq!(
-        convert_zvvnmod_to_utn57(old).unwrap(),
-        convert_zvvnmod_to_utn57(current).unwrap()
+        convert_zvvnmod_to_utn57(hub_0_1_1).unwrap(),
+        convert_zvvnmod_to_utn57(hub_0_1_2).unwrap()
     );
 }

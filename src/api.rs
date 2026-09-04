@@ -49,8 +49,10 @@ impl From<mongol_norm::Error> for Utn57TextConversionError {
 
 /// UTN #57 `MVS`, the written-unit spelling of a detached-suffix boundary.
 ///
-/// The inverse of [`ZVVNMOD_SUFFIX_SEPARATOR`](crate::ZVVNMOD_SUFFIX_SEPARATOR):
-/// what the reverse direction writes as `U+202F` is read back as this.
+/// What a boundary spelling this crate still recognizes on input — `U+202F` from
+/// 0.1.2, `U+180E` from 0.1.1 — is read back as. ZVVNMOD's own `U+0020` is a
+/// space in both directions; see
+/// [`ZVVNMOD_SUFFIX_SEPARATOR`](crate::ZVVNMOD_SUFFIX_SEPARATOR).
 const UTN57_SUFFIX_SEPARATOR: char = '\u{180E}';
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -158,12 +160,14 @@ fn reconstruct_complete_text(
 /// Convert complete text containing ZVVNMOD shape runs to canonical UTN #57 output.
 ///
 /// Formal ZVVNMOD shape runs are normalized in process by the `mongol-norm`
-/// crate. `U+202F`, the detached-suffix boundary ZVVNMOD writes between a stem
-/// and its detached suffix, delimits the runs on either side of it and is read
-/// back as UTN #57 `MVS`. Characters outside the formal ZVVNMOD shape inventory,
-/// including punctuation, digits, whitespace, ordinary Unicode, emoji, and
-/// non-ZVVNMOD private-use values, preserve their order and code points — the
-/// `U+0020` ZVVNMOD writes between words included.
+/// crate. Characters outside the formal ZVVNMOD shape inventory, including
+/// punctuation, digits, whitespace, ordinary Unicode, emoji, and non-ZVVNMOD
+/// private-use values, preserve their order and code points. `U+0020` is among
+/// them: ZVVNMOD spells a detached-suffix boundary and a word space alike, and
+/// telling them apart needs a lexical suffix table this crate has no counterpart
+/// for, so a boundary reaches ZVVNMOD intact and comes back as the space it is.
+/// The `U+202F` 0.1.2 emitted still delimits the runs on either side of it and is
+/// read back as UTN #57 `MVS`, so stored text keeps its boundary.
 /// Legacy ZVVNMOD `U+E140..=U+E144` FVS1-FVS4/MVS controls are excluded.
 ///
 /// # Errors
@@ -302,8 +306,9 @@ impl From<Utn57ReverseError> for ZvvnmodTextConversionError {
 ///
 /// Runs of Mongolian word characters — letters, FVS, MVS, NNBSP, nirugu and
 /// ZWJ — are shaped, positioned, and spelled in ZVVNMOD. A detached-suffix
-/// boundary the chachlag rules did not consume is spelled `U+202F`, so
-/// [`convert_zvvnmod_to_utn57`] can tell it from the `U+0020` between words.
+/// boundary the chachlag rules did not consume is spelled `U+0020`, the same
+/// character ZVVNMOD writes between two words — the hub marks the difference in
+/// the suffix-initial glyph that follows, not in the separator.
 /// Every other character preserves its order and code point, mirroring
 /// [`convert_zvvnmod_to_utn57`]'s treatment of text outside the ZVVNMOD shape
 /// inventory.

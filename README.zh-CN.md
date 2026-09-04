@@ -240,8 +240,8 @@ normalization，不需要任何安装步骤。
 完整文本分类器只转换139个正式 ZVVNMOD shape codes，其中包含 ZVVNMOD 自己的 Nirugu 编码。
 标准 Unicode `U+180A` Nirugu、`U+180E` MVS 和输入 `U+200D` ZWJ
 都没有 ZVVNMOD shaping 语义：本库原样保留它们，并以它们分隔相邻 shape runs。
-`U+202F` 同样分隔相邻 runs，但它不是 passthrough：它是[分写后缀边界](#分写后缀边界)，
-读回时还原为 UTN #57 `MVS`。
+0.1.2 曾用 `U+202F` 写[分写后缀边界](#分写后缀边界)，它同样分隔相邻 runs，
+但不是 passthrough：读回时还原为 UTN #57 `MVS`。
 normalizer 在编码 positioned written units 时可能自行输出 ZWJ；
 该后端输出同样原样保留，不会拿输入 ZWJ 去替换或去重。正式 shape inventory 之外
 的所有字符——包括 Unicode 标点、数字、空白、普通混合文本、emoji 和非 ZVVNMOD PUA——
@@ -279,26 +279,38 @@ utn57-to-zvvnmod '<mongolian-text>'
 
 ### 分写后缀边界
 
-词干与其分写后缀之间的边界，UTN #57 写作 `MVS`，ZVVNMOD 写作 `U+202F`；
-普通词间空格两边都写作 `U+0020`：
+词干与其分写后缀之间的边界，UTN #57 写作 `MVS`；ZVVNMOD 写作普通的 `U+0020`
+——与它写在两词之间的字符完全相同：
 
 | | UTN #57 | ZVVNMOD |
 |---|---|---|
-| 分写后缀 | `MVS`（`U+180E`），输入亦接受 `U+202F` | `U+202F` |
+| 分写后缀 | `MVS`（`U+180E`），输入亦接受 `U+202F` | `U+0020` |
 | 词间空格 | `U+0020` | `U+0020` |
 
-两个方向都翻译它。ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ——`1832 1820 182F 180E 1820 202F 1836 1822 1828`
-——转换为 `E042 E005 E03B E00D 202F E04D E006 E00C`，读回时 `MVS` 完好。两种空格
-必须分开才能做到这一点：若都写成 `U+0020`，反向转换只能猜哪些空格分词、哪些分写后缀。
+ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ——`1832 1820 182F 180E 1820 202F 1836 1822 1828`——转换为
+`E042 E005 E03B E00D 0020 E04D E006 E00C`，与 meco 对同一个词的 hub 文本逐字符一致。
 
-chachlag ᠠ/ᠡ 之前的边界不需要分隔符——十条 chachlag 行把 `MVS` 吃进联合字形，
-上面的 `E03B E00D` 就是其中一条。`U+202F` 是边界而不是 shape，因此没有正式
-inventory 编码；分类器把它报告为 `ZvvnmodTextCharacterKind::SuffixSeparator`。
+hub 并没有丢掉这个区别，只是把它挪了个地方：ZVVNMOD 用**边界之后的那个字形**
+标记分写后缀，而不是用边界本身。起首于后缀的 ᠶ 是 `E04D`，而自成一词的 ᠶ 是
+`E050`；起首于后缀的 ᠤ 是 `E001`，而词首 ᠤ 是 `E000 E008`。所以把 ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ
+当两个词写，得到的是 `E042 E005 E03B E00D 0020 E050 E006 E00C`——同一个分隔符，
+不同的 ᠶ。
+
+因此，要从 `U+0020` 还原出 `MVS`，就得拿这些字形去查一张后缀词表；meco 有这张表，
+本库没有对应物。`convert_zvvnmod_to_utn57` 把该空格照实还原为空格，分写后缀读回时
+成为独立的一个词。
+
+chachlag ᠠ/ᠡ 之前的边界根本不需要分隔符——十条 chachlag 行把 `MVS` 吃进联合字形。
+上面 `E03B E00D` 里的 `E00D` 就是 `Aa:isol`，即那个分写的 ᠠ 本身，也正是它把
+ᠲᠠᠯ᠎ᠠ 自己的 `MVS` 带回反向转换。若在它前面写出 `0020 E00D`，反而会把词干切成
+一个词 ᠲᠠᠯ 加一个孤立元音。
 
 0.1.1 及之前，该边界以原始 `U+180E` 进入 ZVVNMOD。那是 UTN #57 的控制码而不是
 ZVVNMOD 的，下游各 spoke 都把它渲染成一个多余控制符
-（[meco-rust#22](https://github.com/Satsrag/meco-rust/issues/22)）。ZVVNMOD 输入中的
-`U+180E` 仍然原样穿过并落到同一个 `MVS`，所以旧版本写出的文本边界不丢。
+（[meco-rust#22](https://github.com/Satsrag/meco-rust/issues/22)）。0.1.2 把它换成
+`U+202F`，那同样不是 ZVVNMOD 写的字符。两种写法在输入端仍被接受并落到同一个
+`MVS`，所以旧版本写出的文本边界不丢；分类器把它们报告为
+`ZvvnmodTextCharacterKind::SuffixSeparator`。
 
 ### 联合字形由运行时合并，不写进表
 

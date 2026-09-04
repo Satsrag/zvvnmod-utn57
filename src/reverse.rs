@@ -7,21 +7,27 @@ use std::fmt;
 /// The longest source sequence in the reverse relation: the chachlag triples.
 const LONGEST_RULE: usize = 3;
 
-/// How ZVVNMOD spells a detached-suffix boundary: `U+202F NARROW NO-BREAK SPACE`.
+/// How ZVVNMOD spells a detached-suffix boundary: an ordinary `U+0020 SPACE`.
 ///
 /// A boundary before a chachlag ᠠ/ᠡ is carried by the merged chachlag glyph, so
 /// the ten `X:fina MVS Aa:isol` rules consume their `MVS` and emit no separator.
-/// Every other `MVS` record is a boundary of its own, and ZVVNMOD keeps it
-/// distinct from the `U+0020` it writes between words — which is what lets
-/// [`convert_zvvnmod_to_utn57`] read the boundary back as `MVS` without having to
-/// guess which spaces are suffix boundaries.
+/// Every other `MVS` record is a boundary of its own, and ZVVNMOD writes it with
+/// the same character it writes between two words.
 ///
-/// `U+180E MONGOLIAN VOWEL SEPARATOR` is the UTN #57 spelling of the boundary,
-/// not the ZVVNMOD one. Emitting it verbatim leaks a UTN #57 code point into
-/// ZVVNMOD text, which every downstream spoke then renders as a stray control.
+/// ZVVNMOD carries the distinction in the *glyph after* the boundary rather than
+/// in the boundary character. A detached suffix takes a suffix-initial glyph —
+/// `E04D` for ᠶᠢᠨ, `E001` for ᠤᠨ — where the same letters opening a word of their
+/// own take `E050` and `E000 E008`. Reading a `MVS` back out of a `U+0020`
+/// therefore means matching those glyphs against a lexical suffix table, which
+/// this crate has no counterpart for; the boundary reaches ZVVNMOD intact and
+/// [`convert_zvvnmod_to_utn57`] returns it as the space it is.
+///
+/// Neither `U+180E MONGOLIAN VOWEL SEPARATOR`, the UTN #57 spelling, nor the
+/// `U+202F` 0.1.2 chose, is what ZVVNMOD writes. Both leak a code point no
+/// downstream spoke expects at a boundary; both are still accepted on input.
 ///
 /// [`convert_zvvnmod_to_utn57`]: crate::convert_zvvnmod_to_utn57
-pub const ZVVNMOD_SUFFIX_SEPARATOR: ZvvnmodCode = ZvvnmodCode(0x202F);
+pub const ZVVNMOD_SUFFIX_SEPARATOR: ZvvnmodCode = ZvvnmodCode(0x0020);
 
 /// Failure while converting positioned UTN #57 written units to ZVVNMOD.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -122,7 +128,7 @@ pub fn recompose_zvvnmod_codes(codes: &[ZvvnmodCode]) -> Vec<ZvvnmodCode> {
 /// (`X:fina MVS Aa:isol` → one merged code) before the single-unit rows, then
 /// [`recompose_zvvnmod_codes`] merges component runs into their merged glyphs.
 /// A `MVS` record no chachlag rule consumed is emitted as
-/// [`ZVVNMOD_SUFFIX_SEPARATOR`], the `U+202F` ZVVNMOD writes a detached-suffix
+/// [`ZVVNMOD_SUFFIX_SEPARATOR`], the `U+0020` ZVVNMOD writes a detached-suffix
 /// boundary with.
 ///
 /// # Errors
