@@ -7,14 +7,21 @@ use std::fmt;
 /// The longest source sequence in the reverse relation: the chachlag triples.
 const LONGEST_RULE: usize = 3;
 
-/// Standard Unicode `U+180E MONGOLIAN VOWEL SEPARATOR`.
+/// How ZVVNMOD spells a detached-suffix boundary: `U+202F NARROW NO-BREAK SPACE`.
 ///
-/// ZVVNMOD has no formal code for it — [`classify_zvvnmod_text_character`] treats
-/// U+180E as passthrough — so a `MVS` record that no chachlag rule consumed is
-/// emitted verbatim, mirroring the forward direction.
+/// A boundary before a chachlag ᠠ/ᠡ is carried by the merged chachlag glyph, so
+/// the ten `X:fina MVS Aa:isol` rules consume their `MVS` and emit no separator.
+/// Every other `MVS` record is a boundary of its own, and ZVVNMOD keeps it
+/// distinct from the `U+0020` it writes between words — which is what lets
+/// [`convert_zvvnmod_to_utn57`] read the boundary back as `MVS` without having to
+/// guess which spaces are suffix boundaries.
 ///
-/// [`classify_zvvnmod_text_character`]: crate::classify_zvvnmod_text_character
-const STANDARD_MVS: ZvvnmodCode = ZvvnmodCode(0x180E);
+/// `U+180E MONGOLIAN VOWEL SEPARATOR` is the UTN #57 spelling of the boundary,
+/// not the ZVVNMOD one. Emitting it verbatim leaks a UTN #57 code point into
+/// ZVVNMOD text, which every downstream spoke then renders as a stray control.
+///
+/// [`convert_zvvnmod_to_utn57`]: crate::convert_zvvnmod_to_utn57
+pub const ZVVNMOD_SUFFIX_SEPARATOR: ZvvnmodCode = ZvvnmodCode(0x202F);
 
 /// Failure while converting positioned UTN #57 written units to ZVVNMOD.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -114,8 +121,9 @@ pub fn recompose_zvvnmod_codes(codes: &[ZvvnmodCode]) -> Vec<ZvvnmodCode> {
 /// Reviewed longest-match replacement resolves the chachlag triples
 /// (`X:fina MVS Aa:isol` → one merged code) before the single-unit rows, then
 /// [`recompose_zvvnmod_codes`] merges component runs into their merged glyphs.
-/// A `MVS` record no chachlag rule consumed is emitted as standard
-/// `U+180E`, which the forward direction treats as passthrough.
+/// A `MVS` record no chachlag rule consumed is emitted as
+/// [`ZVVNMOD_SUFFIX_SEPARATOR`], the `U+202F` ZVVNMOD writes a detached-suffix
+/// boundary with.
 ///
 /// # Errors
 ///
@@ -141,9 +149,9 @@ pub fn convert_utn57_run_to_zvvnmod(
         };
         debug_assert!(rule.sources.len() <= LONGEST_RULE);
         if rule.targets.is_empty() {
-            // MVS is structural, not a missing glyph: pass it through.
+            // MVS is structural, not a missing glyph: spell the boundary.
             if units[index] == crate::UTN57_MVS_CONTROL {
-                output.push(STANDARD_MVS);
+                output.push(ZVVNMOD_SUFFIX_SEPARATOR);
                 index += 1;
                 continue;
             }
@@ -223,12 +231,12 @@ mod tests {
     }
 
     #[test]
-    fn a_lone_mvs_passes_through_as_standard_unicode() {
+    fn a_lone_mvs_becomes_the_zvvnmod_suffix_separator() {
         let units = [UTN57_B_INIT, UTN57_MVS_CONTROL, UTN57_A_MEDI];
 
         assert_eq!(
             convert_utn57_run_to_zvvnmod(&units).unwrap(),
-            [crate::B_INIT, STANDARD_MVS, crate::A_MEDI]
+            [crate::B_INIT, ZVVNMOD_SUFFIX_SEPARATOR, crate::A_MEDI]
         );
     }
 
