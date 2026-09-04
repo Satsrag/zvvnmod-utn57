@@ -349,6 +349,16 @@ written the same way as a two-unit sequence that also occurs in real words.
 Reverse conversion emits the shared spelling either way — the ambiguity is the
 forward direction's to resolve.
 
+`convert_zvvnmod_run` resolves the two `Dd` rows by context, the way
+`mongol-norm` does (rule III.2e): ᠳ is devsger — the ᠳ that closes a syllable —
+only behind a vowel, which is what makes it a coda. So a bowl behind a consonant
+is that consonant's own vowel (ᠮᠣᠩᠭᠣᠯ, ᠬᠦᠮᠦᠨ, ᠮᠣᠳᠣᠨ) and only a bowl behind a
+vowel closes a syllable (ᠨᠤᠭᠤᠳ, ᠤᠯᠤᠰᠤᠳ). The spelling is genuinely lexical where
+both readings sit behind a vowel, so this is the better default rather than a
+decision procedure. `H:medi` is still read as the composite wherever its
+spelling occurs, and `K`/`K2` is the caller's to resolve through
+`Utn57KVariant`.
+
 For the same reason, `Unicode → ZVVNMOD → Unicode` is not lossless and is not a
 correctness metric here. The property the table owes is
 `positioned units → ZVVNMOD → positioned units`, which `tests/reverse_round_trip.rs`

@@ -241,14 +241,102 @@ fn resolve_candidates<'a>(
     })
 }
 
+/// Is this written unit a vowel?
+///
+/// An exhaustive `match` rather than a lookup, for the reason
+/// [`crate::normalize`] gives for its own: `utn57_mapping.rs` is generated, so a
+/// unit the generator adds has to fail this crate's build rather than default
+/// to a consonant and change how a bowl beside it reads.
+const fn is_vowel(unit: Utn57WrittenUnit) -> bool {
+    match unit {
+        Utn57WrittenUnit::A
+        | Utn57WrittenUnit::Aa
+        | Utn57WrittenUnit::I
+        | Utn57WrittenUnit::Ix
+        | Utn57WrittenUnit::O
+        | Utn57WrittenUnit::U
+        | Utn57WrittenUnit::Ue
+        | Utn57WrittenUnit::Ux => true,
+        Utn57WrittenUnit::B
+        | Utn57WrittenUnit::B2
+        | Utn57WrittenUnit::C
+        | Utn57WrittenUnit::Ch
+        | Utn57WrittenUnit::Cr
+        | Utn57WrittenUnit::D
+        | Utn57WrittenUnit::Dd
+        | Utn57WrittenUnit::F
+        | Utn57WrittenUnit::G
+        | Utn57WrittenUnit::Gx
+        | Utn57WrittenUnit::H
+        | Utn57WrittenUnit::Hr
+        | Utn57WrittenUnit::Hx
+        | Utn57WrittenUnit::J
+        | Utn57WrittenUnit::K
+        | Utn57WrittenUnit::K2
+        | Utn57WrittenUnit::L
+        | Utn57WrittenUnit::M
+        | Utn57WrittenUnit::N
+        | Utn57WrittenUnit::P
+        | Utn57WrittenUnit::R
+        | Utn57WrittenUnit::Rh
+        | Utn57WrittenUnit::S
+        | Utn57WrittenUnit::Sh
+        | Utn57WrittenUnit::Sz
+        | Utn57WrittenUnit::T
+        | Utn57WrittenUnit::W
+        | Utn57WrittenUnit::Y
+        | Utn57WrittenUnit::Z
+        | Utn57WrittenUnit::Zr
+        | Utn57WrittenUnit::Nirugu
+        | Utn57WrittenUnit::MVS => false,
+    }
+}
+
+/// Does every `Dd` this rule spells sit behind a vowel?
+///
+/// ZVVNMOD writes `Dd` — the devsger ᠳ that closes a syllable — as a bowl and a
+/// tooth, the same two codes as an `O:medi` vowel followed by a tooth of its
+/// own. `data/utn57-zvvnmod-map.csv` records both readings as conformant UTN,
+/// with 17 witnesses for `O:medi + A:medi` and 51 for `O:medi + A:fina`, and
+/// leaves the choice here: "reverse conversion emits the shared spelling either
+/// way; picking between them is the forward direction's problem". Longest match
+/// alone never picks — the two-code `Dd` rules simply outrank the one-code bowl,
+/// so every bowl before a tooth read as `Dd` and its vowel was lost.
+///
+/// `mongol-norm` decides it by rule III.2e: ᠳ is devsger only behind a vowel,
+/// which is what makes it a coda. So a bowl behind a consonant is that
+/// consonant's own vowel — ᠮᠣᠩᠭᠣᠯ, ᠬᠦᠮᠦᠨ, ᠮᠣᠳᠣᠨ — and only a bowl behind a vowel
+/// closes a syllable — ᠨᠤᠭᠤᠳ, ᠤᠯᠤᠰᠤᠳ.
+///
+/// `preceding` is the last unit already emitted, and a `Dd` a rule spells after
+/// a unit of its own is judged against that one, so the reviewed particle rows
+/// that carry their own vowel ahead of a `Dd` need no exception.
+fn devsger_readings_hold(
+    rule: &ZvvnmodToUtn57Mapping,
+    preceding: Option<Utn57PositionedWrittenUnit>,
+) -> bool {
+    rule.targets
+        .iter()
+        .enumerate()
+        .filter(|(_, target)| target.written_unit == Utn57WrittenUnit::Dd)
+        .all(|(offset, _)| {
+            offset
+                .checked_sub(1)
+                .map(|previous| rule.targets[previous])
+                .or(preceding)
+                .is_some_and(|unit| is_vowel(unit.written_unit))
+        })
+}
+
 /// Convert one ZVVNMOD written-form run to reviewed UTN #57 units.
 ///
 /// The function discards legacy controls, applies `Ir_fina` replacement,
 /// decomposes general merged codes, and then applies reviewed longest-match
-/// mapping. Equal-longest candidates use positional fallback/override and
-/// registered semantic resolution; unresolved families return a typed error.
-/// Reviewed MVS targets are preserved. The function does not yet reconstruct
-/// ZWJ or particle boundaries.
+/// mapping among the rules whose reading holds where they matched. Equal-longest
+/// candidates use positional fallback/override and registered semantic
+/// resolution; unresolved families return a typed error. Reviewed MVS targets
+/// are preserved. The function does not yet reconstruct ZWJ or particle
+/// boundaries.
 pub fn convert_zvvnmod_run(
     input: &[ZvvnmodCode],
 ) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57ConversionError> {
@@ -277,9 +365,16 @@ pub fn convert_zvvnmod_run_with_options(
     let mut output = Vec::new();
     let mut index = 0;
     while index < input.len() {
+        // Every ZVVNMOD code has a single-code rule, and a single-code rule
+        // spells no `Dd`, so a rule is always left to match and the loop always
+        // advances.
+        let applies = |rule: &ZvvnmodToUtn57Mapping| {
+            input[index..].starts_with(rule.sources)
+                && devsger_readings_hold(rule, output.last().copied())
+        };
         let longest = ZVVNMOD_TO_UTN57_MAPPINGS
             .iter()
-            .filter(|rule| input[index..].starts_with(rule.sources))
+            .filter(|rule| applies(rule))
             .map(|rule| rule.sources.len())
             .max()
             .ok_or(Utn57MappingError {
@@ -288,9 +383,7 @@ pub fn convert_zvvnmod_run_with_options(
             })?;
         let candidates: Vec<_> = ZVVNMOD_TO_UTN57_MAPPINGS
             .iter()
-            .filter(|rule| {
-                rule.sources.len() == longest && input[index..].starts_with(rule.sources)
-            })
+            .filter(|rule| rule.sources.len() == longest && applies(rule))
             .collect();
         let rule = resolve_candidates(
             &candidates,

@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 use zvvnmod_utn57::{
-    convert_zvvnmod_run, Utn57PositionedWrittenUnit, ZvvnmodCode, ZVVNMOD_CODES,
+    convert_zvvnmod_run, Utn57PositionedWrittenUnit, ZvvnmodCode, A_INIT, ZVVNMOD_CODES,
     ZVVNMOD_CODE_DECOMPOSITIONS,
 };
 
@@ -20,11 +20,24 @@ const CODE_NAMES: &str = include_str!("../src/generated/zvvnmod_codes.rs");
 /// round-trip without the caller supplying the variant.
 const K2_ROWS: [&str; 3] = ["K2:init", "K2:medi", "K2:fina"];
 
+/// `Dd` is the devsger ᠳ that closes a syllable, and ZVVNMOD writes it as a bowl
+/// and a tooth — the same two codes as an `O:medi` vowel followed by a tooth of
+/// its own. Both readings occur in real words, so the forward converter picks
+/// between them the way `mongol-norm` does (rule III.2e): ᠳ is devsger only
+/// behind a vowel, which is what makes it a coda.
+///
+/// A row on its own has nothing behind it, so these two cannot round-trip
+/// standalone — the bowl is read as the vowel it is when nothing precedes it.
+/// `the_devsger_rows_round_trip_behind_a_vowel` puts them in the context that
+/// makes them devsger and checks them there.
+const DEVSGER_ROWS: [&str; 2] = ["Dd:medi", "Dd:fina"];
+
 /// UTN units that ZVVNMOD writes as a sequence of other units: it has no
 /// separate glyph for them.
 ///
-/// All nine round-trip through the forward map, which maps each shared spelling
-/// back to its composite. Six of the nine are unambiguous in practice. Their two-unit reading is legal
+/// Six of the nine are unambiguous in practice, and those round-trip through the
+/// forward map, which maps each shared spelling back to its composite. Their
+/// two-unit reading is legal
 /// UTN spelling but not conformant, and it never occurs: counted over 2268
 /// shaped samples (this crate's 276-word natural list plus mongol-norm's 1992
 /// golden vectors), `A:init Aa:isol`, `A:medi Aa:isol`, `O:medi Aa:isol`,
@@ -37,6 +50,11 @@ const K2_ROWS: [&str; 3] = ["K2:init", "K2:medi", "K2:fina"];
 /// `Dd:medi` against `O:medi A:medi` (17 witnesses, ᠮᠣᠩᠭᠣᠯ), `Dd:fina` against
 /// `O:medi A:fina` (51, ᠬᠦᠮᠦᠨ) and `H:medi` against `A:medi A:medi` (85,
 /// ᠲᠡᠩᠷᠢ). ZVVNMOD cannot tell those apart, so the trip back has to pick one.
+///
+/// The two `Dd` rows are picked by context — see [`DEVSGER_ROWS`] — so they
+/// round-trip only behind a vowel. `H:medi` is still resolved to the composite
+/// wherever its spelling occurs, which is the reading ᠠᠪᠤᠭᠰᠠᠨ wants and the
+/// wrong one for ᠲᠡᠩᠷᠢ; nothing here has changed for it.
 ///
 /// `every_composite_unit_is_still_ambiguous` derives this list from the table
 /// and asserts it is exactly these, so a table change surfaces here.
@@ -161,7 +179,7 @@ fn every_reverse_row_names_real_zvvnmod_codes() {
 fn every_reverse_row_round_trips_through_the_forward_converter() {
     let mut failures = Vec::new();
     for row in rows() {
-        if K2_ROWS.contains(&row.sources.as_str()) {
+        if K2_ROWS.contains(&row.sources.as_str()) || DEVSGER_ROWS.contains(&row.sources.as_str()) {
             continue;
         }
         let units = convert_zvvnmod_run(&recompose(&row.codes))
@@ -196,6 +214,58 @@ fn the_k2_rows_are_the_only_ones_the_forward_converter_resolves_to_another_unit(
             "{} should resolve to its K counterpart",
             row.sources
         );
+    }
+}
+
+/// The `Dd` rows in the context that makes them devsger: behind a vowel.
+///
+/// `A_INIT` spells `A:init`, so the bowl that follows it closes a syllable and
+/// the composite is the reading — which is how ᠨᠤᠭᠤᠳ and ᠤᠯᠤᠰᠤᠳ keep their ᠳ.
+#[test]
+fn the_devsger_rows_round_trip_behind_a_vowel() {
+    for row in rows()
+        .into_iter()
+        .filter(|r| DEVSGER_ROWS.contains(&r.sources.as_str()))
+    {
+        let mut codes = vec![A_INIT];
+        codes.extend_from_slice(&row.codes);
+        let units = convert_zvvnmod_run(&recompose(&codes))
+            .unwrap_or_else(|error| panic!("{}: {error}", row.sources));
+        let spelled = units
+            .iter()
+            .map(|unit| spell(*unit))
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert_eq!(
+            spelled,
+            format!("A:init {}", row.sources),
+            "{} should be devsger behind a vowel",
+            row.sources
+        );
+    }
+}
+
+/// And with nothing behind it, the same spelling is the bowl vowel it is — the
+/// reading ᠮᠣᠩᠭᠣᠯ, ᠬᠦᠮᠦᠨ and ᠮᠣᠳᠣᠨ want, where the bowl sits behind a consonant.
+#[test]
+fn a_devsger_row_on_its_own_reads_as_a_bowl_vowel_and_a_tooth() {
+    for row in rows()
+        .into_iter()
+        .filter(|r| DEVSGER_ROWS.contains(&r.sources.as_str()))
+    {
+        let units = convert_zvvnmod_run(&recompose(&row.codes))
+            .unwrap_or_else(|error| panic!("{}: {error}", row.sources));
+        let spelled = units
+            .iter()
+            .map(|unit| spell(*unit))
+            .collect::<Vec<_>>()
+            .join(" ");
+        let rival = COMPOSITE_UNITS
+            .iter()
+            .find(|(unit, _)| *unit == row.sources)
+            .map(|(_, pair)| *pair)
+            .expect("a devsger row is a composite row");
+        assert_eq!(spelled, rival, "{} with nothing behind it", row.sources);
     }
 }
 

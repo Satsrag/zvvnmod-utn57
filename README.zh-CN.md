@@ -327,6 +327,13 @@ ZVVNMOD 编码的是字形，因此合并了 UTN #57 保留的区分：`K` 与 `
 `Dd:medi`、`Dd:fina`、`H:medi` 各自与一个同样出现在真实词里的两单位序列写法相同。
 反向输出共享写法即可——消歧是正向方向的事。
 
+`convert_zvvnmod_run` 按上下文消歧两条 `Dd` 行，做法与 `mongol-norm` 的规则
+III.2e 一致：ᠳ 只有跟在元音后面才是 devsger（收音节的那个 ᠳ），这正是它成为
+韵尾的条件。因此跟在辅音后面的碗是该辅音自己的元音（ᠮᠣᠩᠭᠣᠯ、ᠬᠦᠮᠦᠨ、ᠮᠣᠳᠣᠨ），
+只有跟在元音后面的碗才收音节（ᠨᠤᠭᠤᠳ、ᠤᠯᠤᠰᠤᠳ）。两种读法都跟在元音后面时，
+区分完全取决于词汇，所以这是更好的默认值，而不是判定程序。`H:medi` 出现该写法
+时仍按合成单位读取；`K`/`K2` 则由调用方通过 `Utn57KVariant` 决定。
+
 同理，`Unicode → ZVVNMOD → Unicode` 本就有损，不能用作正确性标准。这张表真正
 该保证的是 `positioned units → ZVVNMOD → positioned units`，
 `tests/reverse_round_trip.rs` 对每一行都做了检查。
