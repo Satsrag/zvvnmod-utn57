@@ -277,7 +277,7 @@ The data flow mirrors the forward direction:
 ```text
 complete text containing Mongolian words
 → split word runs from passthrough spans
-→ shape each run with mongol-norm and recover each unit's joining position
+→ shape each run with mongol-norm's public duplicate-free written-unit stream and recover each unit's joining position
 → replace positioned units with ZVVNMOD codes by reviewed longest match
 → recompose component runs into merged ZVVNMOD glyphs
 → interleave the unchanged passthrough spans
@@ -346,8 +346,14 @@ Substituting a near glyph would change the text silently, which is what
 ZVVNMOD encodes glyph shapes, so it merges distinctions UTN #57 keeps: `K` and
 `K2` share one glyph outright, and `Dd:medi`, `Dd:fina` and `H:medi` are each
 written the same way as a two-unit sequence that also occurs in real words.
-Reverse conversion emits the shared spelling either way — the ambiguity is the
-forward direction's to resolve.
+`mongol-norm` 0.2 supplies one duplicate-free public written-unit stream. It
+expands the three conformant collisions (`Dd:medi → O:medi A:medi`, `Dd:fina →
+O:medi A:fina`, and `H:medi → A:medi A:medi`) before this crate maps the units.
+It also contracts `A:medi Aa:fina` only when an immediately preceding bowed
+written unit (`B`, `P`, `F`, `G`, `Gx`, `K`, or `K2`) licenses the shared ink;
+an intervening unit, structural boundary, or non-bowed unit prevents the
+contraction. Reverse conversion still emits the same shared ZVVNMOD spelling,
+so stored ZVVNMOD text and the reverse-output contract do not change.
 
 For the same reason, `Unicode → ZVVNMOD → Unicode` is not lossless and is not a
 correctness metric here. The property the table owes is
@@ -362,7 +368,7 @@ install:
 
 ```toml
 [dependencies]
-zvvnmod-utn57 = "0.1"
+zvvnmod-utn57 = "0.2"
 ```
 
 ```bash
@@ -398,9 +404,9 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-The `mongol-norm = "0.1.1"` requirement adopts the stable Rust API introduced in the 0.1
-series. `Cargo.lock` records the exact resolved release for reproducible application and CLI
-builds.
+The `mongol-norm = "0.2.0"` dependency provides the duplicate-free public written-unit stream
+used by reverse conversion. `Cargo.lock` records the exact resolved release for
+reproducible application and CLI builds.
 
 ## Validation
 
