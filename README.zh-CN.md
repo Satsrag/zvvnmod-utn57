@@ -266,7 +266,7 @@ utn57-to-zvvnmod '<mongolian-text>'
 ```text
 包含蒙古文单词的完整文本
 → 分离单词 runs 与 passthrough spans
-→ 用 mongol-norm shape 每个 run，并还原每个单位的连写位置
+→ 用 mongol-norm 的公开无重复 written-unit 流 shape 每个 run，并还原每个单位的连写位置
 → 按 reviewed longest match 把 positioned units 替换为 ZVVNMOD 码
 → 把组件序列合并成联合 ZVVNMOD 字形
 → 按原边界补回 passthrough spans
@@ -325,7 +325,12 @@ ZVVNMOD 的，下游各 spoke 都把它渲染成一个多余控制符
 
 ZVVNMOD 编码的是字形，因此合并了 UTN #57 保留的区分：`K` 与 `K2` 共用一个字形；
 `Dd:medi`、`Dd:fina`、`H:medi` 各自与一个同样出现在真实词里的两单位序列写法相同。
-反向输出共享写法即可——消歧是正向方向的事。
+`mongol-norm` 0.2 提供统一的公开无重复 written-unit 流：先展开三条 conformant
+碰撞（`Dd:medi → O:medi A:medi`、`Dd:fina → O:medi A:fina`、
+`H:medi → A:medi A:medi`），再交给本库映射。它只在紧邻的前一单位是 bowed
+written unit（`B`、`P`、`F`、`G`、`Gx`、`K`、`K2`）时折叠
+`A:medi Aa:fina`；中间插入其他单位、结构边界或前一单位不是 bowed 时均不折叠。
+反向转换仍输出同一个共享 ZVVNMOD 写法，因此既有 ZVVNMOD 文本和反向输出契约不变。
 
 同理，`Unicode → ZVVNMOD → Unicode` 本就有损，不能用作正确性标准。这张表真正
 该保证的是 `positioned units → ZVVNMOD → positioned units`，
@@ -338,7 +343,7 @@ Normalization 使用纯 Rust 的 [`mongol-norm`](https://crates.io/crates/mongol
 
 ```toml
 [dependencies]
-zvvnmod-utn57 = "0.1"
+zvvnmod-utn57 = "0.2"
 ```
 
 ```bash
@@ -372,8 +377,8 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-`mongol-norm = "0.1.1"` 采用 0.1 系列引入的稳定 Rust API。`Cargo.lock` 会记录精确解析到的
-版本，确保 application 和 CLI 构建可复现。
+`mongol-norm = "0.2.0"` 提供反向转换所消费的公开无重复 written-unit 流。
+`Cargo.lock` 会记录精确解析到的版本，确保 application 和 CLI 构建可复现。
 
 ## 验证
 

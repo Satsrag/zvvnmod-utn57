@@ -179,8 +179,11 @@ impl From<Error> for Utn57ShapeError {
 
 /// Shape one Mongolian word into positioned UTN #57 written units.
 ///
-/// `mongol-norm` returns a flat written-unit sequence; this recovers the
-/// joining position of each unit the way the positioned encoder infers it.
+/// `mongol-norm` returns its public, duplicate-free written-unit sequence; this
+/// recovers the joining position of each unit the way the positioned encoder
+/// infers it. In `mongol-norm` 0.2 this expands the three conformant composite
+/// collisions (`Dd:medi`, `Dd:fina`, and `H:medi`) and applies only the
+/// context-safe contractions, including `bowed + A:medi + Aa:fina`.
 /// The sequence is split at the structural units, and each remaining chain is
 /// padded by one slot on any side a joiner (`Nirugu` or `Zwj`) sits against, so
 /// a chain that continues past its edge is positioned as if it did. `Mvs` and
@@ -386,7 +389,8 @@ mod shaping_tests {
 
     #[test]
     fn a_word_positions_every_unit_by_its_place_in_the_chain() {
-        // ᠮᠣᠩᠭᠣᠯ shapes to M+O+A+G+Hx+O+L.
+        // ᠮᠣᠩᠭᠣᠯ publicly shapes to M+O+A+G+N+N+O+L: Hx:medi is expanded
+        // because it is the same ink as N:medi + N:medi.
         assert_eq!(
             spell(
                 &shape_utn57_positioned_written_units(
@@ -394,7 +398,7 @@ mod shaping_tests {
                 )
                 .unwrap()
             ),
-            "M:init O:medi A:medi G:medi Hx:medi O:medi L:fina"
+            "M:init O:medi A:medi G:medi N:medi N:medi O:medi L:fina"
         );
     }
 
