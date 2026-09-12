@@ -57,8 +57,22 @@ const UTN57_SUFFIX_SEPARATOR: char = '\u{180E}';
 enum ClassifiedTextPart {
     ZvvnmodRun(Vec<ZvvnmodCode>),
     /// A detached-suffix boundary, which delimits the runs on either side of it.
-    SuffixSeparator,
+    ///
+    /// `separators` is how many `U+202F` the input wrote there. Two or more in a
+    /// row still mark one boundary — there is nothing between them to separate —
+    /// so they fold into one part and are reported, not multiplied.
+    SuffixSeparator {
+        separators: usize,
+    },
     Passthrough(String),
+}
+
+fn append_suffix_separator(parts: &mut Vec<ClassifiedTextPart>) {
+    if let Some(ClassifiedTextPart::SuffixSeparator { separators }) = parts.last_mut() {
+        *separators += 1;
+    } else {
+        parts.push(ClassifiedTextPart::SuffixSeparator { separators: 1 });
+    }
 }
 
 fn append_zvvnmod_code(parts: &mut Vec<ClassifiedTextPart>, code: ZvvnmodCode) {
@@ -92,7 +106,7 @@ fn classify_complete_text(input: &str) -> Vec<ClassifiedTextPart> {
                 // breaking the surrounding ZVVNMOD run.
             }
             ZvvnmodTextCharacterKind::SuffixSeparator => {
-                parts.push(ClassifiedTextPart::SuffixSeparator);
+                append_suffix_separator(&mut parts);
             }
             ZvvnmodTextCharacterKind::Passthrough => {
                 append_passthrough(&mut parts, character);
@@ -105,7 +119,10 @@ fn classify_complete_text(input: &str) -> Vec<ClassifiedTextPart> {
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum ReconstructionStep {
     NormalizedRun(usize),
-    SuffixSeparator,
+    /// One boundary, however many separators the input wrote there.
+    SuffixSeparator {
+        separators: usize,
+    },
     Passthrough(String),
 }
 
@@ -131,8 +148,8 @@ fn build_normalization_plan(input: &str) -> Result<NormalizationPlan, Utn57TextC
                 positioned_written_unit_runs.push(positioned);
                 reconstruction.push(ReconstructionStep::NormalizedRun(run_index));
             }
-            ClassifiedTextPart::SuffixSeparator => {
-                reconstruction.push(ReconstructionStep::SuffixSeparator);
+            ClassifiedTextPart::SuffixSeparator { separators } => {
+                reconstruction.push(ReconstructionStep::SuffixSeparator { separators });
             }
             ClassifiedTextPart::Passthrough(text) => {
                 reconstruction.push(ReconstructionStep::Passthrough(text));
@@ -154,7 +171,7 @@ fn reconstruct_complete_text(
     for step in reconstruction {
         match step {
             ReconstructionStep::NormalizedRun(index) => output.push_str(&normalized_runs[index]),
-            ReconstructionStep::SuffixSeparator => output.push(UTN57_SUFFIX_SEPARATOR),
+            ReconstructionStep::SuffixSeparator { .. } => output.push(UTN57_SUFFIX_SEPARATOR),
             ReconstructionStep::Passthrough(text) => output.push_str(&text),
         }
     }
@@ -186,6 +203,20 @@ pub enum Utn57ConversionWarning {
         /// How many `U+200D` the run's spelling carries.
         count: usize,
     },
+    /// A detached-suffix boundary written with more than one separator.
+    ///
+    /// ZVVNMOD spells the boundary between a stem and its detached suffix as
+    /// `U+202F`; UTN #57 as one `MVS`, which can stand only once between the
+    /// stem's final letter and the suffix's first. Two or more separators in a
+    /// row still mark one boundary — there is nothing between them to separate
+    /// — so one MVS is written and the repetition is reported here, in case it
+    /// was not a slip (Satsrag/meco-rust#40).
+    CollapsedSuffixSeparators {
+        /// Ordinal of the boundary among the input's boundaries, from zero.
+        boundary: usize,
+        /// How many separators the input wrote there.
+        separators: usize,
+    },
 }
 
 impl fmt::Display for Utn57ConversionWarning {
@@ -205,6 +236,14 @@ impl fmt::Display for Utn57ConversionWarning {
                      joined-form glyph that ZVVNMOD has no unjoined form of"
                 )
             }
+            Self::CollapsedSuffixSeparators {
+                boundary,
+                separators,
+            } => write!(
+                formatter,
+                "suffix boundary {boundary} is written with {separators} separators; one MVS \
+                 is emitted, since a boundary can only be crossed once"
+            ),
         }
     }
 }
@@ -232,19 +271,36 @@ pub fn convert_zvvnmod_to_utn57_with_warnings(
     input: &str,
 ) -> Result<Utn57Conversion, Utn57TextConversionError> {
     let plan = build_normalization_plan(input)?;
-    let mut normalized_runs = Vec::with_capacity(plan.positioned_written_unit_runs.len());
+    let mut normalized_runs = vec![String::new(); plan.positioned_written_unit_runs.len()];
     let mut warnings = Vec::new();
-    for (run, units) in plan.positioned_written_unit_runs.iter().enumerate() {
-        let normalized = normalize_positioned_written_units(units)?;
-        let count = normalized.matches(INVENTED_JOINER).count();
-        if count > 0 {
-            warnings.push(Utn57ConversionWarning::InventedZwj {
-                run,
-                codes: plan.zvvnmod_runs[run].clone(),
-                count,
-            });
+    let mut boundary = 0;
+    // Walk the steps rather than the runs, so the warnings come out in input order.
+    for step in &plan.reconstruction {
+        match step {
+            ReconstructionStep::NormalizedRun(run) => {
+                let normalized =
+                    normalize_positioned_written_units(&plan.positioned_written_unit_runs[*run])?;
+                let count = normalized.matches(INVENTED_JOINER).count();
+                if count > 0 {
+                    warnings.push(Utn57ConversionWarning::InventedZwj {
+                        run: *run,
+                        codes: plan.zvvnmod_runs[*run].clone(),
+                        count,
+                    });
+                }
+                normalized_runs[*run] = normalized;
+            }
+            ReconstructionStep::SuffixSeparator { separators } => {
+                if *separators > 1 {
+                    warnings.push(Utn57ConversionWarning::CollapsedSuffixSeparators {
+                        boundary,
+                        separators: *separators,
+                    });
+                }
+                boundary += 1;
+            }
+            ReconstructionStep::Passthrough(_) => {}
         }
-        normalized_runs.push(normalized);
     }
     Ok(Utn57Conversion {
         text: reconstruct_complete_text(plan.reconstruction, normalized_runs),
@@ -260,7 +316,8 @@ const INVENTED_JOINER: char = '\u{200D}';
 /// Formal ZVVNMOD shape runs are normalized in process by the `mongol-norm`
 /// crate. `U+202F`, the detached-suffix boundary ZVVNMOD writes between a stem
 /// and its detached suffix, delimits the runs on either side of it and is read
-/// back as UTN #57 `MVS`. Characters outside the formal ZVVNMOD shape inventory,
+/// back as UTN #57 `MVS` — one MVS however many `U+202F` were written in a row,
+/// since a boundary can only be crossed once. Characters outside the formal ZVVNMOD shape inventory,
 /// including punctuation, digits, whitespace, ordinary Unicode, emoji, and
 /// non-ZVVNMOD private-use values, preserve their order and code points — the
 /// `U+0020` ZVVNMOD writes between words included.
@@ -317,6 +374,21 @@ mod tests {
     }
 
     #[test]
+    fn repeated_suffix_separators_fold_into_one_step() {
+        let plan = build_normalization_plan("\u{E001}\u{202F}\u{202F}\u{202F}\u{E00D}").unwrap();
+
+        assert_eq!(plan.positioned_written_unit_runs.len(), 2);
+        assert_eq!(
+            plan.reconstruction,
+            vec![
+                ReconstructionStep::NormalizedRun(0),
+                ReconstructionStep::SuffixSeparator { separators: 3 },
+                ReconstructionStep::NormalizedRun(1),
+            ]
+        );
+    }
+
+    #[test]
     fn the_suffix_separator_delimits_runs_as_its_own_step() {
         let plan = build_normalization_plan("\u{E001}\u{202F}\u{E00D}").unwrap();
 
@@ -325,7 +397,7 @@ mod tests {
             plan.reconstruction,
             vec![
                 ReconstructionStep::NormalizedRun(0),
-                ReconstructionStep::SuffixSeparator,
+                ReconstructionStep::SuffixSeparator { separators: 1 },
                 ReconstructionStep::NormalizedRun(1),
             ]
         );

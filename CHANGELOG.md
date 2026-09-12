@@ -2,7 +2,13 @@
 
 All notable changes to this project are documented here.
 
-## [Unreleased]
+## [0.3.1] - 2026-09-12
+
+### Fixed
+
+- Two or more `U+202F` in a row mark one detached-suffix boundary and are written as one `MVS`; `convert_zvvnmod_to_utn57_with_warnings` reports the repetition as `Utn57ConversionWarning::CollapsedSuffixSeparators`. Previously every separator became an `MVS`, which UTN #57 does not allow (Satsrag/meco-rust#40).
+
+## [0.3.0] - 2026-09-12
 
 ### Added
 
@@ -28,5 +34,6 @@ All notable changes to this project are documented here.
 - Add regressions for all three conformant collisions and the bowed/non-bowed `A + Aa` boundary.
 - Keep the generated-source, reverse-row, Rust, Python, documentation, package, and wasm gates release-blocking.
 
-[Unreleased]: https://github.com/Satsrag/zvvnmod-utn57/compare/v0.2.0...HEAD
+[0.3.1]: https://github.com/Satsrag/zvvnmod-utn57/releases/tag/v0.3.1
+[0.3.0]: https://github.com/Satsrag/zvvnmod-utn57/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Satsrag/zvvnmod-utn57/releases/tag/v0.2.0
