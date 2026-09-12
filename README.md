@@ -326,6 +326,14 @@ stray control ([meco-rust#22](https://github.com/Satsrag/meco-rust/issues/22)).
 `U+180E` in ZVVNMOD input still passes through onto the same `MVS`, so text
 written by an earlier release keeps its boundary.
 
+A boundary can only be crossed once, and `MVS` can stand only once between the
+stem's final letter and the suffix's first. So two or more `U+202F` in a row
+still mark one boundary — there is nothing between them to separate — and are
+written as one `MVS`; `convert_zvvnmod_to_utn57_with_warnings` reports the
+repetition as `Utn57ConversionWarning::CollapsedSuffixSeparators`, in case it
+was not a slip ([meco-rust#40](https://github.com/Satsrag/meco-rust/issues/40)).
+The reverse direction reads a doubled `MVS` as it was written.
+
 ### Merged glyphs are recomposed, not stored
 
 The table spells every unit in components; `recompose_zvvnmod_codes` merges them

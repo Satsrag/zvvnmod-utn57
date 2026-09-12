@@ -10,7 +10,7 @@ checksum = "c5fe4914d29fa1998a0c7b5aa753290bfa1c8efba4da02a99084ea04af0c395d"
 
 [[package]]
 name = "zvvnmod-utn57"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "mongol-norm",
 ]
