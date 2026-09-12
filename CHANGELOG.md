@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Added
+
+- `U+E096` (`G i O f`, `G_O_ISOL`): the word-initial G + O-final ligature the font-derived inventory lacked. It decomposes to `G_INIT O_FINA`, converts to `ᠭ᠌ᠥ᠌` without an invented ZWJ, and the reverse direction recomposes `G:init O:fina` into it (Satsrag/meco-rust#32).
+- `convert_zvvnmod_to_utn57_with_warnings`, returning the converted text together with a `Utn57ConversionWarning::InventedZwj` for every run the normalizer could only spell by inventing a ZWJ — the signature of a hub inventory gap. `convert_zvvnmod_to_utn57` is unchanged. The `zvvnmod-to-utn57` binary prints each warning to stderr.
+
+### Changed
+
+- The formal ZVVNMOD shape inventory is 140 codes; the decomposition map has 60 entries.
+
 ## [0.2.0] - 2026-09-06
 
 ### Changed
@@ -17,4 +28,5 @@ All notable changes to this project are documented here.
 - Add regressions for all three conformant collisions and the bowed/non-bowed `A + Aa` boundary.
 - Keep the generated-source, reverse-row, Rust, Python, documentation, package, and wasm gates release-blocking.
 
+[Unreleased]: https://github.com/Satsrag/zvvnmod-utn57/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/Satsrag/zvvnmod-utn57/releases/tag/v0.2.0

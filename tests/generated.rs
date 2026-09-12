@@ -88,7 +88,7 @@ fn rejected_inferred_chachlag_sequences_do_not_emit_mvs() {
 fn merged_code_maps_to_decomposed_code_sequence() {
     let map = zvvnmod_code_decomposition_map();
     assert_eq!(map.get(&B_I_INIT), Some(&[B_INIT, I_MEDI].as_slice()));
-    assert_eq!(map.len(), 59);
+    assert_eq!(map.len(), 60);
     assert_eq!(map.get(&N_AA_FINA), None);
     for &(merged, components) in ZVVNMOD_CODE_DECOMPOSITIONS {
         assert_eq!(map.get(&merged), Some(&components));

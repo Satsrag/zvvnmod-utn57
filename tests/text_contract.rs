@@ -3,8 +3,8 @@ use zvvnmod_utn57::{
 };
 
 #[test]
-fn formal_zvvnmod_shape_inventory_is_exactly_139_codes() {
-    assert_eq!(ZVVNMOD_CODES.len(), 139);
+fn formal_zvvnmod_shape_inventory_is_exactly_140_codes() {
+    assert_eq!(ZVVNMOD_CODES.len(), 140);
     assert!(zvvnmod_code('\u{E001}').is_some());
     assert!(zvvnmod_code('\u{E0E5}').is_some());
     assert_eq!(
