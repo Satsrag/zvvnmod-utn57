@@ -32,6 +32,7 @@ pub static ZVVNMOD_CODE_DECOMPOSITIONS: &[(ZvvnmodCode, &[ZvvnmodCode])] = &[
     (G_UE_ISOL, &[G_INIT, UE_FINA]),
     (G_A_INIT, &[G_INIT, A_MEDI]),
     (G_A_MEDI, &[G_MEDI, A_MEDI]),
+    (G_O_ISOL, &[G_INIT, O_FINA]),
     (G_I_INIT, &[G_INIT, I_MEDI]),
     (G_I_MEDI, &[G_MEDI, I_MEDI]),
     (G_I_FINA, &[G_MEDI, I_FINA]),

@@ -121,7 +121,12 @@ G_O_I_INIT → [G_INIT, O_MEDI, I_MEDI]
 
 This Map expands a merged ZVVNMOD code before conversion to UTN #57 written units. Its component-oriented output stays close to the UTN #57 representation. `Ir_fina` helper replacement must run before decomposition because it consumes the helper and changes the preceding merged code. If a required component code is absent from the CSV, no decomposition is invented.
 
-The formal inventory contains only explicit ZVVNMOD shapes from the font. Legacy
+The formal inventory contains only explicit ZVVNMOD shapes from the font, plus one
+code the font-derived list lacked: `U+E096` (`G i O f`, `G_O_ISOL`), the word-initial
+G + O-final ligature. Every other bowed consonant carries both a `X i O f` and a
+`X m O f` glyph; G had only `G m O f` (`U+E09C`), so a whole word such as ᠬᠦ reached
+the hub as a medial glyph and could only be spelled back with an invented ZWJ
+(Satsrag/meco-rust#32). Legacy
 FVS1/FVS2/FVS3/MVS/FVS4 values are not ZVVNMOD codes and are therefore not emitted as
 Rust constants. `discard_legacy_controls()` removes U+E140 through U+E144 from an
 input stream before `Ir_fina` replacement. Later mapping stages will reconstruct
@@ -247,14 +252,19 @@ let output = convert_zvvnmod_to_utn57(zvvnmod_text)?;
 `convert_zvvnmod_to_utn57` is the stable public boundary. It normalizes through the `mongol-norm`
 crate described below, and needs no setup step of any kind.
 
-The complete-text classifier converts only the formal 139-code ZVVNMOD shape inventory,
+The complete-text classifier converts only the formal 140-code ZVVNMOD shape inventory,
 which includes ZVVNMOD's own Nirugu code. Standard Unicode `U+180A` Nirugu, `U+180E` MVS,
 and input `U+200D` ZWJ have no ZVVNMOD shaping semantics: they pass through
 unchanged and delimit adjacent shape runs. `U+202F` also delimits adjacent runs, but it is
 not passthrough: it is the [detached-suffix boundary](#the-detached-suffix-boundary) and is
 read back as UTN #57 `MVS`.
 The normalizer may independently emit ZWJ while encoding positioned written units;
-that output is preserved without consuming or deduplicating input ZWJ. Every other character outside the formal shape inventory—including Unicode
+that output is preserved without consuming or deduplicating input ZWJ. Such a joiner
+is invented — input ZWJ never enters a run — and marks a run that begins or ends with a
+joined-form glyph ZVVNMOD has no unjoined form of. `convert_zvvnmod_to_utn57_with_warnings`
+returns the same text together with one `Utn57ConversionWarning::InventedZwj` per such run,
+naming the run's codes; the `zvvnmod-to-utn57` binary prints them to stderr. That is how the
+missing `G i O f` (Satsrag/meco-rust#32) showed up, and how the next gap will. Every other character outside the formal shape inventory—including Unicode
 punctuation, digits, whitespace, ordinary mixed text, emoji, and non-ZVVNMOD private-use
 values—preserves its original code point and order. Source-specific aliases such as MenkShape
 `U+E23F..=U+E242` belong to an upstream source converter and are not interpreted here. Legacy
@@ -333,7 +343,7 @@ merged and split reach different text in 86 of 118 cases.
 
 ### Units with no ZVVNMOD glyph are reported, not replaced
 
-Seven positioned units have no glyph in the 139-code ZVVNMOD inventory:
+Seven positioned units have no glyph in the 140-code ZVVNMOD inventory:
 `Gx:init`, `Gx:medi`, `Hx:fina`, `Ix:isol`, `N:fina`, `Sz:fina` and `Ux:isol`.
 `Hx:fina` and `N:fina` remain reachable inside their chachlag rows, which
 longest match finds first; a bare one returns

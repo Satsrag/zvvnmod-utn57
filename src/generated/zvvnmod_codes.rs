@@ -220,6 +220,8 @@ pub const G_UE_ISOL: ZvvnmodCode = ZvvnmodCode(0xE093);
 pub const G_A_INIT: ZvvnmodCode = ZvvnmodCode(0xE094);
 /// Code U+E095: G m A m (font).
 pub const G_A_MEDI: ZvvnmodCode = ZvvnmodCode(0xE095);
+/// Code U+E096: G i O f (font).
+pub const G_O_ISOL: ZvvnmodCode = ZvvnmodCode(0xE096);
 /// Code U+E097: G i I m (font).
 pub const G_I_INIT: ZvvnmodCode = ZvvnmodCode(0xE097);
 /// Code U+E098: G m I m (font).
@@ -399,6 +401,7 @@ pub static ZVVNMOD_CODES: &[ZvvnmodCode] = &[
     G_UE_ISOL,  // U+E093
     G_A_INIT,   // U+E094
     G_A_MEDI,   // U+E095
+    G_O_ISOL,   // U+E096
     G_I_INIT,   // U+E097
     G_I_MEDI,   // U+E098
     G_I_FINA,   // U+E099

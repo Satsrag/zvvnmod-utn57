@@ -1,5 +1,5 @@
 use std::process::ExitCode;
-use zvvnmod_utn57::convert_zvvnmod_to_utn57;
+use zvvnmod_utn57::convert_zvvnmod_to_utn57_with_warnings;
 
 fn main() -> ExitCode {
     let mut arguments = std::env::args();
@@ -15,9 +15,12 @@ fn main() -> ExitCode {
         return ExitCode::from(2);
     }
 
-    match convert_zvvnmod_to_utn57(&input) {
-        Ok(output) => {
-            println!("{output}");
+    match convert_zvvnmod_to_utn57_with_warnings(&input) {
+        Ok(conversion) => {
+            for warning in &conversion.warnings {
+                eprintln!("warning: {warning}");
+            }
+            println!("{}", conversion.text);
             ExitCode::SUCCESS
         }
         Err(error) => {
