@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here.
 
+## [0.3.2] - 2026-09-15
+
+### Fixed
+
+- A lone initial A or I (`U+E000`, `U+E04D`) converts to UTN #57 with a trailing ZWJ and reads back as the same glyph; written bare it read back as the isolated form (`A:isol` is `U+E000 U+E00D`, `I:isol` is `U+E01A`). The spelling comes from `mongol-norm` 0.2.1, now the minimum version, which gives a lone `A:init` / `I:init` the trailing ZWJ it already gave `O:init`; a lone initial consonant stays bare, since its isolated form is the initial unit (Satsrag/meco-rust#45).
+
 ## [0.3.1] - 2026-09-12
 
 ### Fixed
@@ -34,6 +40,7 @@ All notable changes to this project are documented here.
 - Add regressions for all three conformant collisions and the bowed/non-bowed `A + Aa` boundary.
 - Keep the generated-source, reverse-row, Rust, Python, documentation, package, and wasm gates release-blocking.
 
+[0.3.2]: https://github.com/Satsrag/zvvnmod-utn57/releases/tag/v0.3.2
 [0.3.1]: https://github.com/Satsrag/zvvnmod-utn57/releases/tag/v0.3.1
 [0.3.0]: https://github.com/Satsrag/zvvnmod-utn57/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Satsrag/zvvnmod-utn57/releases/tag/v0.2.0

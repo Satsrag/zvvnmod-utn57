@@ -1,6 +1,6 @@
 [package]
 name = "zvvnmod-utn57"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 rust-version = "1.82"
 description = "ZVVNMOD and UTN #57 written-form conversion primitives"
@@ -25,4 +25,4 @@ path = "src/bin/utn57-to-zvvnmod.rs"
 [dependencies]
 # Pure-Rust normalization backend. Cargo.lock pins the exact resolved release
 # for reproducible application and CLI builds.
-mongol-norm = "0.2.0"
+mongol-norm = "0.2.1"
