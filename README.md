@@ -422,7 +422,7 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-The `mongol-norm = "0.2.0"` dependency provides the duplicate-free public written-unit stream
+The `mongol-norm = "0.2.1"` dependency provides the duplicate-free public written-unit stream
 used by reverse conversion. `Cargo.lock` records the exact resolved release for
 reproducible application and CLI builds.
 

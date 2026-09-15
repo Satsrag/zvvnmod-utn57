@@ -377,7 +377,7 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-`mongol-norm = "0.2.0"` 提供反向转换所消费的公开无重复 written-unit 流。
+`mongol-norm = "0.2.1"` 提供反向转换所消费的公开无重复 written-unit 流。
 `Cargo.lock` 会记录精确解析到的版本，确保 application 和 CLI 构建可复现。
 
 ## 验证
