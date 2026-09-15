@@ -4,13 +4,13 @@ version = 4
 
 [[package]]
 name = "mongol-norm"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5fe4914d29fa1998a0c7b5aa753290bfa1c8efba4da02a99084ea04af0c395d"
+checksum = "cd0752860f67b606760031a3488e38e62792c6f7cc39d7e1a3e5bd2ec8f9bfa0"
 
 [[package]]
 name = "zvvnmod-utn57"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "mongol-norm",
 ]
