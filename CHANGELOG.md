@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Changed
+
+- Upgrade the normalization and shaping backend from `mongol-norm` 0.2.1 to `mongol-norm` 0.4.1 (`mng-canonical/5`).
+- Handle `WrittenUnit::Zwnj` (`U+200C ZERO WIDTH NON-JOINER`) as a structural non-joining break: just like `ZWJ`, `ZWNJ` determines the joining positions (`init` / `medi` / `fina` / `isol`) of adjacent letters without emitting a `U+200C` control into the ZVVNMOD stream, and `mongol-norm` 0.4.1 synthesizes `ZWNJ` across sub-chain boundaries when converting back to UTN #57 (omitting redundant `ZWNJ`s automatically).
+- Consecutive `MVS` controls in UTN #57 input now collapse into a single `WrittenUnit::Mvs` during shaping under `mongol-norm` 0.4.1, so `convert_utn57_to_zvvnmod` emits one `U+202F` boundary just as `convert_zvvnmod_to_utn57` emits one `MVS` for repeated `U+202F`.
+- Expand `Cr` (`U+1842`) to `O + O` in every position (`isol`, `init`, `medi`, `fina`).
+- Under `mng-canonical/5`'s redundant-ZWJ rules, edge joiners whose joined and unjoined forms are reviewed as equivalent (such as `G_O_FINA` `U+E09C`, `G_O_MEDI` `U+E09B`, `U_FINA` `U+E011`, `I_FINA` `U+E00E`, and lone medial consonants like `B_MEDI` `U+E02A`) are dropped during normalization and no longer trigger `Utn57ConversionWarning::InventedZwj`; runs whose joined form differs from the unjoined form (such as `A_INIT` `U+E000`, `O_INIT` `U+E001`, `I_INIT` `U+E04D`, `A_MEDI` `U+E005`, `O_FINA` `U+E00F`, and `B_FINA` `U+E02B`) retain their invented ZWJ and warning.
+
 ## [0.3.2] - 2026-09-15
 
 ### Fixed

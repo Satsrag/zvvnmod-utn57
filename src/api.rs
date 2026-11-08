@@ -191,10 +191,15 @@ pub enum Utn57ConversionWarning {
     /// Input ZWJ is passthrough and never enters a run, so every joiner inside
     /// a normalized run is one `mongol-norm` invented: the run begins or ends
     /// with a joined-form glyph (a `medi` at the start, a `medi` or `init` at
-    /// the end) and ZVVNMOD has no unjoined form of it. `U+E09C` (`G m O f`)
+    /// the end) that ZVVNMOD has no unjoined form of, and whose joined and
+    /// unjoined forms are not reviewed as equivalent under `mongol-norm`'s
+    /// canonical control policy (`mng-canonical/5`). `U+E09C` (`G m O f`)
     /// standing for a whole word was the first such gap (Satsrag/meco-rust#32);
-    /// it is now spelled by `U+E096`. A lone joined-form glyph a source really
-    /// did write is reported the same way — the ink is right either way.
+    /// it is now spelled by `U+E096` (and under `mng-canonical/5`, `G:medi` at
+    /// a segment start is also equivalent to `G:init`). A lone joined-form
+    /// glyph whose joined shape differs from its unjoined one (such as `U+E005`
+    /// `A m`, `U+E001` `O i`, or `U+E00F` `O f`) is reported the same way —
+    /// the ink is right either way.
     InventedZwj {
         /// Ordinal of the run among the input's ZVVNMOD runs, from zero.
         run: usize,
@@ -467,13 +472,15 @@ impl From<Utn57ReverseError> for ZvvnmodTextConversionError {
 
 /// Convert complete text containing Mongolian words to ZVVNMOD output.
 ///
-/// Runs of Mongolian word characters — letters, FVS, MVS, NNBSP, nirugu and
-/// ZWJ — are shaped, positioned, and spelled in ZVVNMOD. A detached-suffix
-/// boundary the chachlag rules did not consume is spelled `U+202F`, so
-/// [`convert_zvvnmod_to_utn57`] can tell it from the `U+0020` between words.
-/// Every other character preserves its order and code point, mirroring
-/// [`convert_zvvnmod_to_utn57`]'s treatment of text outside the ZVVNMOD shape
-/// inventory.
+/// Runs of Mongolian word characters — letters, FVS, MVS, NNBSP, nirugu, ZWJ
+/// and ZWNJ — are shaped, positioned, and spelled in ZVVNMOD. Just like ZWJ,
+/// ZWNJ determines the joining positions (`init` / `medi` / `fina` / `isol`) of
+/// the letters on either side of the break and is not emitted into the ZVVNMOD
+/// stream. A detached-suffix boundary the chachlag rules did not consume is
+/// spelled `U+202F`, so [`convert_zvvnmod_to_utn57`] can tell it from the
+/// `U+0020` between words. Every other character preserves its order and code
+/// point, mirroring [`convert_zvvnmod_to_utn57`]'s treatment of text outside
+/// the ZVVNMOD shape inventory.
 ///
 /// # Errors
 ///

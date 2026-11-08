@@ -42,9 +42,22 @@ fn public_api_converts_complete_mixed_text_in_one_call() {
 
 #[test]
 fn standard_nirugu_passes_through_between_independently_normalized_runs() {
+    // Standard U+180A Nirugu is passthrough (unlike ZVVNMOD's own U+E0E5
+    // NIRUGU), so E001 (O:init) and E011 (U:fina) normalize as two separate
+    // runs around it: O:init keeps its trailing ZWJ, and lone U:fina drops its
+    // redundant leading ZWJ under mng-canonical/5 (U:fina ≡ U:isol -> ᠤ᠋)
+    // instead of joining across the nirugu into ᠣ᠌.
     assert_eq!(
         convert_zvvnmod_to_utn57("\u{E001}\u{180A}\u{E011}").unwrap(),
-        "\u{1824}\u{180B}\u{200D}\u{180A}\u{200D}\u{1823}\u{180C}"
+        "\u{1824}\u{180B}\u{200D}\u{180A}\u{1824}\u{180B}"
+    );
+}
+
+#[test]
+fn standard_zwnj_passes_through_between_independently_normalized_runs() {
+    assert_eq!(
+        convert_zvvnmod_to_utn57("\u{E000}\u{E005}\u{E03B}\u{200C}\u{E00D}").unwrap(),
+        "\u{1820}\u{180B}\u{1820}\u{182F}\u{200C}\u{1820}\u{180C}"
     );
 }
 

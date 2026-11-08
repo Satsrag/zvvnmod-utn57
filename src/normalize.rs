@@ -110,7 +110,7 @@ pub fn normalize_positioned_written_units(
 ///
 /// The inverse of [`written_unit`], resolved by searching the reviewed
 /// inventory rather than by a second `match`, so the two cannot drift apart.
-/// Returns `None` for a unit outside the inventory, such as `Zwj`.
+/// Returns `None` for a unit outside the inventory, such as `Zwj` or `Zwnj`.
 fn utn57_written_unit(unit: WrittenUnit) -> Option<Utn57WrittenUnit> {
     UTN57_POSITIONED_WRITTEN_UNITS
         .iter()
@@ -181,14 +181,17 @@ impl From<Error> for Utn57ShapeError {
 ///
 /// `mongol-norm` returns its public, duplicate-free written-unit sequence; this
 /// recovers the joining position of each unit the way the positioned encoder
-/// infers it. In `mongol-norm` 0.2 this expands the three conformant composite
-/// collisions (`Dd:medi`, `Dd:fina`, and `H:medi`) and applies only the
-/// context-safe contractions, including `bowed + A:medi + Aa:fina`.
-/// The sequence is split at the structural units, and each remaining chain is
-/// padded by one slot on any side a joiner (`Nirugu` or `Zwj`) sits against, so
-/// a chain that continues past its edge is positioned as if it did. `Mvs` and
-/// `Nirugu` become `Control` records; `Zwj` supplies joining context and is not
-/// itself a record.
+/// infers it. In `mongol-norm` 0.4 (`mng-canonical/5`) this expands the single-unit
+/// duplicates (`Dd:medi`, `Dd:fina`, `H:medi`, `Hx:medi`, and `Cr` in every
+/// position), merges consecutive identical `Zwj`/`Zwnj`/`Mvs` controls, drops
+/// redundant `Zwj` and `Zwnj` units, and applies the context-safe tail-pair
+/// contractions, including `bowed + A:medi + Aa:fina`.
+/// The sequence is split at the structural units (`Mvs`, `Nirugu`, `Zwj`, `Zwnj`),
+/// and each remaining chain is padded by one slot on any side a joiner (`Nirugu`
+/// or `Zwj`) sits against, so a chain that continues past its edge is positioned
+/// as if it did. `Mvs` and `Nirugu` become `Control` records; `Zwj` (joining)
+/// and `Zwnj` (non-joining break) supply structural context and are not
+/// themselves records in the 97-unit inventory.
 ///
 /// A position of `Isol` that the reviewed inventory does not carry falls back to
 /// `Init`, matching how isolated forms borrow the initial glyph.
@@ -196,7 +199,7 @@ impl From<Error> for Utn57ShapeError {
 /// # Errors
 ///
 /// Returns [`Utn57ShapeError::Shape`] when `mongol-norm` rejects the text — it
-/// accepts only Mongolian letters, FVS, MVS, NNBSP, nirugu and ZWJ — and
+/// accepts only Mongolian letters, FVS, MVS, NNBSP, nirugu, ZWJ and ZWNJ — and
 /// [`Utn57ShapeError::UnsupportedWrittenUnit`] for a shaped unit outside the
 /// reviewed UTN #57 inventory.
 pub fn shape_utn57_positioned_written_units(
@@ -209,11 +212,8 @@ pub fn shape_utn57_positioned_written_units(
     let mut index = 0;
     while index < shape.len() {
         let unit = shape[index];
-        if matches!(
-            unit,
-            WrittenUnit::Mvs | WrittenUnit::Nirugu | WrittenUnit::Zwj
-        ) {
-            if unit != WrittenUnit::Zwj {
+        if unit.is_structural() {
+            if !matches!(unit, WrittenUnit::Zwj | WrittenUnit::Zwnj) {
                 let written = utn57_written_unit(unit)
                     .ok_or(Utn57ShapeError::UnsupportedWrittenUnit { index, unit })?;
                 records.push(Utn57PositionedWrittenUnit::new(
@@ -226,12 +226,7 @@ pub fn shape_utn57_positioned_written_units(
         }
         // A chain runs to the next structural unit.
         let start = index;
-        while index < shape.len()
-            && !matches!(
-                shape[index],
-                WrittenUnit::Mvs | WrittenUnit::Nirugu | WrittenUnit::Zwj
-            )
-        {
+        while index < shape.len() && !shape[index].is_structural() {
             index += 1;
         }
         let chain = &shape[start..index];
@@ -350,10 +345,28 @@ mod tests {
     }
 
     #[test]
-    fn declared_positions_must_match_the_chain_they_form() {
+    fn sub_chain_boundaries_synthesize_zwnj_where_needed() {
         let units = [
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Init),
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Init),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Fina),
+        ];
+
+        assert_eq!(
+            normalize_positioned_written_units(&units).unwrap(),
+            "\u{182a}\u{200c}\u{1820}\u{180b}\u{1820}\u{180c}"
+        );
+    }
+
+    #[test]
+    fn declared_positions_must_match_the_chain_they_form() {
+        // Nirugu joins onto the following sub-chain, so `[B:init, A:fina]` is
+        // padded on the left to a 3-slot chain (`medi`, `fina`), making `B:init`
+        // a genuine position mismatch within that sub-chain.
+        let units = [
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Nirugu, Utn57Position::Control),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Init),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Fina),
         ];
 
         assert_eq!(
@@ -411,6 +424,17 @@ mod shaping_tests {
                     .unwrap()
             ),
             "S:init I:medi N:fina Mvs Aa:isol"
+        );
+    }
+
+    #[test]
+    fn zwnj_splits_the_chain_without_emitting_a_control_record() {
+        // ᠠᠯ‌ᠠ᠌ shapes to A+A+L+Zwnj+Aa: ZWNJ breaks the joining chain without
+        // emitting a record in the 97-unit inventory.
+        let word = "\u{1820}\u{182F}\u{200C}\u{1820}\u{180C}";
+        assert_eq!(
+            spell(&shape_utn57_positioned_written_units(word).unwrap()),
+            "A:init A:medi L:fina Aa:isol"
         );
     }
 

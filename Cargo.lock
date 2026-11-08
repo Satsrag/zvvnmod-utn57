@@ -4,9 +4,9 @@ version = 4
 
 [[package]]
 name = "mongol-norm"
-version = "0.2.1"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd0752860f67b606760031a3488e38e62792c6f7cc39d7e1a3e5bd2ec8f9bfa0"
+checksum = "4b267ee25578136b59fea4728c09d25e7bd2082eb5f26c44ff2196b8c711c2fc"
 
 [[package]]
 name = "zvvnmod-utn57"

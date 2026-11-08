@@ -41,7 +41,7 @@ fn character_kind_contract_has_exactly_four_variants() {
 
 #[test]
 fn standard_nirugu_mvs_zwj_and_the_word_space_are_passthrough() {
-    for character in ['\u{180A}', '\u{180E}', '\u{200D}', '\u{0020}'] {
+    for character in ['\u{180A}', '\u{180E}', '\u{200D}', '\u{200C}', '\u{0020}'] {
         assert_eq!(
             classify_zvvnmod_text_character(character),
             ZvvnmodTextCharacterKind::Passthrough,

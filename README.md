@@ -254,14 +254,16 @@ crate described below, and needs no setup step of any kind.
 
 The complete-text classifier converts only the formal 140-code ZVVNMOD shape inventory,
 which includes ZVVNMOD's own Nirugu code. Standard Unicode `U+180A` Nirugu, `U+180E` MVS,
-and input `U+200D` ZWJ have no ZVVNMOD shaping semantics: they pass through
+input `U+200D` ZWJ, and `U+200C` ZWNJ have no ZVVNMOD shaping semantics: they pass through
 unchanged and delimit adjacent shape runs. `U+202F` also delimits adjacent runs, but it is
 not passthrough: it is the [detached-suffix boundary](#the-detached-suffix-boundary) and is
 read back as UTN #57 `MVS`.
 The normalizer may independently emit ZWJ while encoding positioned written units;
 that output is preserved without consuming or deduplicating input ZWJ. Such a joiner
 is invented — input ZWJ never enters a run — and marks a run that begins or ends with a
-joined-form glyph ZVVNMOD has no unjoined form of. `convert_zvvnmod_to_utn57_with_warnings`
+joined-form glyph ZVVNMOD has no unjoined form of, and whose joined and unjoined forms
+are not reviewed as equivalent under `mongol-norm` 0.4.1's canonical control policy
+(`mng-canonical/5`). `convert_zvvnmod_to_utn57_with_warnings`
 returns the same text together with one `Utn57ConversionWarning::InventedZwj` per such run,
 naming the run's codes; the `zvvnmod-to-utn57` binary prints them to stderr. That is how the
 missing `G i O f` (Satsrag/meco-rust#32) showed up, and how the next gap will. Every other character outside the formal shape inventory—including Unicode
@@ -309,7 +311,7 @@ ZVVNMOD writes it as `U+202F`, and an ordinary word space as `U+0020`:
 | detached suffix | `MVS` (`U+180E`), or `U+202F` on input | `U+202F` |
 | word space | `U+0020` | `U+0020` |
 
-Both directions translate it. ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ — `1832 1820 182F 180E 1820 202F 1836
+Both directions translate it. ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ — `1832 1820 182F 180E 1820 202F 1836
 1822 1828` — converts to `E042 E005 E03B E00D 202F E04D E006 E00C` and reads
 back with its `MVS` intact. The two spaces have to stay apart for that: spelling
 both `U+0020` would leave the reverse direction guessing which spaces separate
@@ -332,7 +334,21 @@ still mark one boundary — there is nothing between them to separate — and ar
 written as one `MVS`; `convert_zvvnmod_to_utn57_with_warnings` reports the
 repetition as `Utn57ConversionWarning::CollapsedSuffixSeparators`, in case it
 was not a slip ([meco-rust#40](https://github.com/Satsrag/meco-rust/issues/40)).
-The reverse direction reads a doubled `MVS` as it was written.
+Under `mongol-norm` 0.4 (`mng-canonical/5`), consecutive `MVS` controls in
+UTN #57 input also collapse into a single `Mvs` unit during shaping, so both
+directions fold a repeated boundary into one.
+
+### Non-joining breaks (`ZWNJ`, `U+200C`)
+
+In `mongol-norm` 0.4, `U+200C ZERO WIDTH NON-JOINER` is a Mongolian word
+character that breaks the cursive joining chain while remaining transparent to
+contextual shaping rules (such as vowel harmony), and redundant ZWNJs are
+dropped when the break does not change either adjacent letter's glyph form.
+Just like `ZWJ`, `ZWNJ` only determines the joining positions (`init` / `medi` /
+`fina` / `isol`) of adjacent units and is not emitted into the ZVVNMOD stream;
+when converting back to UTN #57, `mongol-norm` 0.4.1 synthesizes `ZWNJ` across
+sub-chain boundaries and keeps `U+200C` only where required to realize the
+target glyph shapes.
 
 ### Merged glyphs are recomposed, not stored
 
@@ -362,16 +378,19 @@ Substituting a near glyph would change the text silently, which is what
 ### What the reverse direction cannot recover
 
 ZVVNMOD encodes glyph shapes, so it merges distinctions UTN #57 keeps: `K` and
-`K2` share one glyph outright, and `Dd:medi`, `Dd:fina` and `H:medi` are each
-written the same way as a two-unit sequence that also occurs in real words.
-`mongol-norm` 0.2 supplies one duplicate-free public written-unit stream. It
-expands the three conformant collisions (`Dd:medi → O:medi A:medi`, `Dd:fina →
-O:medi A:fina`, and `H:medi → A:medi A:medi`) before this crate maps the units.
-It also contracts `A:medi Aa:fina` only when an immediately preceding bowed
-written unit (`B`, `P`, `F`, `G`, `Gx`, `K`, or `K2`) licenses the shared ink;
-an intervening unit, structural boundary, or non-bowed unit prevents the
-contraction. Reverse conversion still emits the same shared ZVVNMOD spelling,
-so stored ZVVNMOD text and the reverse-output contract do not change.
+`K2` share one glyph outright, and `Dd:medi`, `Dd:fina`, `H:medi`, `Hx:medi`,
+and `Cr` are each written the same way as a two-unit sequence that also occurs
+in real words. `mongol-norm` 0.4 (`mng-canonical/5`) supplies one duplicate-free
+public written-unit stream. It expands the single-unit duplicates (`Dd:medi →
+O:medi A:medi`, `Dd:fina → O:medi A:fina`, `H:medi → A:medi A:medi`, `Hx:medi →
+N:medi N:medi`, and `Cr → O + O` in every position), merges consecutive
+identical `ZWJ`, `ZWNJ`, and `MVS` controls, and drops redundant `ZWJ` and
+`ZWNJ` units before this crate maps the units. It also contracts `A:medi
+Aa:fina` only when an immediately preceding bowed written unit (`B`, `P`, `F`,
+`G`, `Gx`, `K`, or `K2`) licenses the shared ink; an intervening unit,
+structural boundary, or non-bowed unit prevents the contraction. Reverse
+conversion still emits the same shared ZVVNMOD spelling, so stored ZVVNMOD text
+and the reverse-output contract do not change.
 
 For the same reason, `Unicode → ZVVNMOD → Unicode` is not lossless and is not a
 correctness metric here. The property the table owes is
@@ -422,7 +441,7 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-The `mongol-norm = "0.2.1"` dependency provides the duplicate-free public written-unit stream
+The `mongol-norm = "0.4.1"` dependency provides the duplicate-free public written-unit stream
 used by reverse conversion. `Cargo.lock` records the exact resolved release for
 reproducible application and CLI builds.
 
