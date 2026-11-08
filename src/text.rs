@@ -20,14 +20,10 @@ pub enum ZvvnmodTextCharacterKind {
 /// writes a detached-suffix boundary with it, and the conversion facade reads it
 /// back as UTN #57 `MVS`. Standard Unicode `U+180A MONGOLIAN NIRUGU`,
 /// `U+180E MONGOLIAN VOWEL SEPARATOR`, `U+200D ZERO WIDTH JOINER`, and
-/// `U+200C ZERO WIDTH NON-JOINER` (emitted by [`convert_utn57_to_zvvnmod`]
-/// between ZWNJ-delimited segments) are outside both roles and pass through
-/// unchanged — delimiting the ZVVNMOD shape runs on either side so multi-code
-/// rules never cross them — as does the `U+0020` ZVVNMOD writes between words.
-/// All other characters, including punctuation, numbers, and non-ZVVNMOD
-/// private-use values, also pass through unchanged.
-///
-/// [`convert_utn57_to_zvvnmod`]: crate::convert_utn57_to_zvvnmod
+/// `U+200C ZERO WIDTH NON-JOINER` are outside both roles and pass through
+/// unchanged, as does the `U+0020` ZVVNMOD writes between words. All other
+/// characters, including punctuation, numbers, and non-ZVVNMOD private-use
+/// values, also pass through unchanged.
 pub fn classify_zvvnmod_text_character(character: char) -> ZvvnmodTextCharacterKind {
     if matches!(character as u32, 0xE140..=0xE144) {
         return ZvvnmodTextCharacterKind::LegacyControl;

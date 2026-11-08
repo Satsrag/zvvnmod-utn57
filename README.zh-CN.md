@@ -243,7 +243,7 @@ normalization，不需要任何安装步骤。
 `U+202F` 同样分隔相邻 runs，但它不是 passthrough：它是[分写后缀边界](#分写后缀边界)，
 读回时还原为 UTN #57 `MVS`。
 normalizer 在编码 positioned written units 时可能自行输出 ZWJ；
-该后端输出同样原样保留，不会拿输入 ZWJ 去替换或去重。该连接符由后端补出——输入 ZWJ 不会进入 run——标记该 run 以 ZVVNMOD 没有独立形式的连写字形开头或结尾，且在 `mongol-norm` 0.4.0 的规范控制策略（`mng-canonical/5`）下其连写与非连写字形不等价。`convert_zvvnmod_to_utn57_with_warnings` 返回相同文本，并对每个此类 run 附带一条 `Utn57ConversionWarning::InventedZwj`（指明该 run 的编码）；`zvvnmod-to-utn57` 二进制将其打印到 stderr。正式 shape inventory 之外
+该后端输出同样原样保留，不会拿输入 ZWJ 去替换或去重。该连接符由后端补出——输入 ZWJ 不会进入 run——标记该 run 以 ZVVNMOD 没有独立形式的连写字形开头或结尾，且在 `mongol-norm` 0.4.1 的规范控制策略（`mng-canonical/5`）下其连写与非连写字形不等价。`convert_zvvnmod_to_utn57_with_warnings` 返回相同文本，并对每个此类 run 附带一条 `Utn57ConversionWarning::InventedZwj`（指明该 run 的编码）；`zvvnmod-to-utn57` 二进制将其打印到 stderr。正式 shape inventory 之外
 的所有字符——包括 Unicode 标点、数字、空白、普通混合文本、emoji 和非 ZVVNMOD PUA——
 都按原 code point 和原顺序保留。MenkShape `U+E23F..=U+E242` 等 source-specific aliases
 由上游 source converter 处理，本库不解释其语义。旧 ZVVNMOD `U+E140..=U+E144`
@@ -266,9 +266,9 @@ utn57-to-zvvnmod '<mongolian-text>'
 ```text
 包含蒙古文单词的完整文本
 → 分离单词 runs 与 passthrough spans
-→ 用 mongol-norm 的公开无重复 written-unit 流整体 shape 每个单词
-→ 在保留下来的 `Zwnj` 断开处切分片段，还原每个单位的连写位置，并在片段之间输出 `U+200C`
-→ 在每个片段内把组件序列合并成联合 ZVVNMOD 字形
+→ 用 mongol-norm 的公开无重复 written-unit 流 shape 每个 run，并还原每个单位的连写位置
+→ 按 reviewed longest match 把 positioned units 替换为 ZVVNMOD 码
+→ 把组件序列合并成联合 ZVVNMOD 字形
 → 按原边界补回 passthrough spans
 ```
 
@@ -287,7 +287,7 @@ utn57-to-zvvnmod '<mongolian-text>'
 | 分写后缀 | `MVS`（`U+180E`），输入亦接受 `U+202F` | `U+202F` |
 | 词间空格 | `U+0020` | `U+0020` |
 
-两个方向都翻译它。ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ——`1832 1820 182F 180E 1820 202F 1836 1822 1828`
+两个方向都翻译它。ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ——`1832 1820 182F 180E 1820 202F 1836 1822 1828`
 ——转换为 `E042 E005 E03B E00D 202F E04D E006 E00C`，读回时 `MVS` 完好。两种空格
 必须分开才能做到这一点：若都写成 `U+0020`，反向转换只能猜哪些空格分词、哪些分写后缀。
 
@@ -303,19 +303,17 @@ ZVVNMOD 的，下游各 spoke 都把它渲染成一个多余控制符
 同一处分写后缀边界只能跨越一次，`MVS` 在词干末字母与后缀首字母之间也只能出现一次。
 因此连续两个及以上的 `U+202F` 仍只标记一个边界，正向转换只输出一个 `MVS`，并由
 `convert_zvvnmod_to_utn57_with_warnings` 报告 `Utn57ConversionWarning::CollapsedSuffixSeparators`
-（[meco-rust#40](https://github.com/Satsrag/meco-rust/issues/40)）。在 `mongol-norm` 0.4.0
+（[meco-rust#40](https://github.com/Satsrag/meco-rust/issues/40)）。在 `mongol-norm` 0.4
 （`mng-canonical/5`）下，UTN #57 输入中连续的 `MVS` 控制符在 shaping 阶段也会折叠为单个
 `Mvs` 单位，因此正反两个方向都会将重复边界折叠为一个。
 
 ### 非连写断开（`ZWNJ`，`U+200C`）
 
-在 `mongol-norm` 0.4.0 中，`U+200C ZERO WIDTH NON-JOINER` 是蒙古文词内字符：它断开连写链，
+在 `mongol-norm` 0.4 中，`U+200C ZERO WIDTH NON-JOINER` 是蒙古文词内字符：它断开连写链，
 同时对上下文规则（如元音和谐）保持透明，且当断开不改变相邻字母字形时会作为冗余 ZWNJ 被移除。
-`convert_utn57_to_zvvnmod` 先对整个蒙古文单词执行 shaping，再在保留下来的
-`WrittenUnit::Zwnj` 处切分片段，分别转换每个片段并在片段之间输出 `U+200C`。正向转换
-`convert_zvvnmod_to_utn57` 将 `U+200C` 作为 passthrough 处理，从而把两侧的 ZVVNMOD
-编码切分为独立的 run，确保多码规则（如 `ᠠᠯ‌ᠠ᠌` 上的 `L_FINA AA_FINA → L:fina MVS Aa:isol`）
-绝不会跨越 ZWNJ 边界匹配。
+与 `ZWJ` 一样，`ZWNJ` 仅用于确定相邻单位的连写位置（`init` / `medi` / `fina` / `isol`），
+不在 ZVVNMOD 字形码流中输出 `U+200C`；当从 ZVVNMOD 转回 UTN #57 时，`mongol-norm` 0.4.1
+会在断开的子链边界自动补上 `ZWNJ`，并仅在必须靠 `ZWNJ` 才能实现字形时保留 `U+200C`。
 
 ### 联合字形由运行时合并，不写进表
 
@@ -393,7 +391,7 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-`mongol-norm = "0.4.0"` 提供反向转换所消费的公开无重复 written-unit 流。
+`mongol-norm = "0.4.1"` 提供反向转换所消费的公开无重复 written-unit 流。
 `Cargo.lock` 会记录精确解析到的版本，确保 application 和 CLI 构建可复现。
 
 ## 验证

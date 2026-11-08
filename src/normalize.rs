@@ -177,94 +177,6 @@ impl From<Error> for Utn57ShapeError {
     }
 }
 
-/// Position a slice of shaped `mongol-norm` written units.
-///
-/// `base_index` is the slice's starting offset in the full shaped word, so
-/// [`Utn57ShapeError::UnsupportedWrittenUnit`] always reports the offending
-/// unit's index in the whole word's shape.
-///
-/// All four structural units (`Mvs`, `Nirugu`, `Zwj`, `Zwnj`) split letter
-/// chains (`WrittenUnit::is_structural`). Only `Nirugu` and `Zwj` are joiners
-/// that pad an adjacent letter chain's slot count; `Mvs` and `Zwnj` are
-/// non-joining breaks, so the letter before them takes `fina` (or `isol`) and
-/// the letter after them takes `init` (or `isol`). `Mvs` and `Nirugu` emit
-/// `Control` records; `Zwj` and `Zwnj` have no counterpart in the 97-unit
-/// `Utn57WrittenUnit` inventory and emit no record here.
-fn position_written_unit_slice(
-    shape: &[WrittenUnit],
-    base_index: usize,
-) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57ShapeError> {
-    let is_joiner = |unit: WrittenUnit| matches!(unit, WrittenUnit::Nirugu | WrittenUnit::Zwj);
-
-    let mut records = Vec::with_capacity(shape.len());
-    let mut index = 0;
-    while index < shape.len() {
-        let unit = shape[index];
-        if unit.is_structural() {
-            if !matches!(unit, WrittenUnit::Zwj | WrittenUnit::Zwnj) {
-                let written =
-                    utn57_written_unit(unit).ok_or(Utn57ShapeError::UnsupportedWrittenUnit {
-                        index: base_index + index,
-                        unit,
-                    })?;
-                records.push(Utn57PositionedWrittenUnit::new(
-                    written,
-                    Utn57Position::Control,
-                ));
-            }
-            index += 1;
-            continue;
-        }
-        // A chain runs to the next structural unit.
-        let start = index;
-        while index < shape.len() && !shape[index].is_structural() {
-            index += 1;
-        }
-        let chain = &shape[start..index];
-        let joined_left = start > 0 && is_joiner(shape[start - 1]);
-        let joined_right = index < shape.len() && is_joiner(shape[index]);
-        let count = chain.len() + usize::from(joined_left) + usize::from(joined_right);
-        for (offset, unit) in chain.iter().enumerate() {
-            let written =
-                utn57_written_unit(*unit).ok_or(Utn57ShapeError::UnsupportedWrittenUnit {
-                    index: base_index + start + offset,
-                    unit: *unit,
-                })?;
-            let mut position = slot_position(offset + usize::from(joined_left), count);
-            if position == Utn57Position::Isol && !is_reviewed(written, position) {
-                position = Utn57Position::Init;
-            }
-            records.push(Utn57PositionedWrittenUnit::new(written, position));
-        }
-    }
-    Ok(records)
-}
-
-/// Shape one Mongolian word as a whole, then split its positioned units at
-/// surviving [`WrittenUnit::Zwnj`] breaks.
-///
-/// [`Shaper::shape`] runs once over the entire `text` before splitting on
-/// `Zwnj`, so contextual shaping rules (such as vowel-harmony lookbehind across
-/// a ZWNJ), repeated-control deduplication (`ZWJ`, `ZWNJ`, `MVS`), and
-/// redundant-ZWNJ removal (`drop_redundant_zwnj`) operate with full word
-/// context. Splitting afterwards mirrors `mongol-norm` 0.4.0's own
-/// `encode_segments` and lets [`convert_utn57_to_zvvnmod`](crate::convert_utn57_to_zvvnmod)
-/// convert each ZWNJ-delimited segment independently and emit `U+200C` between
-/// them, preventing multi-unit reverse rules, glyph recomposition, and forward
-/// multi-code rules from matching across a ZWNJ break.
-pub(crate) fn shape_utn57_positioned_segments(
-    text: &str,
-) -> Result<Vec<Vec<Utn57PositionedWrittenUnit>>, Utn57ShapeError> {
-    let shape = shaper().shape(text)?;
-    let mut segments = Vec::new();
-    let mut base_index = 0;
-    for segment in shape.split(|&unit| unit == WrittenUnit::Zwnj) {
-        segments.push(position_written_unit_slice(segment, base_index)?);
-        base_index += segment.len() + 1;
-    }
-    Ok(segments)
-}
-
 /// Shape one Mongolian word into positioned UTN #57 written units.
 ///
 /// `mongol-norm` returns its public, duplicate-free written-unit sequence; this
@@ -294,7 +206,47 @@ pub fn shape_utn57_positioned_written_units(
     text: &str,
 ) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57ShapeError> {
     let shape = shaper().shape(text)?;
-    position_written_unit_slice(&shape, 0)
+    let is_joiner = |unit: WrittenUnit| matches!(unit, WrittenUnit::Nirugu | WrittenUnit::Zwj);
+
+    let mut records = Vec::with_capacity(shape.len());
+    let mut index = 0;
+    while index < shape.len() {
+        let unit = shape[index];
+        if unit.is_structural() {
+            if !matches!(unit, WrittenUnit::Zwj | WrittenUnit::Zwnj) {
+                let written = utn57_written_unit(unit)
+                    .ok_or(Utn57ShapeError::UnsupportedWrittenUnit { index, unit })?;
+                records.push(Utn57PositionedWrittenUnit::new(
+                    written,
+                    Utn57Position::Control,
+                ));
+            }
+            index += 1;
+            continue;
+        }
+        // A chain runs to the next structural unit.
+        let start = index;
+        while index < shape.len() && !shape[index].is_structural() {
+            index += 1;
+        }
+        let chain = &shape[start..index];
+        let joined_left = start > 0 && is_joiner(shape[start - 1]);
+        let joined_right = index < shape.len() && is_joiner(shape[index]);
+        let count = chain.len() + usize::from(joined_left) + usize::from(joined_right);
+        for (offset, unit) in chain.iter().enumerate() {
+            let written =
+                utn57_written_unit(*unit).ok_or(Utn57ShapeError::UnsupportedWrittenUnit {
+                    index: start + offset,
+                    unit: *unit,
+                })?;
+            let mut position = slot_position(offset + usize::from(joined_left), count);
+            if position == Utn57Position::Isol && !is_reviewed(written, position) {
+                position = Utn57Position::Init;
+            }
+            records.push(Utn57PositionedWrittenUnit::new(written, position));
+        }
+    }
+    Ok(records)
 }
 
 /// Failure while converting one ZVVNMOD run to canonical Mongolian Unicode.
@@ -393,10 +345,28 @@ mod tests {
     }
 
     #[test]
-    fn declared_positions_must_match_the_chain_they_form() {
+    fn sub_chain_boundaries_synthesize_zwnj_where_needed() {
         let units = [
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Init),
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Init),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Fina),
+        ];
+
+        assert_eq!(
+            normalize_positioned_written_units(&units).unwrap(),
+            "\u{182a}\u{200c}\u{1820}\u{180b}\u{1820}\u{180c}"
+        );
+    }
+
+    #[test]
+    fn declared_positions_must_match_the_chain_they_form() {
+        // Nirugu joins onto the following sub-chain, so `[B:init, A:fina]` is
+        // padded on the left to a 3-slot chain (`medi`, `fina`), making `B:init`
+        // a genuine position mismatch within that sub-chain.
+        let units = [
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Nirugu, Utn57Position::Control),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Init),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Fina),
         ];
 
         assert_eq!(
@@ -460,19 +430,12 @@ mod shaping_tests {
     #[test]
     fn zwnj_splits_the_chain_without_emitting_a_control_record() {
         // ᠠᠯ‌ᠠ᠌ shapes to A+A+L+Zwnj+Aa: ZWNJ breaks the joining chain without
-        // emitting a record in the 97-unit inventory, and `shape_utn57_positioned_segments`
-        // keeps the two segments distinct.
+        // emitting a record in the 97-unit inventory.
         let word = "\u{1820}\u{182F}\u{200C}\u{1820}\u{180C}";
         assert_eq!(
             spell(&shape_utn57_positioned_written_units(word).unwrap()),
             "A:init A:medi L:fina Aa:isol"
         );
-        let segments: Vec<String> = shape_utn57_positioned_segments(word)
-            .unwrap()
-            .iter()
-            .map(|segment| spell(segment))
-            .collect();
-        assert_eq!(segments, vec!["A:init A:medi L:fina", "Aa:isol"]);
     }
 
     #[test]

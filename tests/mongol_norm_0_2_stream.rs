@@ -1,12 +1,12 @@
 //! Regression contract for the duplicate-free written-unit stream and canonical
-//! control policy (`mng-canonical/5`) provided by `mongol-norm` 0.4.0.
+//! control policy (`mng-canonical/5`) provided by `mongol-norm` 0.4.1.
 
 use zvvnmod_utn57::{
     convert_utn57_to_zvvnmod, convert_zvvnmod_to_utn57,
     mongol_norm::{Locale, Shaper, WrittenUnit},
     normalize_positioned_written_units, shape_utn57_positioned_written_units, Utn57Position,
-    Utn57PositionedWrittenUnit, Utn57ReverseError, Utn57WrittenUnit, ZvvnmodTextConversionError,
-    AA_FINA, A_INIT, A_MEDI, B_I_ISOL, H_FINA, I_MEDI, L_FINA, M_FINA, R_FINA, S_FINA,
+    Utn57PositionedWrittenUnit, Utn57WrittenUnit, AA_FINA, A_FINA, A_INIT, A_MEDI, B_INIT,
+    B_I_ISOL, H_FINA, I_MEDI, L_FINA, M_INIT,
 };
 
 fn units(records: &[Utn57PositionedWrittenUnit]) -> Vec<Utn57WrittenUnit> {
@@ -146,76 +146,66 @@ fn final_a_aa_contracts_only_immediately_after_a_bowed_written_unit() {
 }
 
 #[test]
-fn zwnj_splits_segments_and_a_l_zwnj_a_fvs2_does_not_round_trip_to_mvs() {
-    // Regression: ᠠᠯ‌ᠠ᠌ (A L ZWNJ A FVS2, U+1820 U+182F U+200C U+1820 U+180C)
-    // shapes to `A:init A:medi L:fina` + ZWNJ + `Aa:isol`.
-    // Without emitting U+200C between ZWNJ-split segments, reverse conversion
-    // would produce `E000 E005 E03B E00D` (`A_INIT A_MEDI L_FINA AA_FINA`),
-    // which matches the forward multi-code rule `L_FINA AA_FINA -> L:fina MVS Aa:isol`
-    // across the lost break and corrupts the round-trip into an MVS form (`ᠠᠯ᠎ᠠ`).
-    let utn57 = "\u{1820}\u{182F}\u{200C}\u{1820}\u{180C}";
+fn zwnj_positions_adjacent_letters_without_emitting_u200c_in_zvvnmod_and_synthesizes_back() {
+    // 1. `ᠠᠯ‌ᠮᠠ` (`A L ZWNJ M A`): ZWNJ is encoded purely in the glyph positions
+    //    (`[A:init, A:medi, L:fina, M:init, A:fina]`), emitting `A_INIT A_MEDI L_FINA M_INIT A_FINA`
+    //    with no `U+200C` in ZVVNMOD. Converting back to UTN #57 synthesizes the
+    //    ZWNJ across the `L:fina` / `M:init` sub-chain boundary (`mongol-norm` 0.4.1).
+    let al_zwnj_ma = "\u{1820}\u{182F}\u{200C}\u{182E}\u{1820}";
     let expected_zvvnmod = format!(
-        "{}{}{}\u{200C}{}",
+        "{}{}{}{}{}",
         A_INIT.as_char().unwrap(),
         A_MEDI.as_char().unwrap(),
         L_FINA.as_char().unwrap(),
-        AA_FINA.as_char().unwrap(),
+        M_INIT.as_char().unwrap(),
+        A_FINA.as_char().unwrap(),
     );
-
-    let zvvnmod = convert_utn57_to_zvvnmod(utn57).unwrap();
+    let zvvnmod = convert_utn57_to_zvvnmod(al_zwnj_ma).unwrap();
     assert_eq!(zvvnmod, expected_zvvnmod);
+    assert!(!zvvnmod.contains('\u{200C}'));
+    assert_eq!(
+        convert_zvvnmod_to_utn57(&zvvnmod).unwrap(),
+        "\u{1820}\u{180B}\u{1820}\u{182F}\u{200C}\u{182E}\u{1820}\u{180C}"
+    );
 
-    let round_tripped = convert_zvvnmod_to_utn57(&zvvnmod).unwrap();
+    // 2. `ᠪ‌ᠠ` (`B ZWNJ A`): `[B:init, A:init, A:fina]` -> `B_INIT A_INIT A_FINA`,
+    //    which synthesizes ZWNJ between `B:init` and `A:init` on the forward path.
+    let b_zwnj_a = "\u{182A}\u{200C}\u{1820}";
+    let b_a_zvvnmod = convert_utn57_to_zvvnmod(b_zwnj_a).unwrap();
     assert_eq!(
-        round_tripped,
-        "\u{1820}\u{180B}\u{1820}\u{182F}\u{200C}\u{1820}\u{180C}"
+        b_a_zvvnmod,
+        format!(
+            "{}{}{}",
+            B_INIT.as_char().unwrap(),
+            A_INIT.as_char().unwrap(),
+            A_FINA.as_char().unwrap(),
+        )
     );
-    let shaper = Shaper::new(Locale::Mng);
     assert_eq!(
-        shaper.shape(&round_tripped).unwrap(),
-        shaper.shape(utn57).unwrap()
+        convert_zvvnmod_to_utn57(&b_a_zvvnmod).unwrap(),
+        "\u{182A}\u{200C}\u{1820}\u{180B}\u{1820}\u{180C}"
     );
-    assert!(
-        !round_tripped.contains('\u{180E}'),
-        "must not introduce MVS: {round_tripped:?}"
+
+    // 3. `ᠠᠯ‌ᠠ᠌` (`A L ZWNJ A FVS2`): shapes to `[A:init, A:medi, L:fina, Aa:isol]`,
+    //    which maps to `A_INIT A_MEDI L_FINA AA_FINA` without `U+200C` and
+    //    matches the forward chachlag rule `L_FINA AA_FINA -> L:fina MVS Aa:isol`
+    //    (`ᠠ᠋ᠠᠯ᠎ᠠ`).
+    let al_zwnj_aa = "\u{1820}\u{182F}\u{200C}\u{1820}\u{180C}";
+    let al_aa_zvvnmod = convert_utn57_to_zvvnmod(al_zwnj_aa).unwrap();
+    assert_eq!(
+        al_aa_zvvnmod,
+        format!(
+            "{}{}{}{}",
+            A_INIT.as_char().unwrap(),
+            A_MEDI.as_char().unwrap(),
+            L_FINA.as_char().unwrap(),
+            AA_FINA.as_char().unwrap(),
+        )
     );
-    assert_ne!(round_tripped, "\u{1820}\u{182F}\u{180E}\u{1820}");
-    assert_ne!(
-        round_tripped,
+    assert_eq!(
+        convert_zvvnmod_to_utn57(&al_aa_zvvnmod).unwrap(),
         "\u{1820}\u{180B}\u{1820}\u{182F}\u{180E}\u{1820}"
     );
-}
-
-#[test]
-fn zwnj_prevents_other_chachlag_multi_code_rules_across_the_break() {
-    // Every `X_FINA + AA_FINA -> X:fina MVS Aa:isol` rule must be blocked by
-    // the U+200C emitted at a ZWNJ break (`ᠠᠮ‌ᠠ᠌`, `ᠠᠷ‌ᠠ᠌`, `ᠠᠰ‌ᠠ᠌`, `ᠠᠬ‌ᠠ᠌`).
-    let shaper = Shaper::new(Locale::Mng);
-    for (stem_char, expected_fina) in [
-        ('\u{182E}', M_FINA),
-        ('\u{1837}', R_FINA),
-        ('\u{1830}', S_FINA),
-        ('\u{182C}', H_FINA),
-    ] {
-        let utn57 = format!("\u{1820}{stem_char}\u{200C}\u{1820}\u{180C}");
-        let zvvnmod = convert_utn57_to_zvvnmod(&utn57).unwrap();
-        assert_eq!(
-            zvvnmod,
-            format!(
-                "{}{}{}\u{200C}{}",
-                A_INIT.as_char().unwrap(),
-                A_MEDI.as_char().unwrap(),
-                expected_fina.as_char().unwrap(),
-                AA_FINA.as_char().unwrap(),
-            )
-        );
-        let round_tripped = convert_zvvnmod_to_utn57(&zvvnmod).unwrap();
-        assert!(!round_tripped.contains('\u{180E}'), "{round_tripped:?}");
-        assert_eq!(
-            shaper.shape(&round_tripped).unwrap(),
-            shaper.shape(&utn57).unwrap()
-        );
-    }
 }
 
 #[test]
@@ -228,9 +218,6 @@ fn context_looks_through_zwnj_for_vowel_harmony() {
     //   ZWNJ leaves `ᠭ` before ZWNJ as feminine/default `G:fina` (`I_MEDI AA_FINA`).
     let masc = convert_utn57_to_zvvnmod("\u{1822}\u{182D}\u{200C}\u{182F}\u{1820}").unwrap();
     let fem = convert_utn57_to_zvvnmod("\u{1822}\u{182D}\u{200C}\u{182F}\u{1821}").unwrap();
-
-    let masc_before_zwnj = masc.split('\u{200C}').next().unwrap();
-    let fem_before_zwnj = fem.split('\u{200C}').next().unwrap();
     let g_fina_zvvnmod = format!(
         "{}{}",
         I_MEDI.as_char().unwrap(),
@@ -238,12 +225,12 @@ fn context_looks_through_zwnj_for_vowel_harmony() {
     );
 
     assert!(
-        masc_before_zwnj.ends_with(H_FINA.as_char().unwrap()),
-        "expected masculine H_FINA before ZWNJ, got {masc_before_zwnj:?}"
+        masc.contains(H_FINA.as_char().unwrap()),
+        "expected masculine H_FINA before ZWNJ, got {masc:?}"
     );
     assert!(
-        fem_before_zwnj.ends_with(&g_fina_zvvnmod),
-        "expected feminine G:fina (I_MEDI AA_FINA) before ZWNJ, got {fem_before_zwnj:?}"
+        fem.contains(&g_fina_zvvnmod),
+        "expected feminine G:fina (I_MEDI AA_FINA) before ZWNJ, got {fem:?}"
     );
 
     // Forward vowel-harmony propagation across `ZWNJ + ZWJ` onto a joined
@@ -263,7 +250,7 @@ fn context_looks_through_zwnj_for_vowel_harmony() {
 fn redundant_zwnj_is_dropped_before_reverse_conversion() {
     // `ᠪ‌ᠢ᠋` (B ZWNJ I FVS1): `B:isol ≡ B:init` (`ISOL_TO_INIT`) and `I:isol ≡ I:fina`
     // (`ISOL_TO_FINA`), so the ZWNJ is redundant and dropped; the resulting
-    // `[B:init, I:fina]` recomposes to `B_I_ISOL` with no U+200C.
+    // `[B:init, I:fina]` recomposes to `B_I_ISOL`.
     assert_eq!(
         convert_utn57_to_zvvnmod("\u{182A}\u{200C}\u{1822}\u{180B}").unwrap(),
         B_I_ISOL.as_char().unwrap().to_string()
@@ -275,7 +262,7 @@ fn redundant_zwnj_is_dropped_before_reverse_conversion() {
         B_I_ISOL.as_char().unwrap().to_string()
     );
 
-    // Interior ZWNJ between two `O` units (`ᠠᠥ᠌‌ᠤ᠋ᠠ` -> `[A, A, O, Zwnj, O, A]`) is
+    // Interior ZWNJ between two `O` units (`ᠠおお‌ᠤ᠋ᠠ` -> `[A, A, O, Zwnj, O, A]`) is
     // redundant (`O` is in `FINA_TO_MEDI` and `INIT_TO_MEDI`) and dropped,
     // matching `ᠠᠤᠤᠠ` (`[A, A, O, O, A]`).
     assert_eq!(
@@ -293,18 +280,16 @@ fn redundant_zwnj_is_dropped_before_reverse_conversion() {
 
 #[test]
 fn repeated_zwj_and_zwnj_controls_merge() {
-    // Consecutive ZWNJs between segments collapse to a single U+200C break.
+    // Consecutive ZWNJs between segments collapse to one break.
     assert_eq!(
-        convert_utn57_to_zvvnmod("\u{1820}\u{182F}\u{200C}\u{200C}\u{200C}\u{1820}\u{180C}")
+        convert_utn57_to_zvvnmod("\u{1820}\u{182F}\u{200C}\u{200C}\u{200C}\u{182E}\u{1820}")
             .unwrap(),
-        convert_utn57_to_zvvnmod("\u{1820}\u{182F}\u{200C}\u{1820}\u{180C}").unwrap()
+        convert_utn57_to_zvvnmod("\u{1820}\u{182F}\u{200C}\u{182E}\u{1820}").unwrap()
     );
 
-    // A standalone run of repeated ZWNJs collapses to one U+200C.
-    assert_eq!(
-        convert_utn57_to_zvvnmod("\u{200C}\u{200C}").unwrap(),
-        "\u{200C}"
-    );
+    // A standalone ZWNJ (or repeated ZWNJs) with no letters produces no ZVVNMOD codes.
+    assert_eq!(convert_utn57_to_zvvnmod("\u{200C}").unwrap(), "");
+    assert_eq!(convert_utn57_to_zvvnmod("\u{200C}\u{200C}").unwrap(), "");
 
     // Repeated ZWJs on a lone initial vowel (`ᠠ᠋‍‍‍`, U+1820 U+180B + 3 ZWJs)
     // merge into one ZWJ and position as a single `A:init` (`A_INIT`).
@@ -317,25 +302,5 @@ fn repeated_zwj_and_zwnj_controls_merge() {
     assert_eq!(
         convert_utn57_to_zvvnmod("\u{182F}\u{1822}\u{200D}\u{200D}\u{1821}\u{180B}").unwrap(),
         convert_utn57_to_zvvnmod("\u{182F}\u{1822}\u{1821}\u{180B}").unwrap()
-    );
-}
-
-#[test]
-fn reverse_error_index_is_offset_across_zwnj_segments() {
-    // `ᠠᠯ‌ᠪᠠᠳᠠᠭ᠍` (`A L ZWNJ B A D A G+FVS3`): segment 0 (`ᠠᠯ`) has 3 positioned
-    // units (`A:init A:medi L:fina`, indices 0..3), and segment 1 (`ᠪᠠᠳᠠᠭ᠍`) has 5
-    // (`B:init A:medi D:medi A:medi Hx:fina`, local indices 0..5).
-    // `Hx:fina` has no ZVVNMOD glyph and must report index 3 + 4 = 7 in the full
-    // word's positioned-unit sequence, not local index 4.
-    let err = convert_utn57_to_zvvnmod(
-        "\u{1820}\u{182F}\u{200C}\u{182A}\u{1820}\u{1833}\u{1820}\u{182D}\u{180D}",
-    )
-    .unwrap_err();
-    assert_eq!(
-        err,
-        ZvvnmodTextConversionError::Reverse(Utn57ReverseError::Unrepresentable {
-            index: 7,
-            unit: Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Hx, Utn57Position::Fina),
-        })
     );
 }
