@@ -42,9 +42,11 @@ fn public_api_converts_complete_mixed_text_in_one_call() {
 
 #[test]
 fn standard_nirugu_passes_through_between_independently_normalized_runs() {
+    // U+E011 is U:fina. Under mng-canonical/5 a leading ZWJ is redundant with
+    // U:isol, so the right run is the bare U+FVS1 spelling, not ZWJ+OE+FVS2.
     assert_eq!(
         convert_zvvnmod_to_utn57("\u{E001}\u{180A}\u{E011}").unwrap(),
-        "\u{1824}\u{180B}\u{200D}\u{180A}\u{200D}\u{1823}\u{180C}"
+        "\u{1824}\u{180B}\u{200D}\u{180A}\u{1824}\u{180B}"
     );
 }
 

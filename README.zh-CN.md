@@ -13,7 +13,7 @@
 - 生成 30 条用户确认的 `Ir_fina` 替换规则；
 - 生成包含97个 positioned UTN #57 written units与147条非空 reviewed rows（100条main + 47条particle）的 typed relation；
 - 对一个 ZVVNMOD shape run 执行 longest-match replacement，得到 positioned UTN #57 written units；
-- 编排完整文本：只转换正式 ZVVNMOD shape codes，把 Nirugu/MVS 作为结构输入处理，翻译分写后缀边界，输入 ZWJ 与其余字符全部原样保留；
+- 编排完整文本：只转换正式 ZVVNMOD shape codes，把 Nirugu/MVS 作为结构输入处理，翻译分写后缀边界，输入 ZWJ、ZWNJ 与其余字符全部原样保留；
 - 通过纯 Rust 的 [`mongol-norm`](https://crates.io/crates/mongol-norm) crate 把 positioned UTN #57 written units 规范化为 canonical Unicode，直接链接进库中。
 - 反向：把蒙古文文本 shape 成 positioned UTN #57 written units 再拼成 ZVVNMOD，并做联合字形合并。
 
@@ -238,7 +238,7 @@ let output = convert_zvvnmod_to_utn57(zvvnmod_text)?;
 normalization，不需要任何安装步骤。
 
 完整文本分类器只转换139个正式 ZVVNMOD shape codes，其中包含 ZVVNMOD 自己的 Nirugu 编码。
-标准 Unicode `U+180A` Nirugu、`U+180E` MVS 和输入 `U+200D` ZWJ
+标准 Unicode `U+180A` Nirugu、`U+180E` MVS、输入 `U+200D` ZWJ 和输入 `U+200C` ZWNJ
 都没有 ZVVNMOD shaping 语义：本库原样保留它们，并以它们分隔相邻 shape runs。
 `U+202F` 同样分隔相邻 runs，但它不是 passthrough：它是[分写后缀边界](#分写后缀边界)，
 读回时还原为 UTN #57 `MVS`。
@@ -266,7 +266,7 @@ utn57-to-zvvnmod '<mongolian-text>'
 ```text
 包含蒙古文单词的完整文本
 → 分离单词 runs 与 passthrough spans
-→ 用 mongol-norm 的公开无重复 written-unit 流 shape 每个 run，并还原每个单位的连写位置
+→ 用 mongol-norm 的公开无重复 written-unit 流 shape 每个 run（ZWNJ 断开链；保留下来的断开写回 U+200C），并还原每个单位的连写位置
 → 按 reviewed longest match 把 positioned units 替换为 ZVVNMOD 码
 → 把组件序列合并成联合 ZVVNMOD 字形
 → 按原边界补回 passthrough spans
@@ -325,9 +325,9 @@ ZVVNMOD 的，下游各 spoke 都把它渲染成一个多余控制符
 
 ZVVNMOD 编码的是字形，因此合并了 UTN #57 保留的区分：`K` 与 `K2` 共用一个字形；
 `Dd:medi`、`Dd:fina`、`H:medi` 各自与一个同样出现在真实词里的两单位序列写法相同。
-`mongol-norm` 0.2 提供统一的公开无重复 written-unit 流：先展开三条 conformant
+`mongol-norm` 0.4 提供统一的公开无重复 written-unit 流（`mng-canonical/5`）：先展开
 碰撞（`Dd:medi → O:medi A:medi`、`Dd:fina → O:medi A:fina`、
-`H:medi → A:medi A:medi`），再交给本库映射。它只在紧邻的前一单位是 bowed
+`H:medi → A:medi A:medi`，以及任意位置的 `Cr → O O`），再交给本库映射。它只在紧邻的前一单位是 bowed
 written unit（`B`、`P`、`F`、`G`、`Gx`、`K`、`K2`）时折叠
 `A:medi Aa:fina`；中间插入其他单位、结构边界或前一单位不是 bowed 时均不折叠。
 反向转换仍输出同一个共享 ZVVNMOD 写法，因此既有 ZVVNMOD 文本和反向输出契约不变。
@@ -377,7 +377,7 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-`mongol-norm = "0.2.1"` 提供反向转换所消费的公开无重复 written-unit 流。
+`mongol-norm = "0.4.0"` 提供反向转换所消费的公开无重复 written-unit 流，并把 `Zwnj` 当作结构上的连写断开。
 `Cargo.lock` 会记录精确解析到的版本，确保 application 和 CLI 构建可复现。
 
 ## 验证

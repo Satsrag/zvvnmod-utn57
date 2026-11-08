@@ -32,14 +32,19 @@ fn a_word_initial_g_o_ligature_is_spelled_without_a_zwj() {
 }
 
 #[test]
-fn the_medial_g_o_ligature_still_pads_its_open_left_edge() {
-    // U+E09C is a medial glyph; alone it still needs the joiner, as any lone
-    // medial glyph does. Sources that meant the whole word now write U+E096.
+fn the_medial_g_o_ligature_standing_alone_matches_the_initial_spelling() {
+    // U+E09C is a medial glyph. Under mng-canonical/5 the leading ZWJ that
+    // used to pin G:medi is redundant with G:init, so a lone U+E09C encodes
+    // the same way as U+E096. Inside a word it is still the medial ligature.
     assert_eq!(
         convert_zvvnmod_to_utn57("\u{E09C}").unwrap(),
-        format!("\u{200D}{G_O_ISOL_UTN57}")
+        G_O_ISOL_UTN57
     );
     assert_eq!(G_O_FINA, ZvvnmodCode(0xE09C));
+    assert_eq!(
+        convert_zvvnmod_to_utn57("\u{E09C}").unwrap(),
+        convert_zvvnmod_to_utn57("\u{E096}").unwrap()
+    );
 }
 
 #[test]

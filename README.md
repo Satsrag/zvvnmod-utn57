@@ -13,7 +13,7 @@ The current first milestone includes:
 - 30 user-confirmed `Ir_fina` replacement rules;
 - a typed, generated relation containing 97 positioned UTN #57 written units and 147 non-empty reviewed mapping rows (100 main + 47 particle);
 - executable longest-match replacement from one ZVVNMOD shape run to positioned UTN #57 written units;
-- complete-text orchestration that converts only formal ZVVNMOD shape codes, retains Nirugu/MVS as structural input, translates the detached-suffix boundary, and passes input ZWJ and all other characters through unchanged;
+- complete-text orchestration that converts only formal ZVVNMOD shape codes, retains Nirugu/MVS as structural input, translates the detached-suffix boundary, and passes input ZWJ, ZWNJ, and all other characters through unchanged;
 - canonical Unicode normalization of positioned UTN #57 written units through the pure-Rust [`mongol-norm`](https://crates.io/crates/mongol-norm) crate, linked directly into the library.
 - the reverse direction: shaping Mongolian text into positioned UTN #57 written units and spelling them in ZVVNMOD, with merged-glyph recomposition.
 
@@ -254,7 +254,7 @@ crate described below, and needs no setup step of any kind.
 
 The complete-text classifier converts only the formal 140-code ZVVNMOD shape inventory,
 which includes ZVVNMOD's own Nirugu code. Standard Unicode `U+180A` Nirugu, `U+180E` MVS,
-and input `U+200D` ZWJ have no ZVVNMOD shaping semantics: they pass through
+input `U+200D` ZWJ, and input `U+200C` ZWNJ have no ZVVNMOD shaping semantics: they pass through
 unchanged and delimit adjacent shape runs. `U+202F` also delimits adjacent runs, but it is
 not passthrough: it is the [detached-suffix boundary](#the-detached-suffix-boundary) and is
 read back as UTN #57 `MVS`.
@@ -287,7 +287,7 @@ The data flow mirrors the forward direction:
 ```text
 complete text containing Mongolian words
 → split word runs from passthrough spans
-→ shape each run with mongol-norm's public duplicate-free written-unit stream and recover each unit's joining position
+→ shape each run with mongol-norm's public duplicate-free written-unit stream (ZWNJ splits chains; surviving breaks are written back as U+200C) and recover each unit's joining position
 → replace positioned units with ZVVNMOD codes by reviewed longest match
 → recompose component runs into merged ZVVNMOD glyphs
 → interleave the unchanged passthrough spans
@@ -364,9 +364,9 @@ Substituting a near glyph would change the text silently, which is what
 ZVVNMOD encodes glyph shapes, so it merges distinctions UTN #57 keeps: `K` and
 `K2` share one glyph outright, and `Dd:medi`, `Dd:fina` and `H:medi` are each
 written the same way as a two-unit sequence that also occurs in real words.
-`mongol-norm` 0.2 supplies one duplicate-free public written-unit stream. It
-expands the three conformant collisions (`Dd:medi → O:medi A:medi`, `Dd:fina →
-O:medi A:fina`, and `H:medi → A:medi A:medi`) before this crate maps the units.
+`mongol-norm` 0.4 supplies one duplicate-free public written-unit stream (`mng-canonical/5`). It
+expands the composite collisions (`Dd:medi → O:medi A:medi`, `Dd:fina →
+O:medi A:fina`, `H:medi → A:medi A:medi`, and `Cr` in every position → `O O`) before this crate maps the units.
 It also contracts `A:medi Aa:fina` only when an immediately preceding bowed
 written unit (`B`, `P`, `F`, `G`, `Gx`, `K`, or `K2`) licenses the shared ink;
 an intervening unit, structural boundary, or non-bowed unit prevents the
@@ -422,8 +422,8 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-The `mongol-norm = "0.2.1"` dependency provides the duplicate-free public written-unit stream
-used by reverse conversion. `Cargo.lock` records the exact resolved release for
+The `mongol-norm = "0.4.0"` dependency provides the duplicate-free public written-unit stream
+used by reverse conversion, including `Zwnj` as a structural joining break. `Cargo.lock` records the exact resolved release for
 reproducible application and CLI builds.
 
 ## Validation

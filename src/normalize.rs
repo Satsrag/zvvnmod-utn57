@@ -9,9 +9,15 @@ use std::sync::OnceLock;
 ///
 /// `Shaper::new` derives its lookup maps from `&'static` tables and the shaper
 /// is immutable afterwards, so one instance serves the whole process.
-fn shaper() -> &'static Shaper {
+pub(crate) fn shaper() -> &'static Shaper {
     static SHAPER: OnceLock<Shaper> = OnceLock::new();
     SHAPER.get_or_init(|| Shaper::new(Locale::Mng))
+}
+
+/// Joiners force cursive connection on the adjacent letter. `Zwnj` is structural
+/// but a break, not a joiner.
+fn is_joiner(unit: WrittenUnit) -> bool {
+    matches!(unit, WrittenUnit::Nirugu | WrittenUnit::Zwj)
 }
 
 /// Map a reviewed UTN #57 unit identity onto its `mongol-norm` counterpart.
@@ -110,7 +116,7 @@ pub fn normalize_positioned_written_units(
 ///
 /// The inverse of [`written_unit`], resolved by searching the reviewed
 /// inventory rather than by a second `match`, so the two cannot drift apart.
-/// Returns `None` for a unit outside the inventory, such as `Zwj`.
+/// Returns `None` for a unit outside the inventory, such as `Zwj` or `Zwnj`.
 fn utn57_written_unit(unit: WrittenUnit) -> Option<Utn57WrittenUnit> {
     UTN57_POSITIONED_WRITTEN_UNITS
         .iter()
@@ -177,45 +183,21 @@ impl From<Error> for Utn57ShapeError {
     }
 }
 
-/// Shape one Mongolian word into positioned UTN #57 written units.
+/// Recover joining positions from a `mongol-norm` public written-unit stream.
 ///
-/// `mongol-norm` returns its public, duplicate-free written-unit sequence; this
-/// recovers the joining position of each unit the way the positioned encoder
-/// infers it. In `mongol-norm` 0.2 this expands the three conformant composite
-/// collisions (`Dd:medi`, `Dd:fina`, and `H:medi`) and applies only the
-/// context-safe contractions, including `bowed + A:medi + Aa:fina`.
-/// The sequence is split at the structural units, and each remaining chain is
-/// padded by one slot on any side a joiner (`Nirugu` or `Zwj`) sits against, so
-/// a chain that continues past its edge is positioned as if it did. `Mvs` and
-/// `Nirugu` become `Control` records; `Zwj` supplies joining context and is not
-/// itself a record.
-///
-/// A position of `Isol` that the reviewed inventory does not carry falls back to
-/// `Init`, matching how isolated forms borrow the initial glyph.
-///
-/// # Errors
-///
-/// Returns [`Utn57ShapeError::Shape`] when `mongol-norm` rejects the text — it
-/// accepts only Mongolian letters, FVS, MVS, NNBSP, nirugu and ZWJ — and
-/// [`Utn57ShapeError::UnsupportedWrittenUnit`] for a shaped unit outside the
-/// reviewed UTN #57 inventory.
-pub fn shape_utn57_positioned_written_units(
-    text: &str,
+/// Structural tokens split the stream: `Mvs` and `Nirugu` become `Control`
+/// records; `Zwj` and `Zwnj` are outside the reviewed UTN #57 inventory and are
+/// not themselves records. Only `Nirugu` and `Zwj` pad the chain they sit
+/// against; `Zwnj` is a joining break.
+pub(crate) fn position_shaped_written_units(
+    shape: &[WrittenUnit],
 ) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57ShapeError> {
-    let shape = shaper().shape(text)?;
-    let is_joiner = |unit: WrittenUnit| matches!(unit, WrittenUnit::Nirugu | WrittenUnit::Zwj);
-
     let mut records = Vec::with_capacity(shape.len());
     let mut index = 0;
     while index < shape.len() {
         let unit = shape[index];
-        if matches!(
-            unit,
-            WrittenUnit::Mvs | WrittenUnit::Nirugu | WrittenUnit::Zwj
-        ) {
-            if unit != WrittenUnit::Zwj {
-                let written = utn57_written_unit(unit)
-                    .ok_or(Utn57ShapeError::UnsupportedWrittenUnit { index, unit })?;
+        if unit.is_structural() {
+            if let Some(written) = utn57_written_unit(unit) {
                 records.push(Utn57PositionedWrittenUnit::new(
                     written,
                     Utn57Position::Control,
@@ -226,12 +208,7 @@ pub fn shape_utn57_positioned_written_units(
         }
         // A chain runs to the next structural unit.
         let start = index;
-        while index < shape.len()
-            && !matches!(
-                shape[index],
-                WrittenUnit::Mvs | WrittenUnit::Nirugu | WrittenUnit::Zwj
-            )
-        {
+        while index < shape.len() && !shape[index].is_structural() {
             index += 1;
         }
         let chain = &shape[start..index];
@@ -252,6 +229,36 @@ pub fn shape_utn57_positioned_written_units(
         }
     }
     Ok(records)
+}
+
+/// Shape one Mongolian word into positioned UTN #57 written units.
+///
+/// `mongol-norm` returns its public, duplicate-free written-unit sequence; this
+/// recovers the joining position of each unit the way the positioned encoder
+/// infers it. In `mongol-norm` 0.4 (`mng-canonical/5`) this expands the
+/// composite collisions (`Dd` in both positions, medial `H`, medial `Hx`, and
+/// `Cr` in every position) and applies only the context-safe contractions,
+/// including `bowed + A:medi + Aa:fina`. Redundant ZWJ/ZWNJ and repeated
+/// identical controls are folded before the stream is returned.
+/// The sequence is split at the structural units, and each remaining chain is
+/// padded by one slot on any side a joiner (`Nirugu` or `Zwj`) sits against, so
+/// a chain that continues past its edge is positioned as if it did. `Mvs` and
+/// `Nirugu` become `Control` records; `Zwj` and `Zwnj` supply joining context
+/// or a joining break and are not themselves records.
+///
+/// A position of `Isol` that the reviewed inventory does not carry falls back to
+/// `Init`, matching how isolated forms borrow the initial glyph.
+///
+/// # Errors
+///
+/// Returns [`Utn57ShapeError::Shape`] when `mongol-norm` rejects the text — it
+/// accepts only Mongolian letters, FVS, MVS, NNBSP, nirugu, ZWJ and ZWNJ — and
+/// [`Utn57ShapeError::UnsupportedWrittenUnit`] for a shaped unit outside the
+/// reviewed UTN #57 inventory.
+pub fn shape_utn57_positioned_written_units(
+    text: &str,
+) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57ShapeError> {
+    position_shaped_written_units(&shaper().shape(text)?)
 }
 
 /// Failure while converting one ZVVNMOD run to canonical Mongolian Unicode.
@@ -420,6 +427,16 @@ mod shaping_tests {
         assert_eq!(
             spell(&shape_utn57_positioned_written_units("\u{1824}\u{180B}\u{200D}").unwrap()),
             "O:init"
+        );
+    }
+
+    #[test]
+    fn zwnj_splits_the_chain_and_does_not_pad_it() {
+        // ᠪ ZWNJ ᠠ: a joining break, not a joiner. B is a lone consonant (isol
+        // borrows init); isolated A is the two-unit isol form.
+        assert_eq!(
+            spell(&shape_utn57_positioned_written_units("\u{182A}\u{200C}\u{1820}").unwrap()),
+            "B:init A:init A:fina"
         );
     }
 

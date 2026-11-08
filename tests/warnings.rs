@@ -5,20 +5,22 @@
 
 use zvvnmod_utn57::{
     convert_zvvnmod_to_utn57, convert_zvvnmod_to_utn57_with_warnings, Utn57ConversionWarning,
-    G_O_FINA, O_INIT,
+    N_MEDI, O_INIT,
 };
 
 #[test]
 fn a_run_spelled_with_an_invented_zwj_is_reported() {
-    let conversion = convert_zvvnmod_to_utn57_with_warnings("\u{E09C}").unwrap();
+    // N:medi still needs joiners on both sides; G:medi O:fina no longer does,
+    // because that leading ZWJ is redundant with G:init under mng-canonical/5.
+    let conversion = convert_zvvnmod_to_utn57_with_warnings("\u{E028}").unwrap();
 
-    assert_eq!(conversion.text, "\u{200D}\u{182D}\u{180C}\u{1825}\u{180C}");
+    assert_eq!(conversion.text, "\u{200D}\u{1828}\u{180B}\u{200D}");
     assert_eq!(
         conversion.warnings,
         vec![Utn57ConversionWarning::InventedZwj {
             run: 0,
-            codes: vec![G_O_FINA],
-            count: 1,
+            codes: vec![N_MEDI],
+            count: 2,
         }]
     );
 }
@@ -60,16 +62,16 @@ fn runs_are_numbered_in_input_order_across_passthrough_text() {
 
 #[test]
 fn the_warning_names_the_run_by_its_codes() {
-    let conversion = convert_zvvnmod_to_utn57_with_warnings("\u{E09C}").unwrap();
+    let conversion = convert_zvvnmod_to_utn57_with_warnings("\u{E028}").unwrap();
     let message = conversion.warnings[0].to_string();
 
-    assert!(message.contains("U+E09C"), "{message}");
+    assert!(message.contains("U+E028"), "{message}");
     assert!(message.contains("ZWJ"), "{message}");
 }
 
 #[test]
 fn the_text_only_entry_point_is_the_same_conversion() {
-    for input in ["\u{E09C}", "\u{E096}", "\u{E001}\u{202F}\u{E00D}", "plain"] {
+    for input in ["\u{E028}", "\u{E096}", "\u{E001}\u{202F}\u{E00D}", "plain"] {
         assert_eq!(
             convert_zvvnmod_to_utn57(input).unwrap(),
             convert_zvvnmod_to_utn57_with_warnings(input).unwrap().text
