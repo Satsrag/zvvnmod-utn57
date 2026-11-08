@@ -9,7 +9,7 @@ use std::sync::OnceLock;
 ///
 /// `Shaper::new` derives its lookup maps from `&'static` tables and the shaper
 /// is immutable afterwards, so one instance serves the whole process.
-fn shaper() -> &'static Shaper {
+pub(crate) fn shaper() -> &'static Shaper {
     static SHAPER: OnceLock<Shaper> = OnceLock::new();
     SHAPER.get_or_init(|| Shaper::new(Locale::Mng))
 }
@@ -189,7 +189,7 @@ impl From<Error> for Utn57ShapeError {
 /// records; `Zwj` and `Zwnj` are outside the reviewed UTN #57 inventory and are
 /// not themselves records. Only `Nirugu` and `Zwj` pad the chain they sit
 /// against; `Zwnj` is a joining break.
-fn position_shaped_written_units(
+pub(crate) fn position_shaped_written_units(
     shape: &[WrittenUnit],
 ) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57ShapeError> {
     let mut records = Vec::with_capacity(shape.len());
@@ -244,7 +244,10 @@ fn position_shaped_written_units(
 /// padded by one slot on any side a joiner (`Nirugu` or `Zwj`) sits against, so
 /// a chain that continues past its edge is positioned as if it did. `Mvs` and
 /// `Nirugu` become `Control` records; `Zwj` and `Zwnj` supply joining context
-/// or a joining break and are not themselves records.
+/// or a joining break and are not themselves records. Because `Zwnj` is omitted,
+/// feeding the flattened list to [`crate::convert_utn57_run_to_zvvnmod`] can
+/// match a multi-code rule across a break; complete-text reverse conversion
+/// maps each ZWNJ-delimited segment on its own.
 ///
 /// A position of `Isol` that the reviewed inventory does not carry falls back to
 /// `Init`, matching how isolated forms borrow the initial glyph.

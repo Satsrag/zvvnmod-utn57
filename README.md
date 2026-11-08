@@ -287,7 +287,7 @@ The data flow mirrors the forward direction:
 ```text
 complete text containing Mongolian words
 → split word runs from passthrough spans
-→ shape each run with mongol-norm's public duplicate-free written-unit stream (ZWNJ splits chains; the break is not written back — ZVVNMOD PUA codes already encode the unjoined forms) and recover each unit's joining position
+→ shape each run with mongol-norm's public duplicate-free written-unit stream (ZWNJ splits chains; each side is reverse-mapped on its own and the break is written back as U+200C so a multi-code mapping cannot span it) and recover each unit's joining position
 → replace positioned units with ZVVNMOD codes by reviewed longest match
 → recompose component runs into merged ZVVNMOD glyphs
 → interleave the unchanged passthrough spans
@@ -332,7 +332,8 @@ still mark one boundary — there is nothing between them to separate — and ar
 written as one `MVS`; `convert_zvvnmod_to_utn57_with_warnings` reports the
 repetition as `Utn57ConversionWarning::CollapsedSuffixSeparators`, in case it
 was not a slip ([meco-rust#40](https://github.com/Satsrag/meco-rust/issues/40)).
-The reverse direction reads a doubled `MVS` as it was written.
+The reverse direction collapses consecutive `MVS` in the public shape to one
+`U+202F`, matching the forward one-boundary rule.
 
 ### Merged glyphs are recomposed, not stored
 

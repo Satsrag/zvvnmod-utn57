@@ -266,7 +266,7 @@ utn57-to-zvvnmod '<mongolian-text>'
 ```text
 包含蒙古文单词的完整文本
 → 分离单词 runs 与 passthrough spans
-→ 用 mongol-norm 的公开无重复 written-unit 流 shape 每个 run（ZWNJ 断开链；断开本身不写回，ZVVNMOD PUA 码已经是断开后的呈现形），并还原每个单位的连写位置
+→ 用 mongol-norm 的公开无重复 written-unit 流 shape 每个 run（ZWNJ 断开链；两侧各自 reverse-map，断开写回 U+200C，避免多码映射跨断开匹配），并还原每个单位的连写位置
 → 按 reviewed longest match 把 positioned units 替换为 ZVVNMOD 码
 → 把组件序列合并成联合 ZVVNMOD 字形
 → 按原边界补回 passthrough spans

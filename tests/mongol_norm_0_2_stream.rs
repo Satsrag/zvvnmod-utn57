@@ -57,8 +57,14 @@ fn final_a_aa_contracts_only_immediately_after_a_bowed_written_unit() {
 #[test]
 fn cr_expands_to_o_o_in_every_position() {
     // mongol-norm 0.4 expands Cr in all positions (0.2 gated it on init).
-    use Utn57WrittenUnit::O as Uo;
-    use WrittenUnit::Cr;
+    use Utn57WrittenUnit::{Nirugu as Unirugu, O as Uo};
+    use WrittenUnit::{Cr, Nirugu};
 
     assert_eq!(shape_normalized(&[Cr]), [Uo, Uo]);
+    assert_eq!(shape_normalized(&[Cr, Nirugu]), [Uo, Uo, Unirugu]);
+    assert_eq!(
+        shape_normalized(&[Nirugu, Cr, Nirugu]),
+        [Unirugu, Uo, Uo, Unirugu]
+    );
+    assert_eq!(shape_normalized(&[Nirugu, Cr]), [Unirugu, Uo, Uo]);
 }

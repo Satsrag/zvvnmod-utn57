@@ -8,19 +8,19 @@ All notable changes to this project are documented here.
 
 - Upgrade the normalization and shaping backend to `mongol-norm` 0.4.0 (`mng-canonical/5`). This crate's version is unchanged.
 - Consume `mongol-norm`'s public written-unit stream, which now treats `Zwnj` as a structural joining break, drops redundant ZWJ/ZWNJ, merges repeated identical controls, and expands `Cr` in every position.
-- Reverse conversion shapes a word that contains ZWNJ as one run so context looks through the break, and positions each side independently. Surviving `Zwnj` is not written back as `U+200C`: ZVVNMOD PUA codes already encode the unjoined presentation forms.
+- Reverse conversion shapes a word that contains ZWNJ as one run so context looks through the break, reverse-maps each side independently, and writes surviving `Zwnj` back as `U+200C`. The delimiter is required: flattening `L:fina` + `Aa:isol` into `L_FINA AA_FINA` is read as chachlag (`MVS`) on the way back.
 
 ### Canonical encoding (intentional)
 
 These outputs follow `mongol-norm` 0.4's selection policy; the ZVVNMOD inventory and this crate's mapping tables are unchanged.
 
-- A lone `U:fina` (`U+E011`) encodes as bare `U+1824 U+180B`, not `ZWJ + OE + FVS2`, because the leading ZWJ is redundant with `U:isol`.
+- A lone `U:fina` (`U+E011`) encodes as bare `U+1824 U+180B`, not `ZWJ + OE + FVS2`, because the leading ZWJ is redundant with `U:isol`. The same rule covers other lone glyphs whose joined and unjoined ink match, including `I:fina` (`U+E00E`, same spelling as `I:isol` `U+E01A`), `G:medi I:fina` (`U+E099`), `G:medi O:medi` (`U+E09B`), and `P:medi O:fina` (`U+E091`). It does **not** cover `O:fina` (`U+E00F`) or `P:medi A:medi` (`U+E08A`), which still invent a ZWJ.
 - A lone `G:medi O:fina` (`U+E09C`) encodes the same way as `G:init O:fina` (`U+E096`); the leading ZWJ that used to pin the medial reading is redundant with `G:init`. Inside a word the medial ligature is unchanged.
 - Two consecutive MVS in reverse-direction input collapse to one `U+202F` suffix separator, matching the forward direction's one-boundary rule.
 
 ### Testing
 
-- Add regressions for ZWNJ structural splitting, unjoined-vs-joined ZVVNMOD spellings, and positioned-unit roundtrips.
+- Add regressions for ZWNJ structural splitting, the `ᠠᠯ‌ᠠ᠌` chachlag-span, unjoined-vs-joined ZVVNMOD spellings, context through ZWNJ, redundant/repeated controls, Cr expansion in non-isolated positions, and extra lone glyphs that no longer invent a ZWJ.
 - Update ZWJ-spelling expectations that `mng-canonical/5` no longer invents.
 
 ## [0.3.2] - 2026-09-15

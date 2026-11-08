@@ -5,7 +5,8 @@
 
 use zvvnmod_utn57::{
     convert_zvvnmod_to_utn57, convert_zvvnmod_to_utn57_with_warnings, Utn57ConversionWarning,
-    N_MEDI, O_INIT,
+    G_I_FINA, G_O_FINA, G_O_MEDI, I_FINA, I_ISOL, N_MEDI, O_FINA, O_INIT, P_A_MEDI, P_I_INIT,
+    P_O_FINA, U_FINA,
 };
 
 #[test]
@@ -75,6 +76,53 @@ fn the_text_only_entry_point_is_the_same_conversion() {
         assert_eq!(
             convert_zvvnmod_to_utn57(input).unwrap(),
             convert_zvvnmod_to_utn57_with_warnings(input).unwrap().text
+        );
+    }
+}
+
+#[test]
+fn redundant_zwj_is_not_invented_for_more_lone_glyphs_than_u_fina() {
+    // mng-canonical/5 drops a ZWJ whose joined and unjoined ink match. The
+    // CHANGELOG's U:fina / G:medi O:fina examples are not the whole set.
+    // I_FINA is U+E00E (U+E00F is O_FINA and still invents a leading ZWJ).
+    // P_A_MEDI (U+E08A) and P_I_INIT (U+E08C) still invent a trailing ZWJ.
+    for code in [I_FINA, U_FINA, G_O_FINA, G_I_FINA, G_O_MEDI, P_O_FINA] {
+        let conversion =
+            convert_zvvnmod_to_utn57_with_warnings(&code.as_char().unwrap().to_string()).unwrap();
+        assert!(
+            conversion.warnings.is_empty(),
+            "U+{:04X} still invents a ZWJ: {} {:?}",
+            code.codepoint(),
+            conversion
+                .text
+                .chars()
+                .map(|c| format!("U+{:04X}", c as u32))
+                .collect::<Vec<_>>()
+                .join(" "),
+            conversion.warnings
+        );
+        assert!(
+            !conversion.text.contains('\u{200D}'),
+            "U+{:04X} encoded with a ZWJ",
+            code.codepoint()
+        );
+    }
+    assert_eq!(
+        convert_zvvnmod_to_utn57(&I_FINA.as_char().unwrap().to_string()).unwrap(),
+        convert_zvvnmod_to_utn57(&I_ISOL.as_char().unwrap().to_string()).unwrap()
+    );
+
+    for code in [O_FINA, P_A_MEDI, P_I_INIT] {
+        let conversion =
+            convert_zvvnmod_to_utn57_with_warnings(&code.as_char().unwrap().to_string()).unwrap();
+        assert!(
+            matches!(
+                conversion.warnings.as_slice(),
+                [Utn57ConversionWarning::InventedZwj { .. }]
+            ),
+            "U+{:04X} should still invent a ZWJ: {:?}",
+            code.codepoint(),
+            conversion.warnings
         );
     }
 }
