@@ -287,7 +287,7 @@ The data flow mirrors the forward direction:
 ```text
 complete text containing Mongolian words
 → split word runs from passthrough spans
-→ shape each run with mongol-norm's public duplicate-free written-unit stream (ZWNJ splits chains; surviving breaks are written back as U+200C) and recover each unit's joining position
+→ shape each run with mongol-norm's public duplicate-free written-unit stream (ZWNJ splits chains; the break is not written back — ZVVNMOD PUA codes already encode the unjoined forms) and recover each unit's joining position
 → replace positioned units with ZVVNMOD codes by reviewed longest match
 → recompose component runs into merged ZVVNMOD glyphs
 → interleave the unchanged passthrough spans

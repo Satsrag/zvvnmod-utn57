@@ -1,10 +1,10 @@
-use crate::normalize::{normalize_positioned_written_units, position_shaped_written_units, shaper};
+use crate::normalize::{normalize_positioned_written_units, shape_utn57_positioned_written_units};
 use crate::{
     classify_zvvnmod_text_character, convert_utn57_run_to_zvvnmod, convert_zvvnmod_run,
     zvvnmod_code, Utn57ConversionError, Utn57PositionedWrittenUnit, Utn57ReverseError,
     Utn57ShapeError, ZvvnmodCode, ZvvnmodTextCharacterKind,
 };
-use mongol_norm::{is_mongolian_word_char, WrittenUnit};
+use mongol_norm::is_mongolian_word_char;
 use std::error::Error;
 use std::fmt;
 
@@ -471,13 +471,15 @@ impl From<Utn57ReverseError> for ZvvnmodTextConversionError {
 ///
 /// Runs of Mongolian word characters — letters, FVS, MVS, NNBSP, nirugu, ZWJ
 /// and ZWNJ — are shaped, positioned, and spelled in ZVVNMOD. A surviving
-/// `U+200C` ZWNJ is a joining break inside the word: `mongol-norm` looks through
-/// it for context, then each side is spelled on its own and the break is
-/// written back as `U+200C`. A detached-suffix boundary the chachlag rules did
-/// not consume is spelled `U+202F`, so [`convert_zvvnmod_to_utn57`] can tell it
-/// from the `U+0020` between words. Every other character preserves its order
-/// and code point, mirroring [`convert_zvvnmod_to_utn57`]'s treatment of text
-/// outside the ZVVNMOD shape inventory.
+/// `U+200C` ZWNJ is a joining break: `mongol-norm` looks through it for context
+/// and each side is positioned on its own, but the break itself is not written
+/// back. ZVVNMOD PUA codes already *are* the presentation forms, so the unjoined
+/// glyphs carry the ink; `U+200C` is not a ZVVNMOD shape. A detached-suffix
+/// boundary the chachlag rules did not consume is spelled `U+202F`, so
+/// [`convert_zvvnmod_to_utn57`] can tell it from the `U+0020` between words.
+/// Every other character preserves its order and code point, mirroring
+/// [`convert_zvvnmod_to_utn57`]'s treatment of text outside the ZVVNMOD shape
+/// inventory.
 ///
 /// # Errors
 ///
@@ -485,36 +487,18 @@ impl From<Utn57ReverseError> for ZvvnmodTextConversionError {
 /// the ZVVNMOD font has no glyph for is reported rather than replaced by a near
 /// glyph, so the output never silently differs from the input.
 pub fn convert_utn57_to_zvvnmod(input: &str) -> Result<String, ZvvnmodTextConversionError> {
-    fn emit_segment(
-        units: &[WrittenUnit],
-        output: &mut String,
-    ) -> Result<(), ZvvnmodTextConversionError> {
-        if units.is_empty() {
-            return Ok(());
-        }
-        let records = position_shaped_written_units(units)?;
-        for code in convert_utn57_run_to_zvvnmod(&records)? {
-            output.push(code.as_char().expect("ZVVNMOD codes are scalar values"));
-        }
-        Ok(())
-    }
-
     fn flush(word: &mut String, output: &mut String) -> Result<(), ZvvnmodTextConversionError> {
         if word.is_empty() {
             return Ok(());
         }
-        // Shape the whole word so context looks through ZWNJ, then spell each
-        // surviving break's sides independently and write the break back.
-        let shape = shaper().shape(word).map_err(Utn57ShapeError::from)?;
-        let mut start = 0;
-        for (index, unit) in shape.iter().copied().enumerate() {
-            if unit == WrittenUnit::Zwnj {
-                emit_segment(&shape[start..index], output)?;
-                output.push('\u{200C}');
-                start = index + 1;
-            }
+        // Shape the whole word so context looks through ZWNJ. Surviving Zwnj
+        // units split positioning inside `shape_utn57_positioned_written_units`
+        // and are not themselves records — ZVVNMOD PUA codes already encode
+        // the unjoined presentation forms, so U+200C is not written back.
+        let records = shape_utn57_positioned_written_units(word)?;
+        for code in convert_utn57_run_to_zvvnmod(&records)? {
+            output.push(code.as_char().expect("ZVVNMOD codes are scalar values"));
         }
-        emit_segment(&shape[start..], output)?;
         word.clear();
         Ok(())
     }

@@ -8,7 +8,7 @@ All notable changes to this project are documented here.
 
 - Upgrade the normalization and shaping backend to `mongol-norm` 0.4.0 (`mng-canonical/5`). This crate's version is unchanged.
 - Consume `mongol-norm`'s public written-unit stream, which now treats `Zwnj` as a structural joining break, drops redundant ZWJ/ZWNJ, merges repeated identical controls, and expands `Cr` in every position.
-- Reverse conversion shapes a word that contains ZWNJ as one run so context looks through the break, then writes surviving ZWNJs back as `U+200C`.
+- Reverse conversion shapes a word that contains ZWNJ as one run so context looks through the break, and positions each side independently. Surviving `Zwnj` is not written back as `U+200C`: ZVVNMOD PUA codes already encode the unjoined presentation forms.
 
 ### Canonical encoding (intentional)
 
@@ -20,7 +20,7 @@ These outputs follow `mongol-norm` 0.4's selection policy; the ZVVNMOD inventory
 
 ### Testing
 
-- Add regressions for ZWNJ structural splitting and conversion roundtrips.
+- Add regressions for ZWNJ structural splitting, unjoined-vs-joined ZVVNMOD spellings, and positioned-unit roundtrips.
 - Update ZWJ-spelling expectations that `mng-canonical/5` no longer invents.
 
 ## [0.3.2] - 2026-09-15

@@ -9,7 +9,7 @@ use std::sync::OnceLock;
 ///
 /// `Shaper::new` derives its lookup maps from `&'static` tables and the shaper
 /// is immutable afterwards, so one instance serves the whole process.
-pub(crate) fn shaper() -> &'static Shaper {
+fn shaper() -> &'static Shaper {
     static SHAPER: OnceLock<Shaper> = OnceLock::new();
     SHAPER.get_or_init(|| Shaper::new(Locale::Mng))
 }
@@ -189,7 +189,7 @@ impl From<Error> for Utn57ShapeError {
 /// records; `Zwj` and `Zwnj` are outside the reviewed UTN #57 inventory and are
 /// not themselves records. Only `Nirugu` and `Zwj` pad the chain they sit
 /// against; `Zwnj` is a joining break.
-pub(crate) fn position_shaped_written_units(
+fn position_shaped_written_units(
     shape: &[WrittenUnit],
 ) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57ShapeError> {
     let mut records = Vec::with_capacity(shape.len());

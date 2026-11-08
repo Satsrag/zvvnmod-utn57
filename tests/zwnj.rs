@@ -1,11 +1,13 @@
 //! ZWNJ (`U+200C`) is a joining break inside a Mongolian word in `mongol-norm`
-//! 0.4. Forward conversion still treats input ZWNJ as passthrough; reverse
-//! conversion shapes the whole word so context looks through the break, then
-//! writes surviving ZWNJs back.
+//! 0.4. Reverse conversion shapes the whole word so context looks through it
+//! and positions each side independently. The break itself is not written into
+//! ZVVNMOD: the PUA codes already *are* the unjoined presentation forms.
+//! Forward conversion still treats input ZWNJ as passthrough.
 
 use zvvnmod_utn57::{
-    convert_utn57_to_zvvnmod, convert_zvvnmod_to_utn57, mongol_norm,
-    shape_utn57_positioned_written_units, Utn57PositionedWrittenUnit,
+    convert_utn57_run_to_zvvnmod, convert_utn57_to_zvvnmod, convert_zvvnmod_run,
+    convert_zvvnmod_to_utn57, shape_utn57_positioned_written_units, Utn57PositionedWrittenUnit,
+    Utn57TextConversionError, AA_FINA, A_FINA, A_INIT, B_A_INIT, B_INIT,
 };
 
 fn hex(text: &str) -> String {
@@ -51,31 +53,63 @@ fn a_lone_zwnj_shapes_to_no_written_units() {
 }
 
 #[test]
-fn reverse_conversion_writes_a_surviving_zwnj_back() {
+fn reverse_conversion_does_not_write_zwnj_into_zvvnmod() {
     let zvvnmod = convert_utn57_to_zvvnmod(B_ZWNJ_A).unwrap();
     assert!(
-        zvvnmod.contains('\u{200C}'),
-        "expected a ZWNJ in {zvvnmod:?} ({})",
+        !zvvnmod.contains('\u{200C}'),
+        "ZVVNMOD must not carry U+200C: {}",
         hex(&zvvnmod)
+    );
+    assert_eq!(
+        zvvnmod
+            .chars()
+            .map(zvvnmod_utn57::zvvnmod_code)
+            .collect::<Vec<_>>(),
+        [Some(B_INIT), Some(A_INIT), Some(A_FINA)]
     );
 }
 
 #[test]
-fn zwnj_round_trips_through_both_conversion_directions() {
-    let zvvnmod = convert_utn57_to_zvvnmod(B_ZWNJ_A).unwrap();
-    let utn57 = convert_zvvnmod_to_utn57(&zvvnmod).unwrap();
-    assert!(
-        utn57.contains('\u{200C}'),
-        "forward lost the break: {}",
-        hex(&utn57)
+fn unjoined_presentation_forms_differ_from_the_joined_word() {
+    // Per-segment positioning is what preserves the break's ink: ᠪ‌ᠠ is
+    // B:init + isolated A, while ᠪᠠ is the bowed ligature. U+200C is not
+    // required to tell those ZVVNMOD spellings apart.
+    let broken = convert_utn57_to_zvvnmod(B_ZWNJ_A).unwrap();
+    let joined = convert_utn57_to_zvvnmod("\u{182A}\u{1820}").unwrap();
+    assert_ne!(
+        broken,
+        joined,
+        "broken {} joined {}",
+        hex(&broken),
+        hex(&joined)
     );
-    assert_eq!(convert_utn57_to_zvvnmod(&utn57).unwrap(), zvvnmod);
-
-    let shaper = mongol_norm::Shaper::new(mongol_norm::Locale::Mng);
     assert_eq!(
-        shaper.shape(&utn57).unwrap(),
-        shaper.shape(B_ZWNJ_A).unwrap()
+        joined
+            .chars()
+            .map(zvvnmod_utn57::zvvnmod_code)
+            .collect::<Vec<_>>(),
+        [Some(B_A_INIT), Some(AA_FINA)]
     );
+}
+
+#[test]
+fn positioned_unit_roundtrip_does_not_need_zwnj() {
+    let records = shape_utn57_positioned_written_units(B_ZWNJ_A).unwrap();
+    let codes = convert_utn57_run_to_zvvnmod(&records).unwrap();
+    assert_eq!(codes, [B_INIT, A_INIT, A_FINA]);
+    assert_eq!(convert_zvvnmod_run(&codes).unwrap(), records);
+}
+
+#[test]
+fn complete_text_forward_of_unjoined_glyphs_cannot_rejoin_them() {
+    // Concatenated B:init A:init A:fina is valid ZVVNMOD ink but not one
+    // Unicode joining chain, so the text-level encoder rejects it rather
+    // than inventing a ZWNJ.
+    let zvvnmod = convert_utn57_to_zvvnmod(B_ZWNJ_A).unwrap();
+    assert!(matches!(
+        convert_zvvnmod_to_utn57(&zvvnmod),
+        Err(Utn57TextConversionError::Normalize(_))
+    ));
 }
 
 #[test]
@@ -93,7 +127,7 @@ fn input_zwnj_is_passthrough_between_independently_normalized_runs() {
 }
 
 #[test]
-fn a_lone_zwnj_reads_back_as_itself() {
-    assert_eq!(convert_utn57_to_zvvnmod("\u{200C}").unwrap(), "\u{200C}");
+fn a_lone_zwnj_has_no_zvvnmod_presentation() {
+    assert_eq!(convert_utn57_to_zvvnmod("\u{200C}").unwrap(), "");
     assert_eq!(convert_zvvnmod_to_utn57("\u{200C}").unwrap(), "\u{200C}");
 }
