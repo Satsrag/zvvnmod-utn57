@@ -1,4 +1,4 @@
-use crate::normalize::{normalize_positioned_written_units, shape_utn57_positioned_written_units};
+use crate::normalize::{normalize_positioned_written_units, shape_utn57_positioned_segments};
 use crate::{
     classify_zvvnmod_text_character, convert_utn57_run_to_zvvnmod, convert_zvvnmod_run,
     zvvnmod_code, Utn57ConversionError, Utn57PositionedWrittenUnit, Utn57ReverseError,
@@ -191,10 +191,15 @@ pub enum Utn57ConversionWarning {
     /// Input ZWJ is passthrough and never enters a run, so every joiner inside
     /// a normalized run is one `mongol-norm` invented: the run begins or ends
     /// with a joined-form glyph (a `medi` at the start, a `medi` or `init` at
-    /// the end) and ZVVNMOD has no unjoined form of it. `U+E09C` (`G m O f`)
+    /// the end) that ZVVNMOD has no unjoined form of, and whose joined and
+    /// unjoined forms are not reviewed as equivalent under `mongol-norm`'s
+    /// canonical control policy (`mng-canonical/5`). `U+E09C` (`G m O f`)
     /// standing for a whole word was the first such gap (Satsrag/meco-rust#32);
-    /// it is now spelled by `U+E096`. A lone joined-form glyph a source really
-    /// did write is reported the same way — the ink is right either way.
+    /// it is now spelled by `U+E096` (and under `mng-canonical/5`, `G:medi` at
+    /// a segment start is also equivalent to `G:init`). A lone joined-form
+    /// glyph whose joined shape differs from its unjoined one (such as `U+E005`
+    /// `A m`, `U+E001` `O i`, or `U+E00F` `O f`) is reported the same way —
+    /// the ink is right either way.
     InventedZwj {
         /// Ordinal of the run among the input's ZVVNMOD runs, from zero.
         run: usize,
@@ -465,15 +470,41 @@ impl From<Utn57ReverseError> for ZvvnmodTextConversionError {
     }
 }
 
+/// Non-joining structural break (`U+200C ZERO WIDTH NON-JOINER`) emitted between
+/// ZWNJ-delimited segments in ZVVNMOD output.
+///
+/// Rationale for representing `WrittenUnit::Zwnj` as `U+200C` in ZVVNMOD text:
+/// - The 140-code formal ZVVNMOD shape inventory is locked to the font's PUA
+///   glyphs and has no PUA code for a non-joining break, while `U+202F` is
+///   reserved exclusively for [`ZVVNMOD_SUFFIX_SEPARATOR`](crate::ZVVNMOD_SUFFIX_SEPARATOR)
+///   (which the forward converter reads back as `U+180E MVS`).
+/// - On the forward path ([`convert_zvvnmod_to_utn57`]), `U+200C` is classified
+///   as [`ZvvnmodTextCharacterKind::Passthrough`]. It splits the ZVVNMOD codes
+///   on either side of the break into independent `ZvvnmodRun`s and is preserved
+///   verbatim between their normalized UTN #57 encodings.
+/// - Because each `ZvvnmodRun` is converted by [`convert_zvvnmod_run`] and
+///   normalized independently, no multi-code rule in `ZVVNMOD_TO_UTN57_MAPPINGS`
+///   — in particular the inferred chachlag pairs `X_FINA AA_FINA → X:fina MVS Aa:isol`
+///   (such as `L_FINA AA_FINA` on `ᠠᠯ‌ᠠ᠌`, `A L ZWNJ A FVS2`), the retained
+///   chachlag rules, the composite rules, or the particle rules — and no
+///   `Ir_fina` preprocessing rule can ever match across a ZWNJ break.
+const ZVVNMOD_ZWNJ_BREAK: char = '\u{200C}';
+
 /// Convert complete text containing Mongolian words to ZVVNMOD output.
 ///
-/// Runs of Mongolian word characters — letters, FVS, MVS, NNBSP, nirugu and
-/// ZWJ — are shaped, positioned, and spelled in ZVVNMOD. A detached-suffix
-/// boundary the chachlag rules did not consume is spelled `U+202F`, so
-/// [`convert_zvvnmod_to_utn57`] can tell it from the `U+0020` between words.
-/// Every other character preserves its order and code point, mirroring
-/// [`convert_zvvnmod_to_utn57`]'s treatment of text outside the ZVVNMOD shape
-/// inventory.
+/// Runs of Mongolian word characters — letters, FVS, MVS, NNBSP, nirugu, ZWJ
+/// and ZWNJ — are shaped, positioned, and spelled in ZVVNMOD. Each word is
+/// shaped as a whole by `mongol-norm` first (so contextual rules look through
+/// ZWNJ, consecutive `ZWJ`/`ZWNJ`/`MVS` controls merge, and redundant `ZWJ` and
+/// `ZWNJ` units are dropped), then split at surviving `WrittenUnit::Zwnj`
+/// breaks. Each ZWNJ-delimited segment is converted and recomposed independently
+/// with `U+200C` emitted between segments, preventing reverse multi-unit rules,
+/// glyph recomposition, and forward multi-code rules from matching across a
+/// ZWNJ break. A detached-suffix boundary the chachlag rules did not consume is
+/// spelled `U+202F`, so [`convert_zvvnmod_to_utn57`] can tell it from the
+/// `U+0020` between words. Every other character preserves its order and code
+/// point, mirroring [`convert_zvvnmod_to_utn57`]'s treatment of text outside
+/// the ZVVNMOD shape inventory.
 ///
 /// # Errors
 ///
@@ -481,13 +512,37 @@ impl From<Utn57ReverseError> for ZvvnmodTextConversionError {
 /// the ZVVNMOD font has no glyph for is reported rather than replaced by a near
 /// glyph, so the output never silently differs from the input.
 pub fn convert_utn57_to_zvvnmod(input: &str) -> Result<String, ZvvnmodTextConversionError> {
+    fn offset_reverse_error(error: Utn57ReverseError, offset: usize) -> Utn57ReverseError {
+        match error {
+            Utn57ReverseError::Unrepresentable { index, unit } => {
+                Utn57ReverseError::Unrepresentable {
+                    index: offset + index,
+                    unit,
+                }
+            }
+            Utn57ReverseError::UnknownUnit { index, unit } => Utn57ReverseError::UnknownUnit {
+                index: offset + index,
+                unit,
+            },
+        }
+    }
+
     fn flush(word: &mut String, output: &mut String) -> Result<(), ZvvnmodTextConversionError> {
         if word.is_empty() {
             return Ok(());
         }
-        let records = shape_utn57_positioned_written_units(word)?;
-        for code in convert_utn57_run_to_zvvnmod(&records)? {
-            output.push(code.as_char().expect("ZVVNMOD codes are scalar values"));
+        let segments = shape_utn57_positioned_segments(word)?;
+        let mut record_offset = 0;
+        for (segment_index, records) in segments.iter().enumerate() {
+            if segment_index > 0 {
+                output.push(ZVVNMOD_ZWNJ_BREAK);
+            }
+            let codes = convert_utn57_run_to_zvvnmod(records)
+                .map_err(|error| offset_reverse_error(error, record_offset))?;
+            for code in codes {
+                output.push(code.as_char().expect("ZVVNMOD codes are scalar values"));
+            }
+            record_offset += records.len();
         }
         word.clear();
         Ok(())

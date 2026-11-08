@@ -86,12 +86,14 @@ fn boundaries_are_numbered_in_input_order() {
 
 #[test]
 fn the_reverse_direction_still_reads_its_input_faithfully() {
-    // Two MVS in UTN #57 input are not valid, but they are what was written.
+    // Under mongol-norm 0.4.0 (mng-canonical/5), consecutive MVS controls in
+    // UTN #57 input collapse to a single `WrittenUnit::Mvs` during shaping,
+    // matching the forward direction's single-boundary rule.
     assert_eq!(
         convert_utn57_to_zvvnmod(
             "\u{1824}\u{182F}\u{1824}\u{1830}\u{180E}\u{180E}\u{1824}\u{1828}"
         )
         .unwrap(),
-        ulus_un(2)
+        ulus_un(1)
     );
 }

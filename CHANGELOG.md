@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Changed
+
+- Upgrade the normalization and shaping backend from `mongol-norm` 0.2.1 to `mongol-norm` 0.4.0 (`mng-canonical/5`).
+- Handle `WrittenUnit::Zwnj` (`U+200C ZERO WIDTH NON-JOINER`) as a structural non-joining break: `convert_utn57_to_zvvnmod` shapes each Mongolian word as a whole first (so contextual rules such as vowel harmony look through ZWNJ, repeated `ZWJ`/`ZWNJ`/`MVS` controls merge, and redundant `ZWJ`/`ZWNJ` units are dropped), then splits the shaped sequence at surviving `Zwnj` breaks, converts and recomposes each segment independently, and emits `U+200C` between segments. On the forward path, `U+200C` passes through and splits adjacent ZVVNMOD runs so multi-code rules (such as `L_FINA AA_FINA → L:fina MVS Aa:isol` on `ᠠᠯ‌ᠠ᠌`) never match across a ZWNJ break.
+- Consecutive `MVS` controls in UTN #57 input now collapse into a single `WrittenUnit::Mvs` during shaping under `mongol-norm` 0.4.0, so `convert_utn57_to_zvvnmod` emits one `U+202F` boundary just as `convert_zvvnmod_to_utn57` emits one `MVS` for repeated `U+202F`.
+- Expand `Cr` (`U+1842`) to `O + O` in every position (`isol`, `init`, `medi`, `fina`).
+- Under `mng-canonical/5`'s redundant-ZWJ rules, edge joiners whose joined and unjoined forms are reviewed as equivalent (such as `G_O_FINA` `U+E09C`, `G_O_MEDI` `U+E09B`, `U_FINA` `U+E011`, `I_FINA` `U+E00E`, and lone medial consonants like `B_MEDI` `U+E02A`) are dropped during normalization and no longer trigger `Utn57ConversionWarning::InventedZwj`; runs whose joined form differs from the unjoined form (such as `A_INIT` `U+E000`, `O_INIT` `U+E001`, `I_INIT` `U+E04D`, `A_MEDI` `U+E005`, `O_FINA` `U+E00F`, and `B_FINA` `U+E02B`) retain their invented ZWJ and warning.
+
 ## [0.3.2] - 2026-09-15
 
 ### Fixed

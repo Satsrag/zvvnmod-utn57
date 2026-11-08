@@ -237,13 +237,13 @@ let output = convert_zvvnmod_to_utn57(zvvnmod_text)?;
 `convert_zvvnmod_to_utn57` 是稳定的公共边界。它通过下面说明的 `mongol-norm` crate 完成
 normalization，不需要任何安装步骤。
 
-完整文本分类器只转换139个正式 ZVVNMOD shape codes，其中包含 ZVVNMOD 自己的 Nirugu 编码。
-标准 Unicode `U+180A` Nirugu、`U+180E` MVS 和输入 `U+200D` ZWJ
+完整文本分类器只转换140个正式 ZVVNMOD shape codes，其中包含 ZVVNMOD 自己的 Nirugu 编码。
+标准 Unicode `U+180A` Nirugu、`U+180E` MVS、输入 `U+200D` ZWJ 和 `U+200C` ZWNJ
 都没有 ZVVNMOD shaping 语义：本库原样保留它们，并以它们分隔相邻 shape runs。
 `U+202F` 同样分隔相邻 runs，但它不是 passthrough：它是[分写后缀边界](#分写后缀边界)，
 读回时还原为 UTN #57 `MVS`。
 normalizer 在编码 positioned written units 时可能自行输出 ZWJ；
-该后端输出同样原样保留，不会拿输入 ZWJ 去替换或去重。正式 shape inventory 之外
+该后端输出同样原样保留，不会拿输入 ZWJ 去替换或去重。该连接符由后端补出——输入 ZWJ 不会进入 run——标记该 run 以 ZVVNMOD 没有独立形式的连写字形开头或结尾，且在 `mongol-norm` 0.4.0 的规范控制策略（`mng-canonical/5`）下其连写与非连写字形不等价。`convert_zvvnmod_to_utn57_with_warnings` 返回相同文本，并对每个此类 run 附带一条 `Utn57ConversionWarning::InventedZwj`（指明该 run 的编码）；`zvvnmod-to-utn57` 二进制将其打印到 stderr。正式 shape inventory 之外
 的所有字符——包括 Unicode 标点、数字、空白、普通混合文本、emoji 和非 ZVVNMOD PUA——
 都按原 code point 和原顺序保留。MenkShape `U+E23F..=U+E242` 等 source-specific aliases
 由上游 source converter 处理，本库不解释其语义。旧 ZVVNMOD `U+E140..=U+E144`
@@ -266,9 +266,9 @@ utn57-to-zvvnmod '<mongolian-text>'
 ```text
 包含蒙古文单词的完整文本
 → 分离单词 runs 与 passthrough spans
-→ 用 mongol-norm 的公开无重复 written-unit 流 shape 每个 run，并还原每个单位的连写位置
-→ 按 reviewed longest match 把 positioned units 替换为 ZVVNMOD 码
-→ 把组件序列合并成联合 ZVVNMOD 字形
+→ 用 mongol-norm 的公开无重复 written-unit 流整体 shape 每个单词
+→ 在保留下来的 `Zwnj` 断开处切分片段，还原每个单位的连写位置，并在片段之间输出 `U+200C`
+→ 在每个片段内把组件序列合并成联合 ZVVNMOD 字形
 → 按原边界补回 passthrough spans
 ```
 
@@ -300,6 +300,23 @@ ZVVNMOD 的，下游各 spoke 都把它渲染成一个多余控制符
 （[meco-rust#22](https://github.com/Satsrag/meco-rust/issues/22)）。ZVVNMOD 输入中的
 `U+180E` 仍然原样穿过并落到同一个 `MVS`，所以旧版本写出的文本边界不丢。
 
+同一处分写后缀边界只能跨越一次，`MVS` 在词干末字母与后缀首字母之间也只能出现一次。
+因此连续两个及以上的 `U+202F` 仍只标记一个边界，正向转换只输出一个 `MVS`，并由
+`convert_zvvnmod_to_utn57_with_warnings` 报告 `Utn57ConversionWarning::CollapsedSuffixSeparators`
+（[meco-rust#40](https://github.com/Satsrag/meco-rust/issues/40)）。在 `mongol-norm` 0.4.0
+（`mng-canonical/5`）下，UTN #57 输入中连续的 `MVS` 控制符在 shaping 阶段也会折叠为单个
+`Mvs` 单位，因此正反两个方向都会将重复边界折叠为一个。
+
+### 非连写断开（`ZWNJ`，`U+200C`）
+
+在 `mongol-norm` 0.4.0 中，`U+200C ZERO WIDTH NON-JOINER` 是蒙古文词内字符：它断开连写链，
+同时对上下文规则（如元音和谐）保持透明，且当断开不改变相邻字母字形时会作为冗余 ZWNJ 被移除。
+`convert_utn57_to_zvvnmod` 先对整个蒙古文单词执行 shaping，再在保留下来的
+`WrittenUnit::Zwnj` 处切分片段，分别转换每个片段并在片段之间输出 `U+200C`。正向转换
+`convert_zvvnmod_to_utn57` 将 `U+200C` 作为 passthrough 处理，从而把两侧的 ZVVNMOD
+编码切分为独立的 run，确保多码规则（如 `ᠠᠯ‌ᠠ᠌` 上的 `L_FINA AA_FINA → L:fina MVS Aa:isol`）
+绝不会跨越 ZWNJ 边界匹配。
+
 ### 联合字形由运行时合并，不写进表
 
 表里一律写组件形式，之后由 `recompose_zvvnmod_codes` 合并，所以
@@ -315,7 +332,7 @@ ZVVNMOD 的，下游各 spoke 都把它渲染成一个多余控制符
 
 ### 没有字形的单位报错，不替换
 
-139 个码的 ZVVNMOD 清单里有七个 positioned unit 没有字形：`Gx:init`、`Gx:medi`、
+140 个码的 ZVVNMOD 清单里有七个 positioned unit 没有字形：`Gx:init`、`Gx:medi`、
 `Hx:fina`、`Ix:isol`、`N:fina`、`Sz:fina`、`Ux:isol`。其中 `Hx:fina` 和 `N:fina`
 仍可通过 chachlag 行到达（最长匹配会先命中）；单独出现时返回
 `Utn57ReverseError::Unrepresentable`，并带上出错记录的索引。用相近字形顶替会静默
@@ -324,10 +341,9 @@ ZVVNMOD 的，下游各 spoke 都把它渲染成一个多余控制符
 ### 反向无法还原的部分
 
 ZVVNMOD 编码的是字形，因此合并了 UTN #57 保留的区分：`K` 与 `K2` 共用一个字形；
-`Dd:medi`、`Dd:fina`、`H:medi` 各自与一个同样出现在真实词里的两单位序列写法相同。
-`mongol-norm` 0.2 提供统一的公开无重复 written-unit 流：先展开三条 conformant
-碰撞（`Dd:medi → O:medi A:medi`、`Dd:fina → O:medi A:fina`、
-`H:medi → A:medi A:medi`），再交给本库映射。它只在紧邻的前一单位是 bowed
+`Dd:medi`、`Dd:fina`、`H:medi`、`Hx:medi` 与 `Cr` 各自与一个同样出现在真实词里的两单位序列写法相同。
+`mongol-norm` 0.4（`mng-canonical/5`）提供统一的公开无重复 written-unit 流：先展开五个单单位重复编码（`Dd:medi → O:medi A:medi`、`Dd:fina → O:medi A:fina`、
+`H:medi → A:medi A:medi`、`Hx:medi → N:medi N:medi` 以及所有位置的 `Cr → O + O`），合并连续相同的 `ZWJ`、`ZWNJ`、`MVS` 控制符，并移除冗余的 `ZWJ` 与 `ZWNJ`，再交给本库映射。它只在紧邻的前一单位是 bowed
 written unit（`B`、`P`、`F`、`G`、`Gx`、`K`、`K2`）时折叠
 `A:medi Aa:fina`；中间插入其他单位、结构边界或前一单位不是 bowed 时均不折叠。
 反向转换仍输出同一个共享 ZVVNMOD 写法，因此既有 ZVVNMOD 文本和反向输出契约不变。
@@ -377,7 +393,7 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-`mongol-norm = "0.2.1"` 提供反向转换所消费的公开无重复 written-unit 流。
+`mongol-norm = "0.4.0"` 提供反向转换所消费的公开无重复 written-unit 流。
 `Cargo.lock` 会记录精确解析到的版本，确保 application 和 CLI 构建可复现。
 
 ## 验证
