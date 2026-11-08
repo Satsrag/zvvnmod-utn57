@@ -33,11 +33,14 @@ fn a_word_initial_g_o_ligature_is_spelled_without_a_zwj() {
 
 #[test]
 fn the_medial_g_o_ligature_still_pads_its_open_left_edge() {
-    // U+E09C is a medial glyph; alone it still needs the joiner, as any lone
-    // medial glyph does. Sources that meant the whole word now write U+E096.
+    // Under mongol-norm 0.4.0 (mng-canonical/5), G is in INITIAL_BEFORE_LETTER
+    // (G:medi ≡ G:init on the reference font), so the leading ZWJ that pads a
+    // standalone U+E09C (G:medi O:fina) is dropped as redundant during
+    // canonical control normalization. Sources that meant the whole word still
+    // write U+E096 (which is what reverse conversion emits for ᠭ᠌ᠥ᠌).
     assert_eq!(
         convert_zvvnmod_to_utn57("\u{E09C}").unwrap(),
-        format!("\u{200D}{G_O_ISOL_UTN57}")
+        G_O_ISOL_UTN57
     );
     assert_eq!(G_O_FINA, ZvvnmodCode(0xE09C));
 }
