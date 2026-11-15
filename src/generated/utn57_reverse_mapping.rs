@@ -608,61 +608,61 @@ pub static UTN57_TO_ZVVNMOD_MAPPINGS: &[Utn57ToZvvnmodMapping] = &[
     // chachlag:Hx:fina
     Utn57ToZvvnmodMapping {
         id: "chachlag:Hx:fina",
-        sources: &[UTN57_HX_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        sources: &[UTN57_HX_FINA, UTN57_AA_ISOL],
         targets: &[HX_AA_FINA],
     },
     // chachlag:N:fina
     Utn57ToZvvnmodMapping {
         id: "chachlag:N:fina",
-        sources: &[UTN57_N_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        sources: &[UTN57_N_FINA, UTN57_AA_ISOL],
         targets: &[N_AA_FINA],
     },
     // chachlag:M:fina
     Utn57ToZvvnmodMapping {
         id: "chachlag:M:fina",
-        sources: &[UTN57_M_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        sources: &[UTN57_M_FINA, UTN57_AA_ISOL],
         targets: &[M_FINA, AA_FINA],
     },
     // chachlag:L:fina
     Utn57ToZvvnmodMapping {
         id: "chachlag:L:fina",
-        sources: &[UTN57_L_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        sources: &[UTN57_L_FINA, UTN57_AA_ISOL],
         targets: &[L_FINA, AA_FINA],
     },
     // chachlag:S:fina
     Utn57ToZvvnmodMapping {
         id: "chachlag:S:fina",
-        sources: &[UTN57_S_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        sources: &[UTN57_S_FINA, UTN57_AA_ISOL],
         targets: &[S_FINA, AA_FINA],
     },
     // chachlag:R:fina
     Utn57ToZvvnmodMapping {
         id: "chachlag:R:fina",
-        sources: &[UTN57_R_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        sources: &[UTN57_R_FINA, UTN57_AA_ISOL],
         targets: &[R_FINA, AA_FINA],
     },
     // chachlag:I:isol
     Utn57ToZvvnmodMapping {
         id: "chachlag:I:isol",
-        sources: &[UTN57_I_ISOL, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        sources: &[UTN57_I_ISOL, UTN57_AA_ISOL],
         targets: &[I_ISOL, AA_FINA],
     },
     // chachlag:I:fina
     Utn57ToZvvnmodMapping {
         id: "chachlag:I:fina",
-        sources: &[UTN57_I_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        sources: &[UTN57_I_FINA, UTN57_AA_ISOL],
         targets: &[I_FINA, AA_FINA],
     },
     // chachlag:U:fina
     Utn57ToZvvnmodMapping {
         id: "chachlag:U:fina",
-        sources: &[UTN57_U_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        sources: &[UTN57_U_FINA, UTN57_AA_ISOL],
         targets: &[U_FINA, AA_FINA],
     },
     // chachlag:H:fina
     Utn57ToZvvnmodMapping {
         id: "chachlag:H:fina",
-        sources: &[UTN57_H_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        sources: &[UTN57_H_FINA, UTN57_AA_ISOL],
         targets: &[H_FINA, AA_FINA],
     },
 ];

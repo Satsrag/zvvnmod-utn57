@@ -4,15 +4,16 @@ use crate::{
 use std::error::Error;
 use std::fmt;
 
-/// The longest source sequence in the reverse relation: the chachlag triples.
-const LONGEST_RULE: usize = 3;
+/// The longest source sequence in the reverse relation: the chachlag pairs.
+const LONGEST_RULE: usize = 2;
 
 /// How ZVVNMOD spells a detached-suffix boundary: `U+202F NARROW NO-BREAK SPACE`.
 ///
-/// A boundary before a chachlag ᠠ/ᠡ is carried by the merged chachlag glyph, so
-/// the ten `X:fina MVS Aa:isol` rules consume their `MVS` and emit no separator.
-/// Every other `MVS` record is a boundary of its own, and ZVVNMOD keeps it
-/// distinct from the `U+0020` it writes between words — which is what lets
+/// A chachlag boundary before ᠠ/ᠡ is implicit in `Aa:isol` (and in the ten
+/// `X:fina Aa:isol` / `I:isol Aa:isol` chachlag pairs), so it emits no separate
+/// separator. Every `MVS` record in the positioned stream is therefore a
+/// detached-suffix boundary of its own, and ZVVNMOD keeps it distinct from the
+/// `U+0020` it writes between words — which is what lets
 /// [`convert_zvvnmod_to_utn57`] read the boundary back as `MVS` without having to
 /// guess which spaces are suffix boundaries.
 ///
@@ -118,12 +119,12 @@ pub fn recompose_zvvnmod_codes(codes: &[ZvvnmodCode]) -> Vec<ZvvnmodCode> {
 
 /// Convert one run of positioned UTN #57 written units to ZVVNMOD codes.
 ///
-/// Reviewed longest-match replacement resolves the chachlag triples
-/// (`X:fina MVS Aa:isol` → one merged code) before the single-unit rows, then
-/// [`recompose_zvvnmod_codes`] merges component runs into their merged glyphs.
-/// A `MVS` record no chachlag rule consumed is emitted as
-/// [`ZVVNMOD_SUFFIX_SEPARATOR`], the `U+202F` ZVVNMOD writes a detached-suffix
-/// boundary with.
+/// Reviewed longest-match replacement resolves the chachlag pairs
+/// (`X:fina Aa:isol` / `I:isol Aa:isol` → merged or component chachlag codes)
+/// before the single-unit rows, then [`recompose_zvvnmod_codes`] merges
+/// component runs into their merged glyphs. Every explicit `MVS` record is
+/// emitted as [`ZVVNMOD_SUFFIX_SEPARATOR`], the `U+202F` ZVVNMOD writes a
+/// detached-suffix boundary with.
 ///
 /// # Errors
 ///
@@ -201,8 +202,8 @@ mod tests {
     }
 
     #[test]
-    fn a_chachlag_triple_wins_over_its_single_unit_rows() {
-        let units = [UTN57_HX_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL];
+    fn a_chachlag_pair_wins_over_its_single_unit_rows() {
+        let units = [UTN57_HX_FINA, UTN57_AA_ISOL];
 
         assert_eq!(convert_utn57_run_to_zvvnmod(&units).unwrap(), [HX_AA_FINA]);
     }
@@ -222,7 +223,7 @@ mod tests {
 
     #[test]
     fn the_same_unit_converts_inside_its_chachlag_context() {
-        let units = [UTN57_N_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL];
+        let units = [UTN57_N_FINA, UTN57_AA_ISOL];
 
         assert_eq!(
             convert_utn57_run_to_zvvnmod(&units).unwrap(),

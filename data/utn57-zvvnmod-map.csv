@@ -1,4 +1,4 @@
-# metadata={"schema":"utn57-zvvnmod-runtime-map-v1","baseline":"sha256:1f0cb6b8b476022726cec5f2a55973b9423ea96d7b8fd79c98b8447cf73b3592"}
+# metadata={"schema":"utn57-zvvnmod-runtime-map-v1","baseline":"sha256:666f62bf06b570b7f273b9d2fbb1089038c15b119efc5bb76f27b7bdf7fab025"}
 id,sources,targets,note
 unit:A:isol,A:isol,A_INIT AA_FINA,from target:A:isol; composite glyph sequence; ZVVNMOD writes A:init + Aa:isol identically but that reading is legal-not-conformant UTN (never observed) so this unit is the only reading
 unit:A:init,A:init,A_INIT,from source:A_INIT
@@ -96,14 +96,14 @@ unit:Z:medi,Z:medi,Z_MEDI,from source:Z_MEDI
 unit:Z:fina,Z:fina,Z_FINA,from source:Z_FINA
 unit:Zr:init,Zr:init,ZR_INIT,from source:ZR_INIT
 control:Nirugu,Nirugu,NIRUGU,from source:NIRUGU
-control:MVS,MVS,,structural; passed through as its source character unless a chachlag row consumes it
-chachlag:Hx:fina,Hx:fina MVS Aa:isol,HX_AA_FINA,from source:HX_AA_FINA; MVS is implicit between the two glyphs
-chachlag:N:fina,N:fina MVS Aa:isol,N_AA_FINA,from source:N_AA_FINA; MVS is implicit between the two glyphs
-chachlag:M:fina,M:fina MVS Aa:isol,M_FINA AA_FINA,from chachlag:M_FINA_AA_FINA; MVS is implicit between the two glyphs
-chachlag:L:fina,L:fina MVS Aa:isol,L_FINA AA_FINA,from chachlag:L_FINA_AA_FINA; MVS is implicit between the two glyphs
-chachlag:S:fina,S:fina MVS Aa:isol,S_FINA AA_FINA,from chachlag:S_FINA_AA_FINA; MVS is implicit between the two glyphs
-chachlag:R:fina,R:fina MVS Aa:isol,R_FINA AA_FINA,from chachlag:R_FINA_AA_FINA; MVS is implicit between the two glyphs
-chachlag:I:isol,I:isol MVS Aa:isol,I_ISOL AA_FINA,from chachlag:I_ISOL_AA_FINA; MVS is implicit between the two glyphs
-chachlag:I:fina,I:fina MVS Aa:isol,I_FINA AA_FINA,from chachlag:I_FINA_AA_FINA; MVS is implicit between the two glyphs
-chachlag:U:fina,U:fina MVS Aa:isol,U_FINA AA_FINA,from chachlag:U_FINA_AA_FINA; MVS is implicit between the two glyphs
-chachlag:H:fina,H:fina MVS Aa:isol,H_FINA AA_FINA,from chachlag:H_FINA_AA_FINA; MVS is implicit between the two glyphs
+control:MVS,MVS,,structural detached-suffix boundary; emitted as U+202F
+chachlag:Hx:fina,Hx:fina Aa:isol,HX_AA_FINA,from source:HX_AA_FINA; chachlag MVS is implicit before Aa:isol
+chachlag:N:fina,N:fina Aa:isol,N_AA_FINA,from source:N_AA_FINA; chachlag MVS is implicit before Aa:isol
+chachlag:M:fina,M:fina Aa:isol,M_FINA AA_FINA,from chachlag:M_FINA_AA_FINA; chachlag MVS is implicit before Aa:isol
+chachlag:L:fina,L:fina Aa:isol,L_FINA AA_FINA,from chachlag:L_FINA_AA_FINA; chachlag MVS is implicit before Aa:isol
+chachlag:S:fina,S:fina Aa:isol,S_FINA AA_FINA,from chachlag:S_FINA_AA_FINA; chachlag MVS is implicit before Aa:isol
+chachlag:R:fina,R:fina Aa:isol,R_FINA AA_FINA,from chachlag:R_FINA_AA_FINA; chachlag MVS is implicit before Aa:isol
+chachlag:I:isol,I:isol Aa:isol,I_ISOL AA_FINA,from chachlag:I_ISOL_AA_FINA; chachlag MVS is implicit before Aa:isol
+chachlag:I:fina,I:fina Aa:isol,I_FINA AA_FINA,from chachlag:I_FINA_AA_FINA; chachlag MVS is implicit before Aa:isol
+chachlag:U:fina,U:fina Aa:isol,U_FINA AA_FINA,from chachlag:U_FINA_AA_FINA; chachlag MVS is implicit before Aa:isol
+chachlag:H:fina,H:fina Aa:isol,H_FINA AA_FINA,from chachlag:H_FINA_AA_FINA; chachlag MVS is implicit before Aa:isol

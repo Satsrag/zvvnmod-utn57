@@ -155,10 +155,10 @@ B_O_MEDI + IR_FINA → B_UE_FINA
 
 ## Reviewed mapping replacement
 
-直接消费合并网站合同 `Satsrag/satsrag.github.io@0b50ba5b9f5c0ee66040ce6e8f343230b8832513` 中的CSV：
+直接消费合并网站合同 `Satsrag/satsrag.github.io@2f544dc4a63028eaa270054c99ad67df15e1cae3` 中的CSV：
 
 - `data/utn57-written-units.csv` 与网站同名 catalogue 逐字节相同，定义97个 positioned UTN #57 written units，其中包括control `MVS`（`U+180E`）；锁定SHA-256为`2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6`。
-- `data/zvvnmod-utn57-map.csv` 与网站下载artifact逐字节相同。文件先包含canonical metadata comment，随后是`id,sources,targets,note` CSV header与147条双边非空reviewed sequence relations：100条main mappings和全部47条particle mappings。锁定SHA-256为`cc58b012ea2e3a1709d723d115ad9eed00de13d32bba166991a1447c889a358c`；独立锁定的reviewed baseline为`sha256:83a60c3e1ac9df98a14c1a6d979f7c5c8733f1e70d52b81f41de1dd321ea5016`。
+- `data/zvvnmod-utn57-map.csv` 与网站下载artifact逐字节相同。文件先包含canonical metadata comment，随后是`id,sources,targets,note` CSV header与147条双边非空reviewed sequence relations：100条main mappings和全部47条particle mappings。锁定SHA-256为`666f62bf06b570b7f273b9d2fbb1089038c15b119efc5bb76f27b7bdf7fab025`；独立锁定的reviewed baseline为`sha256:19c6a20c222da16631f86cf271163d4ab43ea122957d55cc1e73b5e454fa23e2`。
 
 生成器验证canonical metadata、exact CSV schemas、row widths、quote transitions、单空格ordered sequences、稳定row ID语法与reviewed ambiguity set。`python3 scripts/check_website_contract.py --website-root ../satsrag-site-mapping-editor`读取网站已合并的Git blobs，证明byte identity，并把原样复制的bytes交给实际generator。
 
@@ -183,8 +183,9 @@ candidate row IDs；CSV顺序不会决定语义结果。
 reviewed relation同时包含`AA_FINA → Aa:isol`和`AA_FINA → Aa:fina`。因此独占整个run的
 `AA_FINA`选择`Aa:isol`，位于实际word尾部的matched span选择`Aa:fina`。更长的
 `A_MEDI AA_FINA → Aa:fina`会先折叠该sequence，不让任一singleton candidate提前匹配。
-十条reviewed chachlag relations仍通过longest match优先，输出各自的final/isolated onset，
-随后输出`MVS + Aa:isol`；不推断额外的chachlag relation。ZVVNMOD的K/K2共用shape：
+十条reviewed chachlag relations仍通过longest match优先，输出各自的final/isolated onset
+及紧随其后的`Aa:isol`（其前置chachlag `MVS` 由 `mongol-norm` 0.4.2 在规范化阶段自动补出）；
+不推断额外的chachlag relation。ZVVNMOD的K/K2共用shape：
 默认输出K；调用方拥有nominal/context信息时，可通过`Utn57ConversionOptions`显式选择K2。
 
 Nirugu 输出为 `Utn57WrittenUnit::Nirugu` + `Utn57Position::Control`，不会虚构 positional Nirugu。
@@ -243,7 +244,7 @@ normalization，不需要任何安装步骤。
 `U+202F` 同样分隔相邻 runs，但它不是 passthrough：它是[分写后缀边界](#分写后缀边界)，
 读回时还原为 UTN #57 `MVS`。
 normalizer 在编码 positioned written units 时可能自行输出 ZWJ；
-该后端输出同样原样保留，不会拿输入 ZWJ 去替换或去重。该连接符由后端补出——输入 ZWJ 不会进入 run——标记该 run 以 ZVVNMOD 没有独立形式的连写字形开头或结尾，且在 `mongol-norm` 0.4.1 的规范控制策略（`mng-canonical/5`）下其连写与非连写字形不等价。`convert_zvvnmod_to_utn57_with_warnings` 返回相同文本，并对每个此类 run 附带一条 `Utn57ConversionWarning::InventedZwj`（指明该 run 的编码）；`zvvnmod-to-utn57` 二进制将其打印到 stderr。正式 shape inventory 之外
+该后端输出同样原样保留，不会拿输入 ZWJ 去替换或去重。该连接符由后端补出——输入 ZWJ 不会进入 run——标记该 run 以 ZVVNMOD 没有独立形式的连写字形开头或结尾，且在 `mongol-norm` 0.4.2 的规范控制策略（`mng-canonical/5`）下其连写与非连写字形不等价。`convert_zvvnmod_to_utn57_with_warnings` 返回相同文本，并对每个此类 run 附带一条 `Utn57ConversionWarning::InventedZwj`（指明该 run 的编码）；`zvvnmod-to-utn57` 二进制将其打印到 stderr。正式 shape inventory 之外
 的所有字符——包括 Unicode 标点、数字、空白、普通混合文本、emoji 和非 ZVVNMOD PUA——
 都按原 code point 和原顺序保留。MenkShape `U+E23F..=U+E242` 等 source-specific aliases
 由上游 source converter 处理，本库不解释其语义。旧 ZVVNMOD `U+E140..=U+E144`
@@ -273,7 +274,7 @@ utn57-to-zvvnmod '<mongolian-text>'
 ```
 
 `data/utn57-zvvnmod-map.csv` 是 reviewed 关系表：每个 positioned written unit
-一行，外加十条 `X:fina MVS Aa:isol` chachlag 三元组（合并成单个码）。
+一行，外加十条 `X:fina Aa:isol` / `I:isol Aa:isol` chachlag 二元组。
 `scripts/derive_utn57_zvvnmod_map.py` 从正向表推导它，其 `baseline` 钉住正向表的
 摘要，两张表不会各自漂移。
 
@@ -291,9 +292,12 @@ utn57-to-zvvnmod '<mongolian-text>'
 ——转换为 `E042 E005 E03B E00D 202F E04D E006 E00C`，读回时 `MVS` 完好。两种空格
 必须分开才能做到这一点：若都写成 `U+0020`，反向转换只能猜哪些空格分词、哪些分写后缀。
 
-chachlag ᠠ/ᠡ 之前的边界不需要分隔符——十条 chachlag 行把 `MVS` 吃进联合字形，
-上面的 `E03B E00D` 就是其中一条。`U+202F` 是边界而不是 shape，因此没有正式
-inventory 编码；分类器把它报告为 `ZvvnmodTextCharacterKind::SuffixSeparator`。
+chachlag ᠠ/ᠡ 之前的边界不需要 `U+202F` 分隔符——在 `mongol-norm` 0.4.2 中，`Aa:isol`
+自带隐式前置 `MVS`（显式传入前置 `MVS` 会以 `Error::RedundantChachlagMvs` 拒绝），shaping
+阶段也会把紧邻孤立 `Aa` 前的 `Mvs` 吸收进 `Aa:isol`，上面的 `E03B E00D` 就命中十条
+chachlag 二元组之一。因此 `Utn57PositionedWrittenUnit` 流中的 `MVS` 记录专门表示分写后缀边界。
+`U+202F` 是边界而不是 shape，因此没有正式 inventory 编码；分类器把它报告为
+`ZvvnmodTextCharacterKind::SuffixSeparator`。
 
 0.1.1 及之前，该边界以原始 `U+180E` 进入 ZVVNMOD。那是 UTN #57 的控制码而不是
 ZVVNMOD 的，下游各 spoke 都把它渲染成一个多余控制符
@@ -312,8 +316,8 @@ ZVVNMOD 的，下游各 spoke 都把它渲染成一个多余控制符
 在 `mongol-norm` 0.4 中，`U+200C ZERO WIDTH NON-JOINER` 是蒙古文词内字符：它断开连写链，
 同时对上下文规则（如元音和谐）保持透明，且当断开不改变相邻字母字形时会作为冗余 ZWNJ 被移除。
 与 `ZWJ` 一样，`ZWNJ` 仅用于确定相邻单位的连写位置（`init` / `medi` / `fina` / `isol`），
-不在 ZVVNMOD 字形码流中输出 `U+200C`；当从 ZVVNMOD 转回 UTN #57 时，`mongol-norm` 0.4.1
-会在断开的子链边界自动补上 `ZWNJ`，并仅在必须靠 `ZWNJ` 才能实现字形时保留 `U+200C`。
+不在 ZVVNMOD 字形码流中输出 `U+200C`；当从 ZVVNMOD 转回 UTN #57 时，`mongol-norm` 0.4.2
+会在断开的子链及非连写 `Nirugu` 边界自动补上 `ZWNJ`，并仅在必须靠 `ZWNJ` 才能实现字形时保留 `U+200C`。
 
 ### 联合字形由运行时合并，不写进表
 
@@ -357,7 +361,7 @@ Normalization 使用纯 Rust 的 [`mongol-norm`](https://crates.io/crates/mongol
 
 ```toml
 [dependencies]
-zvvnmod-utn57 = "0.2"
+zvvnmod-utn57 = "0.4"
 ```
 
 ```bash
@@ -379,7 +383,8 @@ unit 和 position 的映射写成穷尽 `match`，而不是走 `contract_name` �
 
 后端的错误变体本身就是有用信息，因此不做包装。`Utn57TextConversionError::Normalize`
 原样携带 `mongol_norm::Error`，并且本 crate 重导出了 `mongol_norm`，调用方无需单独声明
-依赖即可 match `UnsupportedPositionedUnit`、`ChainPositionMismatch` 等具体变体：
+依赖即可 match `UnsupportedPositionedUnit`、`RedundantChachlagMvs`、`ExplicitZwnj`、
+`ChainPositionMismatch` 等具体变体：
 
 ```rust
 use zvvnmod_utn57::{convert_zvvnmod_to_utn57, mongol_norm, Utn57TextConversionError};
@@ -391,7 +396,7 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-`mongol-norm = "0.4.1"` 提供反向转换所消费的公开无重复 written-unit 流。
+`mongol-norm = "0.4.2"` 提供反向转换所消费的公开无重复 written-unit 流。
 `Cargo.lock` 会记录精确解析到的版本，确保 application 和 CLI 构建可复现。
 
 ## 验证

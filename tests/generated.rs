@@ -28,7 +28,7 @@ fn positioned_written_units_expose_stable_python_contract_names() {
 }
 
 #[test]
-fn reviewed_chachlag_rules_emit_mvs_by_longest_match() {
+fn reviewed_chachlag_rules_emit_aa_isol_by_longest_match() {
     let cases: &[(&[ZvvnmodCode], Utn57WrittenUnit)] = &[
         (&[N_AA_FINA], Utn57WrittenUnit::N),
         (&[HX_AA_FINA], Utn57WrittenUnit::Hx),
@@ -51,7 +51,6 @@ fn reviewed_chachlag_rules_emit_mvs_by_longest_match() {
             convert_zvvnmod_run(input).unwrap(),
             vec![
                 unit(onset, onset_position),
-                unit(Utn57WrittenUnit::MVS, Utn57Position::Control),
                 unit(Utn57WrittenUnit::Aa, Utn57Position::Isol),
             ],
             "failed source sequence: {input:?}",
