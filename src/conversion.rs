@@ -247,8 +247,9 @@ fn resolve_candidates<'a>(
 /// decomposes general merged codes, and then applies reviewed longest-match
 /// mapping. Equal-longest candidates use positional fallback/override and
 /// registered semantic resolution; unresolved families return a typed error.
-/// Reviewed MVS targets are preserved. The function does not yet reconstruct
-/// ZWJ or particle boundaries.
+/// Chachlag vowels resolve to `Aa:isol` (whose leading `MVS` is synthesized
+/// during canonical normalization). The function does not reconstruct ZWJ or
+/// detached-suffix boundaries within a single shape run.
 pub fn convert_zvvnmod_run(
     input: &[ZvvnmodCode],
 ) -> Result<Vec<Utn57PositionedWrittenUnit>, Utn57ConversionError> {

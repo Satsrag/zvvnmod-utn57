@@ -1,4 +1,4 @@
-# metadata={"schema":"zvvnmod-utn57-runtime-map-v1","baseline":"sha256:843af21ad5356565c2f0559a18feaafa3d000ae666d9035c389e26eda199c237"}
+# metadata={"schema":"zvvnmod-utn57-runtime-map-v1","baseline":"sha256:19c6a20c222da16631f86cf271163d4ab43ea122957d55cc1e73b5e454fa23e2"}
 id,sources,targets,note
 source:A_INIT,A_INIT,A:init,
 source:A_MEDI,A_MEDI,A:medi,
@@ -26,7 +26,7 @@ source:H_FINA,H_FINA,H:fina,
 source:HR_MEDI,HR_MEDI,Hr:medi,
 source:HR_FINA,HR_FINA,Hr:fina,
 source:HX_INIT,HX_INIT,Hx:init,
-source:HX_AA_FINA,HX_AA_FINA,Hx:fina MVS Aa:isol,Pinned mongfontbuilder/meco chachlag observation.
+source:HX_AA_FINA,HX_AA_FINA,Hx:fina Aa:isol,Pinned mongfontbuilder/meco chachlag observation.
 source:I_ISOL,I_ISOL,I:isol,
 source:I_INIT,I_INIT,I:init,
 source:I_MEDI,I_MEDI,I:medi,
@@ -44,7 +44,7 @@ source:M_MEDI,M_MEDI,M:medi,
 source:M_FINA,M_FINA,M:fina,
 source:N_INIT,N_INIT,N:init,
 source:N_MEDI,N_MEDI,N:medi,
-source:N_AA_FINA,N_AA_FINA,N:fina MVS Aa:isol,Pinned mongfontbuilder/meco chachlag observation.
+source:N_AA_FINA,N_AA_FINA,N:fina Aa:isol,Pinned mongfontbuilder/meco chachlag observation.
 source:O_INIT,O_INIT,O:init,
 source:O_MEDI,O_MEDI,O:medi,
 source:O_FINA,O_FINA,O:fina,
@@ -92,14 +92,14 @@ target:K2:init,K_INIT,K2:init,
 target:K2:medi,K_MEDI,K2:medi,
 target:K2:fina,K_FINA,K2:fina,
 context:A_MEDI_AA_FINA,A_MEDI AA_FINA,Aa:fina,A_MEDI and AA_FINA jointly represent a connected Aa final.
-chachlag:M_FINA_AA_FINA,M_FINA AA_FINA,M:fina MVS Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
-chachlag:L_FINA_AA_FINA,L_FINA AA_FINA,L:fina MVS Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
-chachlag:S_FINA_AA_FINA,S_FINA AA_FINA,S:fina MVS Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
-chachlag:R_FINA_AA_FINA,R_FINA AA_FINA,R:fina MVS Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
-chachlag:I_ISOL_AA_FINA,I_ISOL AA_FINA,I:isol MVS Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
-chachlag:I_FINA_AA_FINA,I_FINA AA_FINA,I:fina MVS Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
-chachlag:U_FINA_AA_FINA,U_FINA AA_FINA,U:fina MVS Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
-chachlag:H_FINA_AA_FINA,H_FINA AA_FINA,H:fina MVS Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
+chachlag:M_FINA_AA_FINA,M_FINA AA_FINA,M:fina Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
+chachlag:L_FINA_AA_FINA,L_FINA AA_FINA,L:fina Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
+chachlag:S_FINA_AA_FINA,S_FINA AA_FINA,S:fina Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
+chachlag:R_FINA_AA_FINA,R_FINA AA_FINA,R:fina Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
+chachlag:I_ISOL_AA_FINA,I_ISOL AA_FINA,I:isol Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
+chachlag:I_FINA_AA_FINA,I_FINA AA_FINA,I:fina Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
+chachlag:U_FINA_AA_FINA,U_FINA AA_FINA,U:fina Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
+chachlag:H_FINA_AA_FINA,H_FINA AA_FINA,H:fina Aa:isol,UTN chachlag onset-plus-suffix shape alignment.
 particle:01,O_INIT U_FINA,O:init U:fina,
 particle:02,O_INIT U_FINA,O:init U:fina,
 particle:03,B_INIT O_MEDI U_FINA,B:init O:medi U:fina,

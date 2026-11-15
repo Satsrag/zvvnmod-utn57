@@ -1,12 +1,12 @@
 //! Regression contract for the duplicate-free written-unit stream and canonical
-//! control policy (`mng-canonical/5`) provided by `mongol-norm` 0.4.1.
+//! control policy (`mng-canonical/5`) provided by `mongol-norm` 0.4.2.
 
 use zvvnmod_utn57::{
     convert_utn57_to_zvvnmod, convert_zvvnmod_to_utn57,
-    mongol_norm::{Locale, Shaper, WrittenUnit},
+    mongol_norm::{Error, Locale, PositionedWrittenUnit, Shaper, UnitPosition, WrittenUnit},
     normalize_positioned_written_units, shape_utn57_positioned_written_units, Utn57Position,
     Utn57PositionedWrittenUnit, Utn57WrittenUnit, AA_FINA, A_FINA, A_INIT, A_MEDI, B_INIT,
-    B_I_ISOL, H_FINA, I_MEDI, L_FINA, M_INIT,
+    B_I_ISOL, CH_INIT, H_FINA, I_MEDI, L_FINA, M_INIT, NIRUGU,
 };
 
 fn units(records: &[Utn57PositionedWrittenUnit]) -> Vec<Utn57WrittenUnit> {
@@ -150,7 +150,7 @@ fn zwnj_positions_adjacent_letters_without_emitting_u200c_in_zvvnmod_and_synthes
     // 1. `ᠠᠯ‌ᠮᠠ` (`A L ZWNJ M A`): ZWNJ is encoded purely in the glyph positions
     //    (`[A:init, A:medi, L:fina, M:init, A:fina]`), emitting `A_INIT A_MEDI L_FINA M_INIT A_FINA`
     //    with no `U+200C` in ZVVNMOD. Converting back to UTN #57 synthesizes the
-    //    ZWNJ across the `L:fina` / `M:init` sub-chain boundary (`mongol-norm` 0.4.1).
+    //    ZWNJ across the `L:fina` / `M:init` sub-chain boundary.
     let al_zwnj_ma = "\u{1820}\u{182F}\u{200C}\u{182E}\u{1820}";
     let expected_zvvnmod = format!(
         "{}{}{}{}{}",
@@ -188,8 +188,8 @@ fn zwnj_positions_adjacent_letters_without_emitting_u200c_in_zvvnmod_and_synthes
 
     // 3. `ᠠᠯ‌ᠠ᠌` (`A L ZWNJ A FVS2`): shapes to `[A:init, A:medi, L:fina, Aa:isol]`,
     //    which maps to `A_INIT A_MEDI L_FINA AA_FINA` without `U+200C` and
-    //    matches the forward chachlag rule `L_FINA AA_FINA -> L:fina MVS Aa:isol`
-    //    (`ᠠ᠋ᠠᠯ᠎ᠠ`).
+    //    matches the forward chachlag rule `L_FINA AA_FINA -> L:fina Aa:isol`,
+    //    synthesizing `MVS` before `Aa:isol` (`\u{1820}\u{180B}\u{1820}\u{182F}\u{180E}\u{1820}`).
     let al_zwnj_aa = "\u{1820}\u{182F}\u{200C}\u{1820}\u{180C}";
     let al_aa_zvvnmod = convert_utn57_to_zvvnmod(al_zwnj_aa).unwrap();
     assert_eq!(
@@ -262,7 +262,7 @@ fn redundant_zwnj_is_dropped_before_reverse_conversion() {
         B_I_ISOL.as_char().unwrap().to_string()
     );
 
-    // Interior ZWNJ between two `O` units (`ᠠおお‌ᠤ᠋ᠠ` -> `[A, A, O, Zwnj, O, A]`) is
+    // Interior ZWNJ between two `O` units (`ᠠöö‌ᠤ᠋ᠠ` -> `[A, A, O, Zwnj, O, A]`) is
     // redundant (`O` is in `FINA_TO_MEDI` and `INIT_TO_MEDI`) and dropped,
     // matching `ᠠᠤᠤᠠ` (`[A, A, O, O, A]`).
     assert_eq!(
@@ -271,7 +271,7 @@ fn redundant_zwnj_is_dropped_before_reverse_conversion() {
         convert_utn57_to_zvvnmod("\u{1820}\u{1824}\u{1824}\u{1820}").unwrap()
     );
 
-    // ZWNJ adjacent to MVS is redundant and dropped, so chachlag triples still collapse.
+    // ZWNJ adjacent to MVS is redundant and dropped, so chachlag pairs still collapse.
     assert_eq!(
         convert_utn57_to_zvvnmod("\u{1830}\u{1822}\u{1828}\u{180E}\u{200C}\u{1821}").unwrap(),
         convert_utn57_to_zvvnmod("\u{1830}\u{1822}\u{1828}\u{180E}\u{1821}").unwrap()
@@ -302,5 +302,124 @@ fn repeated_zwj_and_zwnj_controls_merge() {
     assert_eq!(
         convert_utn57_to_zvvnmod("\u{182F}\u{1822}\u{200D}\u{200D}\u{1821}\u{180B}").unwrap(),
         convert_utn57_to_zvvnmod("\u{182F}\u{1822}\u{1821}\u{180B}").unwrap()
+    );
+}
+
+#[test]
+fn aa_isol_synthesizes_leading_mvs_and_round_trips_standalone_chachlag() {
+    // Standalone `AA_FINA` (`U+E00D`) resolves to `[Aa:isol]`, which in
+    // `mongol-norm` 0.4.2 synthesizes its own leading MVS (`\u{180E}\u{1820}`).
+    let zvvnmod_aa = AA_FINA.as_char().unwrap().to_string();
+    let utn57 = convert_zvvnmod_to_utn57(&zvvnmod_aa).unwrap();
+    assert_eq!(utn57, "\u{180E}\u{1820}");
+    assert_eq!(convert_utn57_to_zvvnmod(&utn57).unwrap(), zvvnmod_aa);
+
+    // Even after a non-table onset such as `CH_INIT` (`\u{1834}\u{180E}\u{1820}`),
+    // shaping absorbs the chachlag MVS into `Aa:isol` without emitting `U+202F`.
+    let ch_mvs_aa = "\u{1834}\u{180E}\u{1820}";
+    assert_eq!(
+        shape_utn57_positioned_written_units(ch_mvs_aa).unwrap(),
+        vec![
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Ch, Utn57Position::Init),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
+        ]
+    );
+    let ch_zvvnmod = convert_utn57_to_zvvnmod(ch_mvs_aa).unwrap();
+    assert_eq!(
+        ch_zvvnmod,
+        format!(
+            "{}{}",
+            CH_INIT.as_char().unwrap(),
+            AA_FINA.as_char().unwrap()
+        )
+    );
+    assert!(!ch_zvvnmod.contains('\u{202F}'));
+}
+
+#[test]
+fn non_joining_nirugu_boundaries_synthesize_zwnj_and_round_trip_through_zvvnmod() {
+    // `NIRUGU M_INIT A_FINA` (`[Nirugu, M:init, A:fina]`) has a closed left edge
+    // on `M:init` right after `Nirugu`; `mongol-norm` 0.4.2 synthesizes ZWNJ
+    // between `Nirugu` and `M:init` (`\u{180A}\u{200C}\u{182E}\u{1820}\u{180C}`),
+    // and the reverse direction shapes it back to the exact ZVVNMOD codes.
+    let zvvnmod_nirugu_ma = format!(
+        "{}{}{}",
+        NIRUGU.as_char().unwrap(),
+        M_INIT.as_char().unwrap(),
+        A_FINA.as_char().unwrap(),
+    );
+    let utn57_nirugu_ma = convert_zvvnmod_to_utn57(&zvvnmod_nirugu_ma).unwrap();
+    assert_eq!(utn57_nirugu_ma, "\u{180A}\u{200C}\u{182E}\u{1820}\u{180C}");
+    assert_eq!(
+        convert_utn57_to_zvvnmod(&utn57_nirugu_ma).unwrap(),
+        zvvnmod_nirugu_ma
+    );
+
+    // Trailing non-joining `Nirugu` after a closed final edge (`[M:init, A:fina, Nirugu]`)
+    // also synthesizes ZWNJ and round-trips cleanly.
+    let zvvnmod_ma_nirugu = format!(
+        "{}{}{}",
+        M_INIT.as_char().unwrap(),
+        A_FINA.as_char().unwrap(),
+        NIRUGU.as_char().unwrap(),
+    );
+    let utn57_ma_nirugu = convert_zvvnmod_to_utn57(&zvvnmod_ma_nirugu).unwrap();
+    assert_eq!(utn57_ma_nirugu, "\u{182E}\u{1820}\u{180C}\u{200C}\u{180A}");
+    assert_eq!(
+        convert_utn57_to_zvvnmod(&utn57_ma_nirugu).unwrap(),
+        zvvnmod_ma_nirugu
+    );
+
+    // `[Aa:isol, Nirugu]` synthesizes MVS before `Aa:isol` and ZWNJ before `Nirugu`,
+    // while `[Nirugu, Aa:isol]` synthesizes MVS before `Aa:isol` without needing ZWNJ.
+    let aa_nirugu = normalize_positioned_written_units(&[
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Nirugu, Utn57Position::Control),
+    ])
+    .unwrap();
+    assert_eq!(aa_nirugu, "\u{180E}\u{1820}\u{200C}\u{180A}");
+    assert_eq!(
+        shape_utn57_positioned_written_units(&aa_nirugu).unwrap(),
+        vec![
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Nirugu, Utn57Position::Control),
+        ]
+    );
+
+    let nirugu_aa = normalize_positioned_written_units(&[
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Nirugu, Utn57Position::Control),
+        Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
+    ])
+    .unwrap();
+    assert_eq!(nirugu_aa, "\u{180A}\u{180E}\u{1820}");
+    assert_eq!(
+        shape_utn57_positioned_written_units(&nirugu_aa).unwrap(),
+        vec![
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Nirugu, Utn57Position::Control),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
+        ]
+    );
+}
+
+#[test]
+fn backend_rejects_explicit_zwnj_and_redundant_chachlag_mvs() {
+    let shaper = Shaper::new(Locale::Mng);
+    assert_eq!(
+        shaper
+            .normalize_positioned_written_units(&[PositionedWrittenUnit::new(
+                WrittenUnit::Zwnj,
+                UnitPosition::Control,
+            )])
+            .unwrap_err(),
+        Error::ExplicitZwnj
+    );
+
+    assert_eq!(
+        normalize_positioned_written_units(&[
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
+        ])
+        .unwrap_err(),
+        Error::RedundantChachlagMvs { index: 0 }
     );
 }

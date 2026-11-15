@@ -128,7 +128,6 @@ fn reviewed_chachlag_long_rule_still_wins_over_aa_candidates() {
         convert_zvvnmod_run(&[S_FINA, AA_FINA]).unwrap(),
         vec![
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::S, Utn57Position::Fina),
-            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control),
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
         ],
     );
@@ -187,12 +186,11 @@ fn connected_aa_without_a_longer_rule_uses_the_final_candidate() {
 }
 
 #[test]
-fn retained_chachlag_codes_emit_reviewed_mvs_without_decomposition() {
+fn retained_chachlag_codes_emit_aa_isol_without_decomposition_or_redundant_mvs() {
     assert_eq!(
         convert_zvvnmod_run(&[N_AA_FINA]).unwrap(),
         vec![
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::N, Utn57Position::Fina),
-            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control),
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
         ],
     );
@@ -200,7 +198,6 @@ fn retained_chachlag_codes_emit_reviewed_mvs_without_decomposition() {
         convert_zvvnmod_run(&[HX_AA_FINA]).unwrap(),
         vec![
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Hx, Utn57Position::Fina),
-            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control),
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
         ],
     );

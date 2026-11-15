@@ -476,11 +476,12 @@ impl From<Utn57ReverseError> for ZvvnmodTextConversionError {
 /// and ZWNJ — are shaped, positioned, and spelled in ZVVNMOD. Just like ZWJ,
 /// ZWNJ determines the joining positions (`init` / `medi` / `fina` / `isol`) of
 /// the letters on either side of the break and is not emitted into the ZVVNMOD
-/// stream. A detached-suffix boundary the chachlag rules did not consume is
-/// spelled `U+202F`, so [`convert_zvvnmod_to_utn57`] can tell it from the
-/// `U+0020` between words. Every other character preserves its order and code
-/// point, mirroring [`convert_zvvnmod_to_utn57`]'s treatment of text outside
-/// the ZVVNMOD shape inventory.
+/// stream. A chachlag `MVS` before isolated `Aa` is absorbed into `Aa:isol`,
+/// while a detached-suffix boundary (`MVS`) is spelled `U+202F` so
+/// [`convert_zvvnmod_to_utn57`] can tell it from the `U+0020` between words.
+/// Every other character preserves its order and code point, mirroring
+/// [`convert_zvvnmod_to_utn57`]'s treatment of text outside the ZVVNMOD shape
+/// inventory.
 ///
 /// # Errors
 ///

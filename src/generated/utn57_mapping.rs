@@ -735,7 +735,7 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
     ZvvnmodToUtn57Mapping {
         id: "source:HX_AA_FINA",
         sources: &[HX_AA_FINA],
-        targets: &[UTN57_HX_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        targets: &[UTN57_HX_FINA, UTN57_AA_ISOL],
         intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:I_ISOL
@@ -861,7 +861,7 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
     ZvvnmodToUtn57Mapping {
         id: "source:N_AA_FINA",
         sources: &[N_AA_FINA],
-        targets: &[UTN57_N_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        targets: &[UTN57_N_FINA, UTN57_AA_ISOL],
         intrinsic_position: Some(Utn57Position::Fina),
     },
     // source:O_INIT
@@ -1197,56 +1197,56 @@ pub static ZVVNMOD_TO_UTN57_MAPPINGS: &[ZvvnmodToUtn57Mapping] = &[
     ZvvnmodToUtn57Mapping {
         id: "chachlag:M_FINA_AA_FINA",
         sources: &[M_FINA, AA_FINA],
-        targets: &[UTN57_M_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        targets: &[UTN57_M_FINA, UTN57_AA_ISOL],
         intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:L_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
         id: "chachlag:L_FINA_AA_FINA",
         sources: &[L_FINA, AA_FINA],
-        targets: &[UTN57_L_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        targets: &[UTN57_L_FINA, UTN57_AA_ISOL],
         intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:S_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
         id: "chachlag:S_FINA_AA_FINA",
         sources: &[S_FINA, AA_FINA],
-        targets: &[UTN57_S_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        targets: &[UTN57_S_FINA, UTN57_AA_ISOL],
         intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:R_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
         id: "chachlag:R_FINA_AA_FINA",
         sources: &[R_FINA, AA_FINA],
-        targets: &[UTN57_R_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        targets: &[UTN57_R_FINA, UTN57_AA_ISOL],
         intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:I_ISOL_AA_FINA
     ZvvnmodToUtn57Mapping {
         id: "chachlag:I_ISOL_AA_FINA",
         sources: &[I_ISOL, AA_FINA],
-        targets: &[UTN57_I_ISOL, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        targets: &[UTN57_I_ISOL, UTN57_AA_ISOL],
         intrinsic_position: Some(Utn57Position::Isol),
     },
     // chachlag:I_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
         id: "chachlag:I_FINA_AA_FINA",
         sources: &[I_FINA, AA_FINA],
-        targets: &[UTN57_I_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        targets: &[UTN57_I_FINA, UTN57_AA_ISOL],
         intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:U_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
         id: "chachlag:U_FINA_AA_FINA",
         sources: &[U_FINA, AA_FINA],
-        targets: &[UTN57_U_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        targets: &[UTN57_U_FINA, UTN57_AA_ISOL],
         intrinsic_position: Some(Utn57Position::Fina),
     },
     // chachlag:H_FINA_AA_FINA
     ZvvnmodToUtn57Mapping {
         id: "chachlag:H_FINA_AA_FINA",
         sources: &[H_FINA, AA_FINA],
-        targets: &[UTN57_H_FINA, UTN57_MVS_CONTROL, UTN57_AA_ISOL],
+        targets: &[UTN57_H_FINA, UTN57_AA_ISOL],
         intrinsic_position: Some(Utn57Position::Fina),
     },
     // particle:01

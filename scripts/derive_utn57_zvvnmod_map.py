@@ -11,7 +11,7 @@ Precedence, highest first:
 1. `target:` rows — the reviewer named the row after its target, so it is the
    canonical ZVVNMOD spelling of that unit.
 2. `source:` rows — one code, one unit.
-3. `chachlag:` rows — the `X:fina MVS Aa:isol` triples.
+3. `chachlag:` rows — the `X:fina Aa:isol` / `I:isol Aa:isol` pairs.
 
 `context:` and `particle:` rows are forward-only. They exist to accept
 sequences users actually type (`A_MEDI AA_FINA`, `N_MEDI N_MEDI`) and are not
@@ -205,7 +205,7 @@ def main() -> None:
         chosen = choose((unit_id,))
         note = note_for((unit_id,), chosen)
         if unit_id == "MVS":
-            emit("control:MVS", unit_id, "", "structural; passed through as its source character unless a chachlag row consumes it")
+            emit("control:MVS", unit_id, "", "structural detached-suffix boundary; emitted as U+202F")
             continue
         kind = "control" if entry["position"] == "control" else "unit"
         if unit_id in ("K:init", "K:medi", "K:fina"):
@@ -222,13 +222,13 @@ def main() -> None:
             note = (
                 "reviewed: ZVVNMOD writes final g by vowel-harmony class rather than with one "
                 "G_FINA code — H_FINA (U+E032) for masculine words (ᠴᠠᠭ shapes to H:fina) and "
-                "this composite for feminine ones (ᠪᠢᠴᠢᠭ) and for final ᠩ (ᠸᠠᠩ); meco-core makes "
+                "this composite for feminine ones (ᠪᠢᠴᠢᠭ) and for final ᠩ (\u1838\u1820\u1829); meco-core makes "
                 "the same split — FROM_DELEHI_CHAGH emits E032 where FROM_DELEHI_HUNDII emits "
                 "E006 E00D — corroborating both this row and source:H_FINA; " + note
             )
         emit(f"{kind}:{unit_id}", unit_id, chosen[1] if chosen else "", note)
 
-    # Multi-unit rows: the chachlag triples, in forward-row order.
+    # Multi-unit rows: the chachlag pairs, in forward-row order.
     for row in forward_rows:
         key = tuple(row["targets"].split(" "))
         if len(key) < 2:
@@ -240,7 +240,7 @@ def main() -> None:
         assert chosen is not None
         if chosen[0] != row["id"]:
             continue  # a higher-precedence row already emitted this key
-        emit("chachlag:" + key[0], " ".join(key), chosen[1], f"from {row['id']}; MVS is implicit between the two glyphs")
+        emit("chachlag:" + key[0], " ".join(key), chosen[1], f"from {row['id']}; chachlag MVS is implicit before Aa:isol")
 
     text = "\n".join(lines) + "\n"
     # The reviewed file must round-trip through the same strict parser the generators use.

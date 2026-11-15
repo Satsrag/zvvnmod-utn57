@@ -87,17 +87,22 @@ const fn positioned_written_unit(unit: Utn57PositionedWrittenUnit) -> Positioned
 /// Encode one run of positioned UTN #57 written units as canonical Mongolian Unicode.
 ///
 /// Records are handed to `mongol-norm`'s
-/// [`Shaper::normalize_positioned_written_units`], which supplies the implicit
-/// ZWJ joining context an incomplete chain needs and returns the FVS-pinned
+/// [`Shaper::normalize_positioned_written_units`], which synthesizes the
+/// implicit `MVS` before `Aa:isol`, the implicit `ZWNJ` across non-joining
+/// boundaries (including non-joining `Nirugu` edges), and the implicit `ZWJ`
+/// joining context an incomplete chain needs, returning the FVS-pinned
 /// canonical encoding.
 ///
 /// # Errors
 ///
 /// Returns the [`mongol_norm::Error`] the backend reports — for example
 /// [`Error::UnsupportedPositionedUnit`] when a `(unit, position)` pair is
-/// outside the authoritative HUD inventory, or [`Error::ChainPositionMismatch`]
-/// when declared positions disagree with the chain they form. Its record
-/// indices refer to the expanded written-unit sequence, not to `units`.
+/// outside the authoritative HUD inventory, [`Error::RedundantChachlagMvs`]
+/// when an explicit `MVS` immediately precedes `Aa:isol`,
+/// [`Error::ExplicitZwnj`] when an explicit `Zwnj` control is supplied, or
+/// [`Error::ChainPositionMismatch`] when an explicit `MVS` appears where a
+/// detached-suffix separator cannot stand. Its record indices refer to the
+/// expanded written-unit sequence, not to `units`.
 pub fn normalize_positioned_written_units(
     units: &[Utn57PositionedWrittenUnit],
 ) -> Result<String, Error> {
@@ -189,9 +194,12 @@ impl From<Error> for Utn57ShapeError {
 /// The sequence is split at the structural units (`Mvs`, `Nirugu`, `Zwj`, `Zwnj`),
 /// and each remaining chain is padded by one slot on any side a joiner (`Nirugu`
 /// or `Zwj`) sits against, so a chain that continues past its edge is positioned
-/// as if it did. `Mvs` and `Nirugu` become `Control` records; `Zwj` (joining)
-/// and `Zwnj` (non-joining break) supply structural context and are not
-/// themselves records in the 97-unit inventory.
+/// as if it did. A `Mvs` immediately preceding an isolated `Aa` (`Aa:isol`) is
+/// absorbed into `Aa:isol` itself (matching `mongol-norm` 0.4.2's implicit
+/// chachlag `Mvs` synthesis), whereas any other `Mvs` (detached-suffix boundary)
+/// and `Nirugu` become `Control` records; `Zwj` (joining) and `Zwnj`
+/// (non-joining break) supply structural context and are not themselves records
+/// in the 97-unit inventory.
 ///
 /// A position of `Isol` that the reviewed inventory does not carry falls back to
 /// `Init`, matching how isolated forms borrow the initial glyph.
@@ -213,7 +221,12 @@ pub fn shape_utn57_positioned_written_units(
     while index < shape.len() {
         let unit = shape[index];
         if unit.is_structural() {
-            if !matches!(unit, WrittenUnit::Zwj | WrittenUnit::Zwnj) {
+            let precedes_chachlag_aa_isol = unit == WrittenUnit::Mvs
+                && shape.get(index + 1) == Some(&WrittenUnit::Aa)
+                && !shape
+                    .get(index + 2)
+                    .is_some_and(|&next| !next.is_structural() || is_joiner(next));
+            if !matches!(unit, WrittenUnit::Zwj | WrittenUnit::Zwnj) && !precedes_chachlag_aa_isol {
                 let written = utn57_written_unit(unit)
                     .ok_or(Utn57ShapeError::UnsupportedWrittenUnit { index, unit })?;
                 records.push(Utn57PositionedWrittenUnit::new(
@@ -359,18 +372,64 @@ mod tests {
     }
 
     #[test]
-    fn declared_positions_must_match_the_chain_they_form() {
-        // Nirugu joins onto the following sub-chain, so `[B:init, A:fina]` is
-        // padded on the left to a 3-slot chain (`medi`, `fina`), making `B:init`
-        // a genuine position mismatch within that sub-chain.
-        let units = [
+    fn non_joining_nirugu_boundary_synthesizes_zwnj() {
+        // M:init differs visually from M:medi, so the synthesized ZWNJ after
+        // Nirugu is retained in canonical output.
+        let retained = [
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Nirugu, Utn57Position::Control),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::M, Utn57Position::Init),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Fina),
+        ];
+        assert_eq!(
+            normalize_positioned_written_units(&retained).unwrap(),
+            "\u{180a}\u{200c}\u{182e}\u{1820}\u{180c}"
+        );
+
+        // B:init shares its bow with B:medi under mng-canonical/5, so the
+        // non-joining boundary succeeds (instead of ChainPositionMismatch) and
+        // its redundant ZWNJ is stripped.
+        let stripped = [
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Nirugu, Utn57Position::Control),
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Init),
             Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Fina),
         ];
+        assert_eq!(
+            normalize_positioned_written_units(&stripped).unwrap(),
+            "\u{180a}\u{182a}\u{1820}\u{180c}"
+        );
+    }
+
+    #[test]
+    fn redundant_explicit_mvs_before_aa_isol_is_rejected() {
+        let units = [
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::N, Utn57Position::Fina),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::Aa, Utn57Position::Isol),
+        ];
 
         assert_eq!(
             normalize_positioned_written_units(&units).unwrap_err(),
+            Error::RedundantChachlagMvs { index: 1 }
+        );
+    }
+
+    #[test]
+    fn misplaced_explicit_mvs_is_rejected_with_chain_position_mismatch() {
+        let trailing = [
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::B, Utn57Position::Init),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control),
+        ];
+        assert_eq!(
+            normalize_positioned_written_units(&trailing).unwrap_err(),
+            Error::ChainPositionMismatch
+        );
+
+        let before_fina = [
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::MVS, Utn57Position::Control),
+            Utn57PositionedWrittenUnit::new(Utn57WrittenUnit::A, Utn57Position::Fina),
+        ];
+        assert_eq!(
+            normalize_positioned_written_units(&before_fina).unwrap_err(),
             Error::ChainPositionMismatch
         );
     }
@@ -416,14 +475,25 @@ mod shaping_tests {
     }
 
     #[test]
-    fn mvs_becomes_a_control_record_and_splits_the_chain() {
-        // ᠰᠢᠨ᠎ᠡ shapes to S+I+N+Mvs+Aa.
+    fn chachlag_mvs_is_absorbed_into_aa_isol_while_detached_suffix_mvs_stays_control() {
+        // ᠰᠢᠨ᠎ᠡ shapes to S+I+N+Mvs+Aa; the Mvs before isolated Aa is absorbed into Aa:isol.
         assert_eq!(
             spell(
                 &shape_utn57_positioned_written_units("\u{1830}\u{1822}\u{1828}\u{180E}\u{1821}")
                     .unwrap()
             ),
-            "S:init I:medi N:fina Mvs Aa:isol"
+            "S:init I:medi N:fina Aa:isol"
+        );
+        // ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ has both a chachlag Mvs (absorbed into Aa:isol) and a detached-suffix NNBSP
+        // (kept as an explicit Mvs control record).
+        assert_eq!(
+            spell(
+                &shape_utn57_positioned_written_units(
+                    "\u{1832}\u{1820}\u{182F}\u{180E}\u{1820}\u{202F}\u{1836}\u{1822}\u{1828}"
+                )
+                .unwrap()
+            ),
+            "T:init A:medi L:fina Aa:isol Mvs I:init I:medi A:fina"
         );
     }
 
@@ -465,6 +535,10 @@ mod shaping_tests {
             "\u{1824}\u{182F}\u{1824}\u{1830}",                 // ᠤᠯᠤᠰ
             "\u{1830}\u{1822}\u{1828}\u{180E}\u{1821}",         // ᠰᠢᠨ᠎ᠡ
             "\u{182A}\u{1820}\u{182D}\u{180E}\u{1820}",         // ᠪᠠᠭ᠎ᠠ
+            "\u{1832}\u{1820}\u{182F}\u{180E}\u{1820}\u{202F}\u{1836}\u{1822}\u{1828}", // ᠲᠠᠯ᠎ᠠ ᠶᠢᠨ
+            "\u{180E}\u{1820}",                                 // ᠎ᠠ
+            "\u{180A}\u{200C}\u{182A}\u{1820}\u{180C}",         // ᠊‌ᠪᠠ᠌
+            "\u{180E}\u{1820}\u{200C}\u{180A}",                 // ᠎ᠠ‌᠊
             "\u{182C}\u{1821}\u{182F}\u{1821}",                 // ᠬᠡᠯᠡ
             "\u{1828}\u{1824}\u{182D}\u{1824}\u{1833}",         // ᠨᠤᠭᠤᠳ
         ];

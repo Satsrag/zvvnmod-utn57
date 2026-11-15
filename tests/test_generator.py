@@ -17,11 +17,11 @@ MAPPING = ROOT / "data" / "zvvnmod-utn57-map.csv"
 REVERSE_MAPPING = ROOT / "data" / "utn57-zvvnmod-map.csv"
 TARGETS = ROOT / "data" / "utn57-written-units.csv"
 WEBSITE_CHECKER = ROOT / "scripts" / "check_website_contract.py"
-MAPPING_SHA256 = "1f0cb6b8b476022726cec5f2a55973b9423ea96d7b8fd79c98b8447cf73b3592"
+MAPPING_SHA256 = "666f62bf06b570b7f273b9d2fbb1089038c15b119efc5bb76f27b7bdf7fab025"
 TARGETS_SHA256 = "2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6"
 PARTICLE_RELATIONS_SHA256 = "396563dfa46cad6225fc92d07e7a6cc2e7c563f155bf70351ceb9448fbf75e5e"
-REVERSE_MAPPING_SHA256 = "6432b79e628e9ef9ff0bc31e6ef96f93bea9ceff254930b6b35c7d9ff820e731"
-TEST_MAPPING_BASELINE = "sha256:843af21ad5356565c2f0559a18feaafa3d000ae666d9035c389e26eda199c237"
+REVERSE_MAPPING_SHA256 = "57df7fc4e57fcf072c96e83f5145ac58010a711d3cba1b74f00bfe4ce218938c"
+TEST_MAPPING_BASELINE = "sha256:19c6a20c222da16631f86cf271163d4ab43ea122957d55cc1e73b5e454fa23e2"
 TEST_MAPPING_METADATA = (
     '# metadata={"schema":"zvvnmod-utn57-runtime-map-v1",'
     f'"baseline":"{TEST_MAPPING_BASELINE}"}}\n'
@@ -544,33 +544,36 @@ class ShapeNamingTests(unittest.TestCase):
         self.assertEqual(len(mapping.rules), 147)
         self.assertEqual(
             mapping.baseline,
-            "sha256:843af21ad5356565c2f0559a18feaafa3d000ae666d9035c389e26eda199c237",
+            TEST_MAPPING_BASELINE,
         )
         self.assertEqual(mapping.targets[-1].id, "MVS")
         self.assertEqual(mapping.targets[-1].position, "control")
         nirugu_rule = next(rule for rule in mapping.rules if rule.id == "source:NIRUGU")
         self.assertEqual([entry.const_name for entry in nirugu_rule.sources], ["NIRUGU"])
         self.assertEqual([target.id for target in nirugu_rule.targets], ["Nirugu"])
-        mvs_rules = {
+        self.assertFalse(
+            any(target.id == "MVS" for rule in mapping.rules for target in rule.targets)
+        )
+        chachlag_rules = {
             tuple(entry.const_name for entry in rule.sources): tuple(
                 target.id for target in rule.targets
             )
             for rule in mapping.rules
-            if any(target.id == "MVS" for target in rule.targets)
+            if len(rule.targets) == 2 and rule.targets[-1].id == "Aa:isol"
         }
         self.assertEqual(
-            mvs_rules,
+            chachlag_rules,
             {
-                ("N_AA_FINA",): ("N:fina", "MVS", "Aa:isol"),
-                ("HX_AA_FINA",): ("Hx:fina", "MVS", "Aa:isol"),
-                ("M_FINA", "AA_FINA"): ("M:fina", "MVS", "Aa:isol"),
-                ("L_FINA", "AA_FINA"): ("L:fina", "MVS", "Aa:isol"),
-                ("S_FINA", "AA_FINA"): ("S:fina", "MVS", "Aa:isol"),
-                ("R_FINA", "AA_FINA"): ("R:fina", "MVS", "Aa:isol"),
-                ("I_ISOL", "AA_FINA"): ("I:isol", "MVS", "Aa:isol"),
-                ("I_FINA", "AA_FINA"): ("I:fina", "MVS", "Aa:isol"),
-                ("U_FINA", "AA_FINA"): ("U:fina", "MVS", "Aa:isol"),
-                ("H_FINA", "AA_FINA"): ("H:fina", "MVS", "Aa:isol"),
+                ("N_AA_FINA",): ("N:fina", "Aa:isol"),
+                ("HX_AA_FINA",): ("Hx:fina", "Aa:isol"),
+                ("M_FINA", "AA_FINA"): ("M:fina", "Aa:isol"),
+                ("L_FINA", "AA_FINA"): ("L:fina", "Aa:isol"),
+                ("S_FINA", "AA_FINA"): ("S:fina", "Aa:isol"),
+                ("R_FINA", "AA_FINA"): ("R:fina", "Aa:isol"),
+                ("I_ISOL", "AA_FINA"): ("I:isol", "Aa:isol"),
+                ("I_FINA", "AA_FINA"): ("I:fina", "Aa:isol"),
+                ("U_FINA", "AA_FINA"): ("U:fina", "Aa:isol"),
+                ("H_FINA", "AA_FINA"): ("H:fina", "Aa:isol"),
             },
         )
         aa_rules = {
@@ -645,11 +648,11 @@ class ReverseMappingTests(unittest.TestCase):
         single = {rule.sources[0].id for rule in rules if len(rule.sources) == 1}
         self.assertEqual(single, {target.id for target in targets})
         self.assertEqual(len(rules), 107)
-        # The chachlag triples are the only multi-unit rows.
+        # The chachlag pairs are the only multi-unit rows.
         multi = [rule for rule in rules if len(rule.sources) > 1]
         self.assertEqual(len(multi), 10)
         for rule in multi:
-            self.assertEqual([target.id for target in rule.sources[1:]], ["MVS", "Aa:isol"])
+            self.assertEqual([target.id for target in rule.sources[1:]], ["Aa:isol"])
 
     def test_reverse_mapping_is_fail_closed(self):
         gen, model, targets = self.load()

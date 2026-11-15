@@ -57,7 +57,7 @@ fn standard_nirugu_passes_through_between_independently_normalized_runs() {
 fn standard_zwnj_passes_through_between_independently_normalized_runs() {
     assert_eq!(
         convert_zvvnmod_to_utn57("\u{E000}\u{E005}\u{E03B}\u{200C}\u{E00D}").unwrap(),
-        "\u{1820}\u{180B}\u{1820}\u{182F}\u{200C}\u{1820}\u{180C}"
+        "\u{1820}\u{180B}\u{1820}\u{182F}\u{200C}\u{180E}\u{1820}"
     );
 }
 
@@ -65,10 +65,11 @@ fn standard_zwnj_passes_through_between_independently_normalized_runs() {
 fn input_zwj_passes_through_between_independently_normalized_runs() {
     // The backend may add a trailing ZWJ to the left run. The input ZWJ is a
     // separate literal and is neither consumed nor deduplicated. The right run
-    // remains isolated because input ZWJ has no ZVVNMOD positional semantics.
+    // remains isolated (`Aa:isol` -> `\u{180E}\u{1820}`) because input ZWJ has
+    // no ZVVNMOD positional semantics.
     assert_eq!(
         convert_zvvnmod_to_utn57("\u{E001}\u{200D}\u{E00D}").unwrap(),
-        "\u{1824}\u{180B}\u{200D}\u{200D}\u{1820}\u{180C}"
+        "\u{1824}\u{180B}\u{200D}\u{200D}\u{180E}\u{1820}"
     );
 }
 
@@ -76,6 +77,6 @@ fn input_zwj_passes_through_between_independently_normalized_runs() {
 fn standard_mvs_passes_through_between_independently_normalized_runs() {
     assert_eq!(
         convert_zvvnmod_to_utn57("\u{E001}\u{180E}\u{E00D}").unwrap(),
-        "\u{1824}\u{180B}\u{200D}\u{180E}\u{1820}\u{180C}"
+        "\u{1824}\u{180B}\u{200D}\u{180E}\u{180E}\u{1820}"
     );
 }

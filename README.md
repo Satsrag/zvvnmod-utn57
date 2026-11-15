@@ -163,10 +163,10 @@ The 30 authoritative rules are stored in `data/ir-fina-replacements.csv` with re
 
 ## Reviewed mapping replacement
 
-The merged website contract at `Satsrag/satsrag.github.io@0b50ba5b9f5c0ee66040ce6e8f343230b8832513` is consumed directly as CSV:
+The merged website contract at `Satsrag/satsrag.github.io@2f544dc4a63028eaa270054c99ad67df15e1cae3` is consumed directly as CSV:
 
 - `data/utn57-written-units.csv` is byte-for-byte identical to the website catalogue of the same name. It defines 97 positioned UTN #57 written units, including `MVS` (`U+180E`) as a control; its locked SHA-256 is `2b924e3baeaab7582793585b5911a672037b05b5b65daa2771521839c3e088f6`.
-- `data/zvvnmod-utn57-map.csv` is byte-for-byte identical to the website download artifact. It contains a canonical metadata comment followed by the `id,sources,targets,note` CSV header and 147 non-empty reviewed sequence relations: 100 main mappings plus all 47 particle mappings. Its locked SHA-256 is `cc58b012ea2e3a1709d723d115ad9eed00de13d32bba166991a1447c889a358c`; the independently locked reviewed baseline is `sha256:83a60c3e1ac9df98a14c1a6d979f7c5c8733f1e70d52b81f41de1dd321ea5016`.
+- `data/zvvnmod-utn57-map.csv` is byte-for-byte identical to the website download artifact. It contains a canonical metadata comment followed by the `id,sources,targets,note` CSV header and 147 non-empty reviewed sequence relations: 100 main mappings plus all 47 particle mappings. Its locked SHA-256 is `666f62bf06b570b7f273b9d2fbb1089038c15b119efc5bb76f27b7bdf7fab025`; the independently locked reviewed baseline is `sha256:19c6a20c222da16631f86cf271163d4ab43ea122957d55cc1e73b5e454fa23e2`.
 
 The generator validates canonical metadata, exact CSV schemas, row widths, quote transitions, ordered single-space sequences, stable row-ID syntax, and the reviewed ambiguity set. `python3 scripts/check_website_contract.py --website-root ../satsrag-site-mapping-editor` reads the merged website Git blobs, proves byte identity, and runs those copied bytes through the actual generator.
 
@@ -196,10 +196,11 @@ The reviewed relation contains both `AA_FINA → Aa:isol` and
 matched final span selects `Aa:fina`. The longer
 `A_MEDI AA_FINA → Aa:fina` relation collapses that sequence before either
 singleton candidate can match. The ten reviewed chachlag relations still win by
-longest match and emit their final/isolated onset followed by `MVS + Aa:isol`;
-no additional chachlag relation is inferred. ZVVNMOD uses the same shapes for UTN
-K and K2: default conversion emits K, while callers with nominal or other context
-can explicitly select K2 with `Utn57ConversionOptions`.
+longest match and emit their final/isolated onset followed directly by `Aa:isol`
+(whose leading `MVS` is synthesized during canonical normalization by
+`mongol-norm` 0.4.2); no additional chachlag relation is inferred. ZVVNMOD uses
+the same shapes for UTN K and K2: default conversion emits K, while callers with
+nominal or other context can explicitly select K2 with `Utn57ConversionOptions`.
 
 Nirugu is emitted as `Utn57WrittenUnit::Nirugu` with `Utn57Position::Control`; no
 positional Nirugu form is invented.
@@ -262,7 +263,7 @@ The normalizer may independently emit ZWJ while encoding positioned written unit
 that output is preserved without consuming or deduplicating input ZWJ. Such a joiner
 is invented — input ZWJ never enters a run — and marks a run that begins or ends with a
 joined-form glyph ZVVNMOD has no unjoined form of, and whose joined and unjoined forms
-are not reviewed as equivalent under `mongol-norm` 0.4.1's canonical control policy
+are not reviewed as equivalent under `mongol-norm` 0.4.2's canonical control policy
 (`mng-canonical/5`). `convert_zvvnmod_to_utn57_with_warnings`
 returns the same text together with one `Utn57ConversionWarning::InventedZwj` per such run,
 naming the run's codes; the `zvvnmod-to-utn57` binary prints them to stderr. That is how the
@@ -296,10 +297,10 @@ complete text containing Mongolian words
 ```
 
 `data/utn57-zvvnmod-map.csv` holds the reviewed relation: one row per positioned
-written unit, plus the ten `X:fina MVS Aa:isol` chachlag triples that collapse
-into a single merged code. `scripts/derive_utn57_zvvnmod_map.py` derives it from
-the forward map, and its `baseline` pins the forward map's digest so the two
-cannot drift apart.
+written unit, plus the ten `X:fina Aa:isol` / `I:isol Aa:isol` chachlag pairs that
+map to their merged or component ZVVNMOD codes. `scripts/derive_utn57_zvvnmod_map.py`
+derives it from the forward map, and its `baseline` pins the forward map's digest
+so the two cannot drift apart.
 
 ### The detached-suffix boundary
 
@@ -317,8 +318,12 @@ back with its `MVS` intact. The two spaces have to stay apart for that: spelling
 both `U+0020` would leave the reverse direction guessing which spaces separate
 words and which separate a stem from its suffix.
 
-A boundary before a chachlag ᠠ/ᠡ needs no separator — the ten chachlag rows
-consume their `MVS` into a merged glyph, and `E03B E00D` above is one of them.
+A boundary before a chachlag ᠠ/ᠡ needs no `U+202F` separator — `Aa:isol` carries
+its own implicit leading `MVS` in `mongol-norm` 0.4.2 (so explicit `MVS` before
+`Aa:isol` is rejected with `Error::RedundantChachlagMvs`), shaping absorbs a
+chachlag `Mvs` into `Aa:isol`, and `E03B E00D` above matches one of the ten
+chachlag pair rows. Every `MVS` record in `Utn57PositionedWrittenUnit` is
+therefore exclusively a detached-suffix boundary.
 `U+202F` is a boundary, not a shape, so it carries no formal inventory code; the
 classifier reports it as `ZvvnmodTextCharacterKind::SuffixSeparator`.
 
@@ -346,9 +351,9 @@ contextual shaping rules (such as vowel harmony), and redundant ZWNJs are
 dropped when the break does not change either adjacent letter's glyph form.
 Just like `ZWJ`, `ZWNJ` only determines the joining positions (`init` / `medi` /
 `fina` / `isol`) of adjacent units and is not emitted into the ZVVNMOD stream;
-when converting back to UTN #57, `mongol-norm` 0.4.1 synthesizes `ZWNJ` across
-sub-chain boundaries and keeps `U+200C` only where required to realize the
-target glyph shapes.
+when converting back to UTN #57, `mongol-norm` 0.4.2 synthesizes `ZWNJ` across
+non-joining sub-chain and `Nirugu` boundaries, keeping `U+200C` only where
+required to realize the target glyph shapes.
 
 ### Merged glyphs are recomposed, not stored
 
@@ -405,7 +410,7 @@ install:
 
 ```toml
 [dependencies]
-zvvnmod-utn57 = "0.2"
+zvvnmod-utn57 = "0.4"
 ```
 
 ```bash
@@ -429,7 +434,8 @@ once per process behind a `OnceLock` and shared by every run.
 Because the backend's errors are the useful ones, they are not wrapped away.
 `Utn57TextConversionError::Normalize` carries `mongol_norm::Error` verbatim, and the crate
 re-exports `mongol_norm`, so a caller can match `UnsupportedPositionedUnit`,
-`ChainPositionMismatch` and friends without declaring the dependency separately:
+`RedundantChachlagMvs`, `ExplicitZwnj`, `ChainPositionMismatch`, and friends without declaring
+the dependency separately:
 
 ```rust
 use zvvnmod_utn57::{convert_zvvnmod_to_utn57, mongol_norm, Utn57TextConversionError};
@@ -441,7 +447,7 @@ match convert_zvvnmod_to_utn57(text) {
 }
 ```
 
-The `mongol-norm = "0.4.1"` dependency provides the duplicate-free public written-unit stream
+The `mongol-norm = "0.4.2"` dependency provides the duplicate-free public written-unit stream
 used by reverse conversion. `Cargo.lock` records the exact resolved release for
 reproducible application and CLI builds.
 

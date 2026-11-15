@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Changed
+
+- Upgrade the normalization and shaping backend from `mongol-norm` 0.4.1 to `mongol-norm` 0.4.2.
+- Align the positioned written-unit contract and reviewed mapping tables (`Satsrag/satsrag.github.io@2f544dc4a63028eaa270054c99ad67df15e1cae3`) with `mongol-norm` 0.4.2's implicit chachlag `MVS` synthesis: omit redundant `MVS` before `Aa:isol` in all ten chachlag forward/reverse mapping rows (`X:fina Aa:isol` / `I:isol Aa:isol`), absorb `WrittenUnit::Mvs` immediately preceding isolated `Aa` into `Aa:isol` in `shape_utn57_positioned_written_units`, and encode standalone `AA_FINA` (`U+E00D` → `Aa:isol`) as `\u{180E}\u{1820}` (`᠎ᠠ`) so standalone chachlag round-trips cleanly. Explicit `MVS` records before `Aa:isol` are rejected with `mongol_norm::Error::RedundantChachlagMvs`, leaving `UTN57_MVS_CONTROL` exclusively for detached-suffix boundaries (`U+202F` in ZVVNMOD).
+- Non-joining `Nirugu` boundaries (`[Nirugu:control, X:init, ...]`, `[..., X:fina, Nirugu:control]`, `[Aa:isol, Nirugu:control]`) now synthesize `ZWNJ` during `normalize_positioned_written_units` instead of failing with `Error::ChainPositionMismatch`, round-tripping cleanly with ZVVNMOD's `U+E0E5` `NIRUGU`.
+
 ## [0.4.0] - 2026-11-08
 
 ### Changed
@@ -50,6 +58,7 @@ All notable changes to this project are documented here.
 - Add regressions for all three conformant collisions and the bowed/non-bowed `A + Aa` boundary.
 - Keep the generated-source, reverse-row, Rust, Python, documentation, package, and wasm gates release-blocking.
 
+[Unreleased]: https://github.com/Satsrag/zvvnmod-utn57/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/Satsrag/zvvnmod-utn57/releases/tag/v0.4.0
 [0.3.2]: https://github.com/Satsrag/zvvnmod-utn57/releases/tag/v0.3.2
 [0.3.1]: https://github.com/Satsrag/zvvnmod-utn57/releases/tag/v0.3.1
